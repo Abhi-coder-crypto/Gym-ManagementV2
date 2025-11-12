@@ -7,7 +7,7 @@ import { ProgressTracker } from "@/components/progress-tracker";
 import { AchievementsWidget } from "@/components/achievements-widget";
 import { VideoPlayerModal } from "@/components/video-player-modal";
 import { NotificationCenter } from "@/components/notification-center";
-import { Dumbbell, Flame, Trophy, Calendar, Video, UtensilsCrossed, User, History } from "lucide-react";
+import { Dumbbell, Flame, Trophy, Calendar, Video, UtensilsCrossed, User, History, Home } from "lucide-react";
 import strengthImage from "@assets/generated_images/Strength_training_video_thumbnail_e7f2ebd6.png";
 import yogaImage from "@assets/generated_images/Yoga_class_video_thumbnail_a8a89f8b.png";
 import cardioImage from "@assets/generated_images/Cardio_workout_video_thumbnail_2c386154.png";
@@ -40,6 +40,10 @@ export default function ClientDashboard() {
                 <span className="text-2xl font-display font-bold tracking-tight">FitPro</span>
               </div>
               <nav className="hidden md:flex items-center gap-6">
+                <Button variant="ghost" onClick={() => setLocation("/")} data-testid="link-home">
+                  <Home className="h-4 w-4 mr-2" />
+                  Home
+                </Button>
                 <Button variant="ghost" className="bg-accent" data-testid="link-dashboard">
                   Dashboard
                 </Button>
