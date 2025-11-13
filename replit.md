@@ -5,10 +5,10 @@ Comprehensive online gym management system with separate admin and client dashbo
 
 ## Current State
 - **Design System**: Fitness-focused Material Design with blue/orange/green color scheme, Inter/Montserrat fonts
-- **Authentication**: Ready for integration (Replit Auth placeholder in place)
+- **Authentication**: Phone-based client login + admin password login (Admin@123)
 - **Payment**: Ready for Stripe integration
-- **Database**: PostgreSQL setup with Drizzle ORM ready
-- **Phase**: Design-first prototype with full dummy data
+- **Database**: MongoDB with automated seeding (demo client: 8600126395 / Abhijeet Singh)
+- **Phase**: Functional prototype with body composition tools and plan generators
 
 ## Architecture
 
@@ -40,10 +40,16 @@ shared/
 
 ### Landing Page
 - Hero section with gym background
-- Two main access buttons: Client Dashboard & Admin Dashboard
+- Single "Access Client Dashboard" button (admin access via /admin URL only)
 - Dark/light theme toggle
 
 ### Admin Dashboard (`/admin/*`)
+
+#### Admin Login (`/admin`)
+- Password-protected access (Admin@123)
+- Improved centered card design with shield icon
+- Back to home navigation
+- Dark/light theme toggle
 
 #### 1. Dashboard (`/admin`)
 - 4 key metrics: Total Clients, Active Users, Revenue, Growth Rate
@@ -68,6 +74,20 @@ shared/
 - Video management interface
 
 #### 4. Diet Plans (`/admin/diet`)
+- **3 Tabs**: Plan Generators, Diet Plans, Workout Plans
+- **Diet Plan Generator**:
+  - Client name input
+  - Calorie target selection (1500-3500)
+  - Goal-based planning (lose/maintain/gain)
+  - Diet type selection (balanced, high protein, low carb, keto, vegan)
+  - Complete meal plans with macro breakdowns
+  - Export to text file with validation
+- **Workout Plan Generator**:
+  - Client name input
+  - Duration selection (7/14/21/30 days)
+  - 5 templates (beginner, intermediate, advanced, strength, cardio)
+  - Daily exercise schedules with sets/reps
+  - Export to text file with validation
 - 5 diet plans (Low Carb, High Protein, Keto, Vegan, Balanced)
 - Full details: calories, meals per day, assigned clients
 - Edit and assign functionality
@@ -130,10 +150,17 @@ shared/
 - Recent workouts list with completion badges
 
 #### 6. Profile & Settings (`/client/profile`)
-- 3 tabs: Personal Info, Subscription, Preferences
+- 4 tabs: Personal Info, Subscription, Preferences, Body Composition
 - **Personal Info**: Contact details form
 - **Subscription**: Current plan, billing date, payment method
 - **Preferences**: Notification settings, fitness goals
+- **Body Composition Calculator**:
+  - Height, weight, age, gender, activity level inputs
+  - BMI calculation with category display
+  - BMR (Basal Metabolic Rate) calculation
+  - TDEE (Total Daily Energy Expenditure) calculation
+  - Ideal weight range recommendation
+  - Goal-based calorie recommendations (lose/maintain/gain)
 
 ### Interactive Features
 
@@ -159,6 +186,7 @@ shared/
 ## Interactive Elements (All Working)
 
 ### Client Side
+- ✅ Phone-based login (demo: 8600126395)
 - ✅ Video playback modal
 - ✅ Mark workout as complete
 - ✅ Category filtering with live updates
@@ -167,10 +195,12 @@ shared/
 - ✅ Achievements display
 - ✅ Notification center
 - ✅ Profile settings forms
+- ✅ Body composition calculator (BMI, BMR, TDEE, ideal weight)
 - ✅ Theme toggle (light/dark)
 - ✅ Navigation between pages
 
 ### Admin Side
+- ✅ Password-protected login (Admin@123)
 - ✅ Client search (real-time filtering)
 - ✅ Client detail modal (4 tabs)
 - ✅ Add client form
@@ -179,6 +209,9 @@ shared/
 - ✅ Analytics visualizations
 - ✅ Package management
 - ✅ Session scheduling interface
+- ✅ Workout plan generator with templates
+- ✅ Diet plan generator with calorie targets
+- ✅ Export plans to text files with validation
 - ✅ Theme toggle (light/dark)
 - ✅ Sidebar navigation
 
@@ -186,6 +219,8 @@ shared/
 
 ### Public
 - `/` - Landing page
+- `/client-access` - Client phone login
+- `/admin` - Admin password login
 
 ### Client
 - `/client` - Dashboard
@@ -193,13 +228,13 @@ shared/
 - `/client/diet` - Diet plan
 - `/client/sessions` - Live sessions
 - `/client/history` - Workout history
-- `/client/profile` - Settings & profile
+- `/client/profile` - Settings & profile (with body composition calculator)
 
 ### Admin
-- `/admin` - Dashboard
+- `/admin/dashboard` - Dashboard overview
 - `/admin/clients` - Client management
 - `/admin/videos` - Video library
-- `/admin/diet` - Diet plans
+- `/admin/diet` - Diet plans & generators (workout/diet plan generators)
 - `/admin/sessions` - Live sessions
 - `/admin/analytics` - Analytics & reports
 - `/admin/revenue` - Revenue & payments
@@ -218,16 +253,20 @@ shared/
 - `achievements-widget` - Badge system
 - `notification-center` - Alerts dropdown
 - `video-player-modal` - Video playback
+- `body-composition-calculator` - BMI, BMR, TDEE calculator
 
 ### Admin-Specific
 - `admin-sidebar` - Navigation sidebar
 - `client-detail-modal` - Client details (4 tabs)
 - `add-client-modal` - New client form
 - `upload-video-modal` - Video upload form
+- `workout-plan-generator` - Template-based workout plans
+- `diet-plan-generator` - Calorie-based diet plans
 
 ## Data Structure (Dummy Data)
 
 ### Clients
+- Demo client: Abhijeet Singh (phone: 8600126395) - Premium package
 - 8 sample clients across 3 packages
 - Contact info, package, status, join date
 - Progress tracking, workout history
@@ -272,9 +311,31 @@ shared/
 
 ## Development Notes
 
+- **Admin Access**: Only via `/admin` route with password "Admin@123"
+- **Demo Client**: Phone 8600126395, Name "Abhijeet Singh" (auto-seeded on startup)
+- **Export Validation**: Both workout and diet generators validate before export
 - All interactive elements log to console for demonstration
 - Mock data marked with comments for easy removal
 - Design system fully implemented in `design_guidelines.md`
 - Forms are controlled components with validation ready
 - Responsive design works on all screen sizes
 - Dark mode fully functional across all pages
+
+## Recent Updates (November 2025)
+
+### Authentication Flow
+- Removed admin button from landing page
+- Admin access restricted to `/admin` route only
+- Password: `Admin@123`
+- Improved login UI for both client and admin
+
+### Body Composition Tools
+- Comprehensive calculator integrated into client profile
+- Calculates BMI, BMR, TDEE, and ideal weight
+- Provides goal-based calorie recommendations
+
+### Plan Generators
+- Workout plan generator with 5 templates
+- Diet plan generator with 5 diet types
+- Both export to downloadable text files
+- Validation prevents empty file downloads
