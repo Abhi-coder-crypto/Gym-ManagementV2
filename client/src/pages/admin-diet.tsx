@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Users } from "lucide-react";
+import { DietPlanGenerator } from "@/components/diet-plan-generator";
+import { WorkoutPlanGenerator } from "@/components/workout-plan-generator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function AdminDiet() {
   const style = { "--sidebar-width": "16rem" };
@@ -32,51 +35,76 @@ export default function AdminDiet() {
 
           <main className="flex-1 overflow-auto p-8">
             <div className="max-w-7xl mx-auto space-y-6">
-              <div className="flex items-center justify-between">
-                <p className="text-muted-foreground">Manage and assign custom diet plans to clients</p>
-                <Button data-testid="button-create-plan">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create New Plan
-                </Button>
-              </div>
+              <Tabs defaultValue="generator" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="generator">Plan Generators</TabsTrigger>
+                  <TabsTrigger value="diet">Diet Plans</TabsTrigger>
+                  <TabsTrigger value="workout">Workout Plans</TabsTrigger>
+                </TabsList>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {dietPlans.map((plan) => (
-                  <Card key={plan.id} data-testid={`card-diet-plan-${plan.id}`}>
-                    <CardHeader>
-                      <CardTitle className="font-display text-xl">{plan.name}</CardTitle>
-                      <Badge variant="outline" className="w-fit">{plan.type}</Badge>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Daily Calories</span>
-                          <span className="font-semibold">{plan.calories} cal</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Meals per Day</span>
-                          <span className="font-semibold">{plan.meals}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            Assigned to
-                          </span>
-                          <span className="font-semibold">{plan.assignedTo} clients</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" className="flex-1" size="sm" data-testid="button-edit-plan">
-                          Edit
-                        </Button>
-                        <Button variant="outline" className="flex-1" size="sm" data-testid="button-assign-plan">
-                          Assign
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                <TabsContent value="generator" className="space-y-6 mt-6">
+                  <div className="grid lg:grid-cols-2 gap-6">
+                    <div>
+                      <DietPlanGenerator />
+                    </div>
+                    <div>
+                      <WorkoutPlanGenerator />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="diet" className="space-y-6 mt-6">
+                  <div className="flex items-center justify-between">
+                    <p className="text-muted-foreground">Manage and assign custom diet plans to clients</p>
+                    <Button data-testid="button-create-plan">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Plan
+                    </Button>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {dietPlans.map((plan) => (
+                      <Card key={plan.id} data-testid={`card-diet-plan-${plan.id}`}>
+                        <CardHeader>
+                          <CardTitle className="font-display text-xl">{plan.name}</CardTitle>
+                          <Badge variant="outline" className="w-fit">{plan.type}</Badge>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Daily Calories</span>
+                              <span className="font-semibold">{plan.calories} cal</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Meals per Day</span>
+                              <span className="font-semibold">{plan.meals}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                Assigned to
+                              </span>
+                              <span className="font-semibold">{plan.assignedTo} clients</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="outline" className="flex-1" size="sm" data-testid="button-edit-plan">
+                              Edit
+                            </Button>
+                            <Button variant="outline" className="flex-1" size="sm" data-testid="button-assign-plan">
+                              Assign
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="workout" className="space-y-6 mt-6">
+                  <p className="text-muted-foreground">Workout plans are generated using templates and can be exported for clients</p>
+                </TabsContent>
+              </Tabs>
             </div>
           </main>
         </div>

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Dumbbell, User, Shield } from "lucide-react";
+import { Dumbbell, User } from "lucide-react";
 import { useLocation } from "wouter";
 import heroImage from "@assets/generated_images/Gym_hero_background_image_43c161d8.png";
 
@@ -40,7 +40,7 @@ export default function Landing() {
             workout libraries, diet management, and live training sessions
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 max-w-2xl mx-auto">
+          <div className="flex items-center justify-center max-w-md mx-auto">
             <Button
               size="lg"
               className="text-lg px-12 py-6 h-auto w-full sm:w-auto backdrop-blur-sm bg-primary/90 hover:bg-primary"
@@ -48,22 +48,12 @@ export default function Landing() {
               data-testid="button-client-access"
             >
               <User className="h-5 w-5 mr-2" />
-              Client Dashboard
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-lg px-12 py-6 h-auto w-full sm:w-auto backdrop-blur-sm bg-background/10 hover:bg-background/20 border-white/30 text-white hover:text-white"
-              onClick={() => setLocation("/admin")}
-              data-testid="button-admin-access"
-            >
-              <Shield className="h-5 w-5 mr-2" />
-              Admin Dashboard
+              Access Client Dashboard
             </Button>
           </div>
 
           <p className="text-white/70 text-sm mt-8">
-            Demo Mode: Explore both client and admin interfaces with sample data
+            Enter with your phone number to access your personalized fitness dashboard
           </p>
         </div>
       </section>

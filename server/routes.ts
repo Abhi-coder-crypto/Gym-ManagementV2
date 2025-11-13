@@ -45,7 +45,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.createPackage(pkg);
         }
         
-        res.json({ message: "Default packages created successfully", count: defaultPackages.length });
+        // Create demo client
+        const demoClientPhone = "8600126395";
+        const existingDemoClient = await storage.getClientByPhone(demoClientPhone);
+        
+        if (!existingDemoClient) {
+          const packages = await storage.getAllPackages();
+          const premiumPackage = packages.find(p => p.name === "Premium");
+          
+          await storage.createClient({
+            name: "Abhijeet Singh",
+            phone: demoClientPhone,
+            packageId: premiumPackage?._id?.toString() || "",
+          });
+        }
+        
+        res.json({ message: "Default packages and demo client created successfully", count: defaultPackages.length });
       } else {
         res.json({ message: "Packages already exist", count: existingPackages.length });
       }

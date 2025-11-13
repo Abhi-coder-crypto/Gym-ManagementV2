@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Landing from "@/pages/landing";
 import ClientAccess from "@/pages/client-access";
+import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminClients from "@/pages/admin-clients";
 import AdminVideos from "@/pages/admin-videos";
@@ -25,7 +26,8 @@ function Router() {
     <Switch>
       <Route path="/" component={Landing} />
       <Route path="/client-access" component={ClientAccess} />
-      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin" component={AdminLogin} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/clients" component={AdminClients} />
       <Route path="/admin/videos" component={AdminVideos} />
       <Route path="/admin/diet" component={AdminDiet} />

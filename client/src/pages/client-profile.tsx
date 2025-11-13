@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dumbbell, Video, UtensilsCrossed, Calendar, User, Mail, Phone, MapPin, CreditCard } from "lucide-react";
 import { useLocation } from "wouter";
+import { BodyCompositionCalculator } from "@/components/body-composition-calculator";
 
 export default function ClientProfile() {
   const [, setLocation] = useLocation();
@@ -72,8 +73,9 @@ export default function ClientProfile() {
           </div>
 
           <Tabs defaultValue="personal" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="personal">Personal Info</TabsTrigger>
+              <TabsTrigger value="body">Body Composition</TabsTrigger>
               <TabsTrigger value="subscription">Subscription</TabsTrigger>
               <TabsTrigger value="preferences">Preferences</TabsTrigger>
             </TabsList>
@@ -118,6 +120,10 @@ export default function ClientProfile() {
                   <Button className="w-full" data-testid="button-save-personal">Save Changes</Button>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="body" className="space-y-6">
+              <BodyCompositionCalculator />
             </TabsContent>
 
             <TabsContent value="subscription" className="space-y-6">

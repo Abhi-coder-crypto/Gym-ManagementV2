@@ -125,13 +125,18 @@ export default function ClientAccess() {
 
       <main className="container mx-auto px-6 py-16 flex items-center justify-center min-h-[calc(100vh-80px)]">
         <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-2xl">Client Access</CardTitle>
-            <CardDescription>
-              {showNameInput
-                ? "Please tell us your name to get started"
-                : "Enter your phone number to access your dashboard"}
-            </CardDescription>
+          <CardHeader className="space-y-4">
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mx-auto">
+              <Dumbbell className="h-8 w-8 text-primary" />
+            </div>
+            <div className="text-center">
+              <CardTitle className="text-2xl font-display">Client Access</CardTitle>
+              <CardDescription className="mt-2">
+                {showNameInput
+                  ? "Please tell us your name to get started"
+                  : "Enter your phone number to access your personalized dashboard"}
+              </CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
             {!showNameInput ? (
