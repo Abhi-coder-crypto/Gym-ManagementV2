@@ -1,3 +1,7 @@
+// Load environment variables from .env file
+import dotenv from "dotenv";
+dotenv.config();
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -5,18 +9,21 @@ import { storage } from "./storage";
 
 const app = express();
 
+// Extend IncomingMessage for rawBody
 declare module 'http' {
   interface IncomingMessage {
-    rawBody: unknown
+    rawBody: unknown;
   }
 }
+
 app.use(express.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf;
-  }
+  },
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// Middleware to log API requests
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -35,11 +42,9 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "…";
       }
-
       log(logLine);
     }
   });
@@ -49,9 +54,11 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
+    // Connect to MongoDB using .env MONGODB_URI
     await storage.connect();
-    log('Database connected successfully');
-    
+    log("✅ Database connected successfully");
+
+    // Check for existing packages
     const existingPackages = await storage.getAllPackages();
     if (existingPackages.length === 0) {
       const defaultPackages = [
@@ -69,7 +76,12 @@ app.use((req, res, next) => {
           name: "Premium",
           description: "Most popular choice",
           price: 59.99,
-          features: ["All Basic features", "Video library access", "Diet plans", "2 live sessions/month"],
+          features: [
+            "All Basic features",
+            "Video library access",
+            "Diet plans",
+            "2 live sessions/month",
+          ],
           videoAccess: true,
           liveSessionsPerMonth: 2,
           dietPlanAccess: true,
@@ -79,49 +91,55 @@ app.use((req, res, next) => {
           name: "Elite",
           description: "Complete fitness solution",
           price: 99.99,
-          features: ["All Premium features", "Unlimited live sessions", "Personal trainer support", "Priority support"],
+          features: [
+            "All Premium features",
+            "Unlimited live sessions",
+            "Personal trainer support",
+            "Priority support",
+          ],
           videoAccess: true,
           liveSessionsPerMonth: 999,
           dietPlanAccess: true,
           workoutPlanAccess: true,
         },
       ];
-      
+
       for (const pkg of defaultPackages) {
         await storage.createPackage(pkg);
       }
-      log(`Created ${defaultPackages.length} default packages`);
+      log(`📦 Created ${defaultPackages.length} default packages`);
     } else {
-      log(`Found ${existingPackages.length} existing packages`);
+      log(`📦 Found ${existingPackages.length} existing packages`);
     }
   } catch (error) {
-    log('Failed to connect to database:');
+    log("❌ Failed to connect to database:");
     console.error(error);
     process.exit(1);
   }
 
+  // Register all routes
   const server = await registerRoutes(app);
 
+  // Global error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     res.status(status).json({ message });
     throw err;
   });
 
+  // Setup static/Vite
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  // Start server
+  const port = parseInt(process.env.PORT || "5000", 10);
+
+// ✅ Updated: compatible with Windows & Replit
+server.listen(port, "127.0.0.1", () => {
+  log(`🚀 Server running locally on http://127.0.0.1:${port}`);
+});
 })();
