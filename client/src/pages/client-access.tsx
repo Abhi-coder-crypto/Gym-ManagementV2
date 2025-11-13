@@ -52,7 +52,7 @@ export default function ClientAccess() {
 
   const createClientMutation = useMutation({
     mutationFn: async (data: { name: string; phone: string }) => {
-      const response = await apiRequest('/api/clients', 'POST', data);
+      const response = await apiRequest('POST', '/api/clients', data);
       return response.json();
     },
     onSuccess: (client: any) => {
