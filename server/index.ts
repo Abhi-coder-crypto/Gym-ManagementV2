@@ -111,6 +111,133 @@ app.use((req, res, next) => {
     } else {
       log(`📦 Found ${existingPackages.length} existing packages`);
     }
+    
+    // Create demo client if doesn't exist (regardless of packages)
+      const demoClientPhone = "8600126395";
+      let demoClient = await storage.getClientByPhone(demoClientPhone);
+      
+      if (!demoClient) {
+        const packages = await storage.getAllPackages();
+        const premiumPackage = packages.find(p => p.name === "Premium");
+        
+        demoClient = await storage.createClient({
+          name: "Abhijeet Singh",
+          phone: demoClientPhone,
+          packageId: premiumPackage?._id?.toString() || "",
+          age: 28,
+          gender: "male",
+          height: 175,
+          weight: 75,
+          goal: "Build Muscle"
+        });
+        log(`👤 Created demo client: Abhijeet Singh`);
+      }
+      
+      // Seed videos if none exist
+      const existingVideos = await storage.getAllVideos();
+      if (existingVideos.length === 0) {
+        const packages = await storage.getAllPackages();
+        const premiumPackage = packages.find(p => p.name === "Premium");
+        
+        const videos = [
+          { title: "Full Body Strength Training", category: "Strength", duration: 45, url: "https://example.com/video1", description: "Complete full body workout", packageRequirement: premiumPackage?._id?.toString() },
+          { title: "Morning Yoga Flow", category: "Yoga", duration: 30, url: "https://example.com/video2", description: "Energizing morning yoga", packageRequirement: premiumPackage?._id?.toString() },
+          { title: "HIIT Cardio Blast", category: "Cardio", duration: 25, url: "https://example.com/video3", description: "High intensity cardio", packageRequirement: premiumPackage?._id?.toString() },
+          { title: "Upper Body Power", category: "Strength", duration: 40, url: "https://example.com/video4", description: "Focus on upper body", packageRequirement: premiumPackage?._id?.toString() },
+          { title: "Flexibility & Stretching", category: "Yoga", duration: 20, url: "https://example.com/video5", description: "Improve flexibility", packageRequirement: premiumPackage?._id?.toString() },
+          { title: "Advanced HIIT Circuit", category: "HIIT", duration: 35, url: "https://example.com/video6", description: "Advanced HIIT training", packageRequirement: premiumPackage?._id?.toString() },
+          { title: "Core Strength Builder", category: "Strength", duration: 30, url: "https://example.com/video7", description: "Build core strength", packageRequirement: premiumPackage?._id?.toString() },
+          { title: "Evening Relaxation Yoga", category: "Yoga", duration: 25, url: "https://example.com/video8", description: "Wind down yoga session", packageRequirement: premiumPackage?._id?.toString() },
+          { title: "Beginner Cardio Workout", category: "Cardio", duration: 20, url: "https://example.com/video9", description: "Cardio for beginners", packageRequirement: premiumPackage?._id?.toString() },
+        ];
+        
+        for (const video of videos) {
+          await storage.createVideo(video);
+        }
+        log(`🎥 Created ${videos.length} demo videos`);
+      }
+      
+      // Seed live sessions if none exist
+      const existingSessions = await storage.getAllSessions();
+      if (existingSessions.length === 0) {
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(18, 0, 0, 0);
+        
+        const dayAfter = new Date(now);
+        dayAfter.setDate(dayAfter.getDate() + 2);
+        dayAfter.setHours(19, 0, 0, 0);
+        
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(17, 30, 0, 0);
+        
+        const sessions = [
+          { title: "Power Yoga Session", description: "Energizing yoga flow", scheduledAt: tomorrow, duration: 60, status: "upcoming", meetingLink: "https://meet.example.com/yoga1" },
+          { title: "HIIT Training", description: "High intensity interval training", scheduledAt: dayAfter, duration: 45, status: "upcoming", meetingLink: "https://meet.example.com/hiit1" },
+          { title: "Strength Building", description: "Full body strength", scheduledAt: yesterday, duration: 50, status: "completed", meetingLink: "https://meet.example.com/strength1" },
+          { title: "Cardio Bootcamp", description: "Morning cardio session", scheduledAt: tomorrow, duration: 40, status: "upcoming", meetingLink: "https://meet.example.com/cardio1" },
+        ];
+        
+        for (const session of sessions) {
+          await storage.createSession(session);
+        }
+        log(`📅 Created ${sessions.length} demo live sessions`);
+      }
+      
+      // Seed diet and workout plans for demo client if they don't exist
+      if (demoClient) {
+        const clientId = (demoClient as any)._id.toString();
+        
+        const existingDietPlans = await storage.getClientDietPlans(clientId);
+        if (existingDietPlans.length === 0) {
+          await storage.createDietPlan({
+            clientId,
+            name: "Balanced Nutrition Plan",
+            targetCalories: 2200,
+            protein: 150,
+            carbs: 220,
+            fats: 70,
+            meals: {
+              breakfast: { name: "Oatmeal with Berries", calories: 450, protein: 15, carbs: 65, fats: 12 },
+              lunch: { name: "Grilled Chicken Salad", calories: 550, protein: 45, carbs: 40, fats: 18 },
+              snack: { name: "Greek Yogurt & Almonds", calories: 300, protein: 20, carbs: 25, fats: 15 },
+              dinner: { name: "Salmon with Quinoa", calories: 650, protein: 50, carbs: 55, fats: 20 }
+            }
+          });
+          log(`🥗 Created diet plan for demo client`);
+        }
+        
+        const existingWorkoutPlans = await storage.getClientWorkoutPlans(clientId);
+        if (existingWorkoutPlans.length === 0) {
+          await storage.createWorkoutPlan({
+            clientId,
+            name: "4-Week Strength & Conditioning",
+            description: "Build strength and improve conditioning",
+            goal: "Build Muscle",
+            durationWeeks: 4,
+            exercises: {
+              monday: [
+                { name: "Barbell Squat", sets: 4, reps: 8, rest: "2min" },
+                { name: "Bench Press", sets: 4, reps: 8, rest: "2min" },
+                { name: "Bent-Over Rows", sets: 3, reps: 10, rest: "90s" }
+              ],
+              wednesday: [
+                { name: "Deadlift", sets: 4, reps: 6, rest: "3min" },
+                { name: "Overhead Press", sets: 3, reps: 8, rest: "2min" },
+                { name: "Pull-ups", sets: 3, reps: "max", rest: "90s" }
+              ],
+              friday: [
+                { name: "Leg Press", sets: 4, reps: 12, rest: "90s" },
+                { name: "Dumbbell Bench", sets: 3, reps: 10, rest: "90s" },
+                { name: "Cable Rows", sets: 3, reps: 12, rest: "90s" }
+              ]
+            }
+          });
+          log(`💪 Created workout plan for demo client`);
+        }
+      }
   } catch (error) {
     log("❌ Failed to connect to database:");
     console.error(error);
