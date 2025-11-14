@@ -34,11 +34,28 @@ export default function ClientDashboard() {
     enabled: !!clientId,
   });
 
-  const videos = [
-    { id: 1, title: "Full Body Strength Training", category: "Strength", duration: "45 min", thumbnail: strengthImage },
-    { id: 2, title: "Morning Yoga Flow", category: "Yoga", duration: "30 min", thumbnail: yogaImage },
-    { id: 3, title: "HIIT Cardio Blast", category: "Cardio", duration: "25 min", thumbnail: cardioImage },
-  ];
+  // Fetch real videos from backend
+  const { data: videosData, isLoading: videosLoading } = useQuery<any[]>({
+    queryKey: ['/api/videos'],
+  });
+
+  // Fetch real live sessions from backend
+  const { data: sessionsData, isLoading: sessionsLoading } = useQuery<any[]>({
+    queryKey: ['/api/sessions'],
+  });
+
+  // Use real videos or show loading state
+  const videos = videosData?.slice(0, 3).map((video, index) => ({
+    id: video._id,
+    title: video.title,
+    category: video.category,
+    duration: `${video.duration} min`,
+    thumbnail: index % 3 === 0 ? strengthImage : index % 3 === 1 ? yogaImage : cardioImage,
+    url: video.url,
+  })) || [];
+
+  // Filter upcoming sessions
+  const upcomingSessions = sessionsData?.filter(s => s.status === 'upcoming')?.slice(0, 2) || [];
 
   const handleVideoPlay = (video: typeof videos[0]) => {
     setVideoModal({ open: true, ...video });
@@ -97,28 +114,29 @@ export default function ClientDashboard() {
                   </Button>
                 </div>
                 <div className="grid md:grid-cols-2 gap-6">
-                  <LiveSessionCard
-                    title="Power Yoga Session"
-                    trainer="Sarah Johnson"
-                    date="Nov 12, 2025"
-                    time="6:00 PM"
-                    duration="60 min"
-                    participants={8}
-                    maxParticipants={15}
-                    status="upcoming"
-                    onJoin={() => console.log("Joining upcoming session")}
-                  />
-                  <LiveSessionCard
-                    title="HIIT Training"
-                    trainer="Mike Chen"
-                    date="Nov 11, 2025"
-                    time="7:00 PM"
-                    duration="45 min"
-                    participants={12}
-                    maxParticipants={15}
-                    status="live"
-                    onJoin={() => console.log("Joining live session")}
-                  />
+                  {sessionsLoading ? (
+                    <div className="col-span-2 text-center py-8 text-muted-foreground">Loading sessions...</div>
+                  ) : upcomingSessions.length > 0 ? (
+                    upcomingSessions.map((session: any) => {
+                      const sessionDate = new Date(session.scheduledAt);
+                      return (
+                        <LiveSessionCard
+                          key={session._id}
+                          title={session.title}
+                          trainer="HOC Trainer"
+                          date={sessionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          time={sessionDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                          duration={`${session.duration} min`}
+                          participants={session.participants || 0}
+                          maxParticipants={session.maxParticipants || 15}
+                          status={session.status}
+                          onJoin={() => window.open(session.meetingLink, '_blank')}
+                        />
+                      );
+                    })
+                  ) : (
+                    <div className="col-span-2 text-center py-8 text-muted-foreground">No upcoming sessions scheduled</div>
+                  )}
                 </div>
               </div>
             </div>

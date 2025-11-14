@@ -8,25 +8,40 @@ import strengthImage from "@assets/generated_images/Strength_training_video_thum
 import yogaImage from "@assets/generated_images/Yoga_class_video_thumbnail_a8a89f8b.png";
 import cardioImage from "@assets/generated_images/Cardio_workout_video_thumbnail_2c386154.png";
 import { useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ClientWorkouts() {
   const [, setLocation] = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [videoModal, setVideoModal] = useState({ open: false, title: "", category: "", duration: "", thumbnail: "" });
+  const [videoModal, setVideoModal] = useState({ open: false, title: "", category: "", duration: "", thumbnail: "", url: "" });
 
-  const categories = ["All", "Strength", "Cardio", "Yoga", "HIIT"];
-  const allVideos = [
-    { id: 1, title: "Full Body Strength Training", category: "Strength", duration: "45 min", thumbnail: strengthImage },
-    { id: 2, title: "Morning Yoga Flow", category: "Yoga", duration: "30 min", thumbnail: yogaImage },
-    { id: 3, title: "HIIT Cardio Blast", category: "Cardio", duration: "25 min", thumbnail: cardioImage },
-    { id: 4, title: "Upper Body Power", category: "Strength", duration: "40 min", thumbnail: strengthImage },
-    { id: 5, title: "Flexibility & Stretching", category: "Yoga", duration: "20 min", thumbnail: yogaImage },
-    { id: 6, title: "Advanced HIIT Circuit", category: "HIIT", duration: "35 min", thumbnail: cardioImage },
-    { id: 7, title: "Core Strength Builder", category: "Strength", duration: "30 min", thumbnail: strengthImage },
-    { id: 8, title: "Evening Relaxation Yoga", category: "Yoga", duration: "25 min", thumbnail: yogaImage },
-    { id: 9, title: "Beginner Cardio Workout", category: "Cardio", duration: "20 min", thumbnail: cardioImage },
-  ];
+  // Fetch real videos from backend
+  const { data: videosData, isLoading } = useQuery<any[]>({
+    queryKey: ['/api/videos'],
+  });
+
+  // Extract unique categories from backend data
+  const categories = useMemo(() => {
+    if (!videosData) return ["All"];
+    const uniqueCategories = new Set(videosData.map(v => v.category));
+    return ["All", ...Array.from(uniqueCategories).sort()];
+  }, [videosData]);
+
+  // Map backend videos to display format
+  const allVideos = useMemo(() => {
+    if (!videosData) return [];
+    return videosData.map((video, index) => ({
+      id: video._id,
+      title: video.title,
+      category: video.category,
+      duration: `${video.duration} min`,
+      thumbnail: video.category === "Strength" ? strengthImage : 
+                 video.category === "Yoga" ? yogaImage : cardioImage,
+      url: video.url,
+      description: video.description,
+    }));
+  }, [videosData]);
 
   const filteredVideos = selectedCategory === "All" 
     ? allVideos 
@@ -63,16 +78,26 @@ export default function ClientWorkouts() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVideos.map((video) => (
-              <VideoCard
-                key={video.id}
-                title={video.title}
-                category={video.category}
-                duration={video.duration}
-                thumbnail={video.thumbnail}
-                onPlay={() => handleVideoPlay(video)}
-              />
-            ))}
+            {isLoading ? (
+              <div className="col-span-full text-center py-12 text-muted-foreground">
+                Loading workout videos...
+              </div>
+            ) : filteredVideos.length > 0 ? (
+              filteredVideos.map((video) => (
+                <VideoCard
+                  key={video.id}
+                  title={video.title}
+                  category={video.category}
+                  duration={video.duration}
+                  thumbnail={video.thumbnail}
+                  onPlay={() => handleVideoPlay(video)}
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12 text-muted-foreground">
+                No videos available in this category
+              </div>
+            )}
           </div>
         </div>
       </main>
