@@ -559,10 +559,13 @@ export class MongoStorage implements IStorage {
       supplements: originalPlan.supplements,
       isTemplate: clientId ? false : originalPlan.isTemplate,
       createdBy: originalPlan.createdBy,
+      clonedFrom: planId,
     });
     
     if (originalPlan.isTemplate) {
-      await DietPlan.findByIdAndUpdate(planId, { $inc: { assignedCount: 1 } });
+      await DietPlan.findByIdAndUpdate(planId, { 
+        $inc: { assignedCount: 1, timesCloned: 1 } 
+      });
     }
     
     return await clonedPlan.save();

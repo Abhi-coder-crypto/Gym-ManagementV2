@@ -117,6 +117,8 @@ export interface IDietPlan extends Document {
   isTemplate?: boolean;
   createdBy?: string;
   assignedCount?: number;
+  clonedFrom?: string;
+  timesCloned?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -322,6 +324,8 @@ const DietPlanSchema = new Schema({
   isTemplate: { type: Boolean, default: false },
   createdBy: String,
   assignedCount: { type: Number, default: 0 },
+  clonedFrom: { type: Schema.Types.ObjectId, ref: 'DietPlan' },
+  timesCloned: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
