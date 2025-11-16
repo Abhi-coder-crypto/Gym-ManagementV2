@@ -33,6 +33,10 @@ import {
   type IGoal,
   type IPaymentHistory,
 } from './models';
+import { Message, type IMessage } from './models/message';
+import { Ticket, type ITicket } from './models/ticket';
+import { Announcement, type IAnnouncement } from './models/announcement';
+import { ForumTopic, type IForumTopic } from './models/forum';
 
 export interface IStorage {
   // Package methods
@@ -155,6 +159,33 @@ export interface IStorage {
   // Payment History methods
   getClientPaymentHistory(clientId: string): Promise<IPaymentHistory[]>;
   createPaymentRecord(data: Partial<IPaymentHistory>): Promise<IPaymentHistory>;
+  
+  // Communication - Message methods
+  getConversationMessages(conversationId: string): Promise<IMessage[]>;
+  getClientConversations(clientId: string): Promise<any[]>;
+  sendMessage(data: Partial<IMessage>): Promise<IMessage>;
+  markMessageAsRead(messageId: string): Promise<IMessage | null>;
+  getUnreadMessageCount(userId: string): Promise<number>;
+  
+  // Communication - Ticket methods
+  getClientTickets(clientId: string): Promise<ITicket[]>;
+  getTicket(ticketNumber: string): Promise<ITicket | null>;
+  createTicket(data: Partial<ITicket>): Promise<ITicket>;
+  addTicketResponse(ticketNumber: string, response: any): Promise<ITicket | null>;
+  updateTicketStatus(ticketNumber: string, status: string): Promise<ITicket | null>;
+  
+  // Communication - Announcement methods
+  getAllAnnouncements(targetAudience?: string): Promise<IAnnouncement[]>;
+  getAnnouncement(id: string): Promise<IAnnouncement | null>;
+  createAnnouncement(data: Partial<IAnnouncement>): Promise<IAnnouncement>;
+  
+  // Communication - Forum methods
+  getAllForumTopics(category?: string): Promise<IForumTopic[]>;
+  getForumTopic(id: string): Promise<IForumTopic | null>;
+  createForumTopic(data: Partial<IForumTopic>): Promise<IForumTopic>;
+  addForumReply(topicId: string, reply: any): Promise<IForumTopic | null>;
+  incrementTopicViews(topicId: string): Promise<void>;
+  toggleTopicLike(topicId: string, increment: boolean): Promise<IForumTopic | null>;
 }
 
 export class MongoStorage implements IStorage {
@@ -747,6 +778,189 @@ export class MongoStorage implements IStorage {
   async createPaymentRecord(data: Partial<IPaymentHistory>): Promise<IPaymentHistory> {
     const payment = new PaymentHistory(data);
     return await payment.save();
+  }
+  
+  // Communication - Message methods
+  async getConversationMessages(conversationId: string): Promise<IMessage[]> {
+    return await Message.find({ conversationId }).sort({ createdAt: 1 });
+  }
+  
+  async getClientConversations(clientId: string): Promise<any[]> {
+    const messages = await Message.aggregate([
+      {
+        $match: {
+          $or: [{ senderId: clientId }, { receiverId: clientId }]
+        }
+      },
+      {
+        $sort: { createdAt: -1 }
+      },
+      {
+        $group: {
+          _id: '$conversationId',
+          lastMessage: { $first: '$$ROOT' },
+          unreadCount: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$receiverId', clientId] },
+                    { $eq: ['$isRead', false] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      },
+      {
+        $sort: { 'lastMessage.createdAt': -1 }
+      }
+    ]);
+    
+    return messages;
+  }
+  
+  async sendMessage(data: Partial<IMessage>): Promise<IMessage> {
+    const message = new Message(data);
+    return await message.save();
+  }
+  
+  async markMessageAsRead(messageId: string): Promise<IMessage | null> {
+    return await Message.findByIdAndUpdate(
+      messageId,
+      { isRead: true, readAt: new Date() },
+      { new: true }
+    );
+  }
+  
+  async getUnreadMessageCount(userId: string): Promise<number> {
+    return await Message.countDocuments({
+      receiverId: userId,
+      isRead: false
+    });
+  }
+  
+  // Communication - Ticket methods
+  async getClientTickets(clientId: string): Promise<ITicket[]> {
+    return await Ticket.find({ clientId }).sort({ createdAt: -1 });
+  }
+  
+  async getTicket(ticketNumber: string): Promise<ITicket | null> {
+    return await Ticket.findOne({ ticketNumber });
+  }
+  
+  async createTicket(data: Partial<ITicket>): Promise<ITicket> {
+    const ticketCount = await Ticket.countDocuments();
+    data.ticketNumber = `TKT-${String(ticketCount + 1).padStart(6, '0')}`;
+    const ticket = new Ticket(data);
+    return await ticket.save();
+  }
+  
+  async addTicketResponse(ticketNumber: string, response: any): Promise<ITicket | null> {
+    return await Ticket.findOneAndUpdate(
+      { ticketNumber },
+      { 
+        $push: { responses: response },
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+  }
+  
+  async updateTicketStatus(ticketNumber: string, status: string): Promise<ITicket | null> {
+    const updateData: any = { status, updatedAt: new Date() };
+    
+    if (status === 'resolved') {
+      updateData.resolvedAt = new Date();
+    } else if (status === 'closed') {
+      updateData.closedAt = new Date();
+    }
+    
+    return await Ticket.findOneAndUpdate(
+      { ticketNumber },
+      updateData,
+      { new: true }
+    );
+  }
+  
+  // Communication - Announcement methods
+  async getAllAnnouncements(targetAudience?: string): Promise<IAnnouncement[]> {
+    const query: any = {};
+    
+    if (targetAudience) {
+      query.$or = [
+        { targetAudience: 'all' },
+        { targetAudience }
+      ];
+    }
+    
+    const now = new Date();
+    query.$or = query.$or || [];
+    if (query.$or.length === 0) {
+      query.$or = [
+        { expiresAt: { $exists: false } },
+        { expiresAt: { $gte: now } }
+      ];
+    }
+    
+    return await Announcement.find(query)
+      .sort({ isPinned: -1, createdAt: -1 });
+  }
+  
+  async getAnnouncement(id: string): Promise<IAnnouncement | null> {
+    return await Announcement.findById(id);
+  }
+  
+  async createAnnouncement(data: Partial<IAnnouncement>): Promise<IAnnouncement> {
+    const announcement = new Announcement(data);
+    return await announcement.save();
+  }
+  
+  // Communication - Forum methods
+  async getAllForumTopics(category?: string): Promise<IForumTopic[]> {
+    const query: any = {};
+    if (category) {
+      query.category = category;
+    }
+    
+    return await ForumTopic.find(query)
+      .sort({ isPinned: -1, lastActivityAt: -1 });
+  }
+  
+  async getForumTopic(id: string): Promise<IForumTopic | null> {
+    return await ForumTopic.findById(id);
+  }
+  
+  async createForumTopic(data: Partial<IForumTopic>): Promise<IForumTopic> {
+    const topic = new ForumTopic(data);
+    return await topic.save();
+  }
+  
+  async addForumReply(topicId: string, reply: any): Promise<IForumTopic | null> {
+    return await ForumTopic.findByIdAndUpdate(
+      topicId,
+      { 
+        $push: { replies: reply },
+        lastActivityAt: new Date(),
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+  }
+  
+  async incrementTopicViews(topicId: string): Promise<void> {
+    await ForumTopic.findByIdAndUpdate(topicId, { $inc: { viewCount: 1 } });
+  }
+  
+  async toggleTopicLike(topicId: string, increment: boolean): Promise<IForumTopic | null> {
+    return await ForumTopic.findByIdAndUpdate(
+      topicId,
+      { $inc: { likeCount: increment ? 1 : -1 } },
+      { new: true }
+    );
   }
 }
 
