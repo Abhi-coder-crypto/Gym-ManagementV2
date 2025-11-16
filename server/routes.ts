@@ -1487,6 +1487,159 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Analytics routes
+  app.get("/api/analytics/monthly-trends", async (_req, res) => {
+    try {
+      const clients = await storage.getAllClients();
+      const packages = await storage.getAllPackages();
+
+      // Create package lookup map
+      const packageById = packages.reduce((map: Record<string, any>, pkg: any) => {
+        map[pkg._id.toString()] = pkg;
+        return map;
+      }, {});
+
+      // Get last 6 months
+      const now = new Date();
+      const monthsData = [];
+      
+      for (let i = 5; i >= 0; i--) {
+        const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const nextMonthDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+        const monthName = monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+        // Count clients created up to this month
+        const clientsUpToMonth = clients.filter(c => 
+          new Date(c.createdAt) < nextMonthDate
+        );
+
+        // Calculate revenue for clients active this month
+        const monthRevenue = clientsUpToMonth.reduce((sum, client) => {
+          const packageId = typeof client.packageId === 'object' ? client.packageId._id : client.packageId;
+          const pkg = packageById[packageId?.toString()];
+          return sum + (pkg?.price || 0);
+        }, 0);
+
+        // Count new clients in this specific month
+        const newClients = clients.filter(c => {
+          const createdDate = new Date(c.createdAt);
+          return createdDate >= monthDate && createdDate < nextMonthDate;
+        }).length;
+
+        monthsData.push({
+          month: monthName,
+          revenue: monthRevenue,
+          clients: clientsUpToMonth.length,
+          newClients: newClients
+        });
+      }
+
+      res.json(monthsData);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/analytics/growth-metrics", async (_req, res) => {
+    try {
+      const clients = await storage.getAllClients();
+      const packages = await storage.getAllPackages();
+
+      // Calculate this month vs last month
+      const now = new Date();
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+
+      const thisMonthClients = clients.filter(c => 
+        new Date(c.createdAt) >= thisMonthStart
+      ).length;
+
+      const lastMonthClients = clients.filter(c => {
+        const createdDate = new Date(c.createdAt);
+        return createdDate >= lastMonthStart && createdDate < thisMonthStart;
+      }).length;
+
+      const twoMonthsAgoClients = clients.filter(c => {
+        const createdDate = new Date(c.createdAt);
+        return createdDate >= twoMonthsAgo && createdDate < lastMonthStart;
+      }).length;
+
+      // Calculate growth rate
+      const growthRate = lastMonthClients > 0 
+        ? Math.round(((thisMonthClients - lastMonthClients) / lastMonthClients) * 100)
+        : 100;
+
+      const lastMonthGrowthRate = twoMonthsAgoClients > 0
+        ? Math.round(((lastMonthClients - twoMonthsAgoClients) / twoMonthsAgoClients) * 100)
+        : 100;
+
+      // Package breakdown
+      const packageById = packages.reduce((map: Record<string, any>, pkg: any) => {
+        map[pkg._id.toString()] = pkg;
+        return map;
+      }, {});
+
+      const packageStats = packages.map((pkg: any) => {
+        const count = clients.filter((c: any) => {
+          const packageId = typeof c.packageId === 'object' ? c.packageId._id : c.packageId;
+          return packageId?.toString() === pkg._id.toString();
+        }).length;
+        return {
+          name: pkg.name,
+          count,
+          percentage: clients.length > 0 ? Math.round((count / clients.length) * 100) : 0
+        };
+      });
+
+      res.json({
+        thisMonth: thisMonthClients,
+        lastMonth: lastMonthClients,
+        growthRate,
+        lastMonthGrowthRate,
+        totalClients: clients.length,
+        packageStats
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/analytics/client-timeline", async (_req, res) => {
+    try {
+      const clients = await storage.getAllClients();
+      
+      // Group clients by month for the last 6 months
+      const now = new Date();
+      const timeline = [];
+      
+      for (let i = 5; i >= 0; i--) {
+        const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const nextMonthDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+        const monthName = monthDate.toLocaleDateString('en-US', { month: 'short' });
+
+        const newClients = clients.filter(c => {
+          const createdDate = new Date(c.createdAt);
+          return createdDate >= monthDate && createdDate < nextMonthDate;
+        }).length;
+
+        const totalClients = clients.filter(c => 
+          new Date(c.createdAt) < nextMonthDate
+        ).length;
+
+        timeline.push({
+          month: monthName,
+          newClients,
+          totalClients
+        });
+      }
+
+      res.json(timeline);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

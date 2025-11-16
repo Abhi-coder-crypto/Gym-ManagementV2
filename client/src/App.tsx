@@ -12,7 +12,7 @@ import AdminClients from "@/pages/admin-clients";
 import AdminVideos from "@/pages/admin-videos";
 import AdminDiet from "@/pages/admin-diet";
 import AdminSessions from "@/pages/admin-sessions";
-import AdminAnalytics from "@/pages/admin-analytics";
+import AdminAnalyticsEnhanced from "@/pages/admin-analytics-enhanced";
 import AdminRevenue from "@/pages/admin-revenue";
 import ClientDashboard from "@/pages/client-dashboard";
 import ClientWorkouts from "@/pages/client-workouts";
@@ -49,7 +49,7 @@ function Router() {
       <Route path="/admin/videos" component={AdminVideos} />
       <Route path="/admin/diet" component={AdminDiet} />
       <Route path="/admin/sessions" component={AdminSessions} />
-      <Route path="/admin/analytics" component={AdminAnalytics} />
+      <Route path="/admin/analytics" component={AdminAnalyticsEnhanced} />
       <Route path="/admin/revenue" component={AdminRevenue} />
       <Route path="/client" component={ClientDashboard} />
       <Route path="/client/workouts" component={ClientWorkouts} />
