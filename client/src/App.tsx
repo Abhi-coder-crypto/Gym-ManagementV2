@@ -14,6 +14,7 @@ import AdminDiet from "@/pages/admin-diet-plans";
 import AdminSessions from "@/pages/admin-sessions";
 import AdminAnalyticsEnhanced from "@/pages/admin-analytics-enhanced";
 import AdminRevenueEnhanced from "@/pages/admin-revenue-enhanced";
+import AdminAnalyticsReports from "@/pages/admin-analytics-reports";
 import ClientDashboard from "@/pages/client-dashboard";
 import ClientWorkouts from "@/pages/client-workouts";
 import ClientVideos from "@/pages/client-videos";
@@ -50,6 +51,7 @@ function Router() {
       <Route path="/admin/diet" component={AdminDiet} />
       <Route path="/admin/sessions" component={AdminSessions} />
       <Route path="/admin/analytics" component={AdminAnalyticsEnhanced} />
+      <Route path="/admin/reports" component={AdminAnalyticsReports} />
       <Route path="/admin/revenue" component={AdminRevenueEnhanced} />
       <Route path="/client" component={ClientDashboard} />
       <Route path="/client/workouts" component={ClientWorkouts} />

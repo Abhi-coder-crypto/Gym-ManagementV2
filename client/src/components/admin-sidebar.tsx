@@ -7,6 +7,7 @@ import {
   BarChart3,
   DollarSign,
   Home,
+  FileText,
 } from "lucide-react";
 import {
   Sidebar,
@@ -27,6 +28,7 @@ const menuItems = [
   { title: "Diet Plans", icon: UtensilsCrossed, url: "/admin/diet" },
   { title: "Live Sessions", icon: Calendar, url: "/admin/sessions" },
   { title: "Analytics", icon: BarChart3, url: "/admin/analytics" },
+  { title: "Reports", icon: FileText, url: "/admin/reports" },
   { title: "Revenue", icon: DollarSign, url: "/admin/revenue" },
 ];
 

@@ -219,3 +219,45 @@ export const weeklyWorkoutGoals = pgTable("weekly_workout_goals", {
 export const insertWeeklyWorkoutGoalSchema = createInsertSchema(weeklyWorkoutGoals).omit({ id: true });
 export type InsertWeeklyWorkoutGoal = z.infer<typeof insertWeeklyWorkoutGoalSchema>;
 export type WeeklyWorkoutGoal = typeof weeklyWorkoutGoals.$inferSelect;
+
+export const videoViews = pgTable("video_views", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  videoId: varchar("video_id").notNull().references(() => videos.id),
+  clientId: varchar("client_id").notNull().references(() => clients.id),
+  viewedAt: timestamp("viewed_at").notNull().default(sql`now()`),
+  watchDuration: integer("watch_duration"),
+  completed: boolean("completed").default(false),
+});
+
+export const insertVideoViewSchema = createInsertSchema(videoViews).omit({ id: true, viewedAt: true });
+export type InsertVideoView = z.infer<typeof insertVideoViewSchema>;
+export type VideoView = typeof videoViews.$inferSelect;
+
+export const clientActivity = pgTable("client_activity", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => clients.id),
+  activityType: text("activity_type").notNull(),
+  timestamp: timestamp("timestamp").notNull().default(sql`now()`),
+  metadata: jsonb("metadata"),
+});
+
+export const insertClientActivitySchema = createInsertSchema(clientActivity).omit({ id: true, timestamp: true });
+export type InsertClientActivity = z.infer<typeof insertClientActivitySchema>;
+export type ClientActivity = typeof clientActivity.$inferSelect;
+
+export const payments = pgTable("payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => clients.id),
+  packageId: varchar("package_id").notNull().references(() => packages.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull().default('pending'),
+  paidAt: timestamp("paid_at"),
+  dueDate: timestamp("due_date").notNull(),
+  invoiceNumber: text("invoice_number"),
+  paymentMethod: text("payment_method"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true });
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type Payment = typeof payments.$inferSelect;

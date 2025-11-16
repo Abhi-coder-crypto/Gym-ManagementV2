@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { PaymentHistory, Invoice, Refund, PaymentReminder } from "./models";
+import { PaymentHistory, Invoice, Refund, PaymentReminder, VideoProgress, LiveSession } from "./models";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize default packages if none exist
@@ -2373,6 +2373,382 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(timeline);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/admin/analytics/client-stats', async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const clients = await storage.getAllClients();
+      
+      const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+      const end = endDate ? new Date(endDate as string) : new Date();
+
+      const totalClients = clients.length;
+      const activeClients = clients.filter((c: any) => c.status === 'active').length;
+      const inactiveClients = clients.filter((c: any) => c.status === 'inactive').length;
+      const pendingClients = clients.filter((c: any) => c.status === 'pending').length;
+
+      const filteredClients = clients.filter((c: any) => {
+        const createdDate = new Date(c.createdAt);
+        return createdDate >= start && createdDate <= end;
+      });
+
+      const growthData = [];
+      const currentDate = new Date(start);
+      while (currentDate <= end) {
+        const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        
+        const newClients = clients.filter((c: any) => {
+          const created = new Date(c.createdAt);
+          return created >= monthStart && created <= monthEnd;
+        }).length;
+
+        growthData.push({
+          month: monthStart.toISOString().slice(0, 7),
+          newClients,
+          totalClients: clients.filter((c: any) => new Date(c.createdAt) <= monthEnd).length
+        });
+
+        currentDate.setMonth(currentDate.getMonth() + 1);
+      }
+
+      res.json({
+        totalClients,
+        activeClients,
+        inactiveClients,
+        pendingClients,
+        newClientsInPeriod: filteredClients.length,
+        growthData
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/admin/analytics/video-performance', async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const videos = await storage.getAllVideos();
+      const videoProgress = await VideoProgress.find();
+
+      const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+      const end = endDate ? new Date(endDate as string) : new Date();
+
+      const videoStats = videos.map((video: any) => {
+        const progressRecords = videoProgress.filter((vp: any) => {
+          const vpDate = new Date(vp.lastWatchedAt || vp.createdAt);
+          return vp.videoId?.toString() === video._id.toString() && vpDate >= start && vpDate <= end;
+        });
+
+        const views = progressRecords.length;
+        const completions = progressRecords.filter((vp: any) => vp.completed).length;
+        const completionRate = views > 0 ? Math.round((completions / views) * 100) : 0;
+        const totalWatchTime = progressRecords.reduce((sum: number, vp: any) => sum + (vp.watchDuration || 0), 0);
+        const avgWatchTime = views > 0 ? Math.round(totalWatchTime / views) : 0;
+
+        return {
+          id: video._id,
+          title: video.title,
+          category: video.category,
+          duration: video.duration,
+          views,
+          completions,
+          completionRate,
+          avgWatchTime
+        };
+      });
+
+      videoStats.sort((a, b) => b.views - a.views);
+
+      res.json({
+        totalVideos: videos.length,
+        totalViews: videoStats.reduce((sum, v) => sum + v.views, 0),
+        totalCompletions: videoStats.reduce((sum, v) => sum + v.completions, 0),
+        avgCompletionRate: videoStats.length > 0 
+          ? Math.round(videoStats.reduce((sum, v) => sum + v.completionRate, 0) / videoStats.length) 
+          : 0,
+        topVideos: videoStats.slice(0, 10)
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/admin/analytics/session-attendance', async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+      const end = endDate ? new Date(endDate as string) : new Date();
+
+      const sessions = await storage.getAllSessions();
+      const filteredSessions = sessions.filter((s: any) => {
+        const scheduledDate = new Date(s.scheduledAt);
+        return scheduledDate >= start && scheduledDate <= end;
+      });
+
+      const sessionStats = await Promise.all(filteredSessions.map(async (session: any) => {
+        const sessionClients = await storage.getSessionClients(session._id);
+        const bookedCount = sessionClients.length;
+        const attendedCount = sessionClients.filter((sc: any) => sc.attended).length;
+        const attendanceRate = bookedCount > 0 ? Math.round((attendedCount / bookedCount) * 100) : 0;
+
+        return {
+          id: session._id,
+          title: session.title,
+          sessionType: session.sessionType,
+          scheduledAt: session.scheduledAt,
+          trainerName: session.trainerName,
+          maxCapacity: session.maxCapacity,
+          bookedCount,
+          attendedCount,
+          attendanceRate,
+          status: session.status
+        };
+      }));
+
+      const totalSessions = filteredSessions.length;
+      const completedSessions = filteredSessions.filter((s: any) => s.status === 'completed').length;
+      const totalBooked = sessionStats.reduce((sum: number, s: any) => sum + s.bookedCount, 0);
+      const totalAttended = sessionStats.reduce((sum: number, s: any) => sum + s.attendedCount, 0);
+      const avgAttendanceRate = totalBooked > 0 ? Math.round((totalAttended / totalBooked) * 100) : 0;
+
+      res.json({
+        totalSessions,
+        completedSessions,
+        totalBooked,
+        totalAttended,
+        avgAttendanceRate,
+        sessionDetails: sessionStats.sort((a: any, b: any) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime())
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/admin/analytics/revenue', async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+      const end = endDate ? new Date(endDate as string) : new Date();
+
+      const payments = await PaymentHistory.find({
+        createdAt: { $gte: start, $lte: end }
+      }).populate('clientId packageId');
+
+      const totalRevenue = payments.reduce((sum, p: any) => sum + parseFloat(p.amount || 0), 0);
+      const paidRevenue = payments.filter((p: any) => p.status === 'paid').reduce((sum, p: any) => sum + parseFloat(p.amount || 0), 0);
+      const pendingRevenue = payments.filter((p: any) => p.status === 'pending').reduce((sum, p: any) => sum + parseFloat(p.amount || 0), 0);
+      const overdueRevenue = payments.filter((p: any) => p.status === 'overdue').reduce((sum, p: any) => sum + parseFloat(p.amount || 0), 0);
+
+      const monthlyRevenue = [];
+      const currentDate = new Date(start);
+      while (currentDate <= end) {
+        const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        
+        const monthPayments = payments.filter((p: any) => {
+          const pDate = new Date(p.createdAt);
+          return pDate >= monthStart && pDate <= monthEnd && p.status === 'paid';
+        });
+
+        monthlyRevenue.push({
+          month: monthStart.toISOString().slice(0, 7),
+          revenue: monthPayments.reduce((sum, p: any) => sum + parseFloat(p.amount || 0), 0),
+          count: monthPayments.length
+        });
+
+        currentDate.setMonth(currentDate.getMonth() + 1);
+      }
+
+      const packages = await storage.getAllPackages();
+      const revenueByPackage = packages.map((pkg: any) => {
+        const pkgPayments = payments.filter((p: any) => 
+          p.packageId?._id?.toString() === pkg._id.toString() && p.status === 'paid'
+        );
+        return {
+          packageName: pkg.name,
+          revenue: pkgPayments.reduce((sum, p: any) => sum + parseFloat(p.amount || 0), 0),
+          count: pkgPayments.length
+        };
+      });
+
+      res.json({
+        totalRevenue: Math.round(totalRevenue * 100) / 100,
+        paidRevenue: Math.round(paidRevenue * 100) / 100,
+        pendingRevenue: Math.round(pendingRevenue * 100) / 100,
+        overdueRevenue: Math.round(overdueRevenue * 100) / 100,
+        totalPayments: payments.length,
+        monthlyRevenue,
+        revenueByPackage
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/admin/analytics/retention', async (req, res) => {
+    try {
+      const clients = await storage.getAllClients();
+      const now = new Date();
+      
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+      const activeClients = clients.filter((c: any) => c.status === 'active').length;
+      const inactiveClients = clients.filter((c: any) => c.status === 'inactive').length;
+
+      const clientsCreated30DaysAgo = clients.filter((c: any) => 
+        new Date(c.createdAt) >= sixtyDaysAgo && new Date(c.createdAt) < thirtyDaysAgo
+      );
+      
+      const stillActive30Days = clientsCreated30DaysAgo.filter((c: any) => c.status === 'active').length;
+      const retention30Days = clientsCreated30DaysAgo.length > 0 
+        ? Math.round((stillActive30Days / clientsCreated30DaysAgo.length) * 100) 
+        : 0;
+
+      const clientsCreated90DaysAgo = clients.filter((c: any) => 
+        new Date(c.createdAt) < ninetyDaysAgo
+      );
+      
+      const stillActive90Days = clientsCreated90DaysAgo.filter((c: any) => c.status === 'active').length;
+      const retention90Days = clientsCreated90DaysAgo.length > 0 
+        ? Math.round((stillActive90Days / clientsCreated90DaysAgo.length) * 100) 
+        : 0;
+
+      const churnRate = clients.length > 0 
+        ? Math.round((inactiveClients / clients.length) * 100) 
+        : 0;
+
+      const packages = await storage.getAllPackages();
+      const retentionByPackage = packages.map((pkg: any) => {
+        const pkgClients = clients.filter((c: any) => c.packageId?.toString() === pkg._id.toString());
+        const pkgActive = pkgClients.filter((c: any) => c.status === 'active').length;
+        return {
+          packageName: pkg.name,
+          totalClients: pkgClients.length,
+          activeClients: pkgActive,
+          retentionRate: pkgClients.length > 0 ? Math.round((pkgActive / pkgClients.length) * 100) : 0
+        };
+      });
+
+      res.json({
+        totalClients: clients.length,
+        activeClients,
+        inactiveClients,
+        retention30Days,
+        retention90Days,
+        churnRate,
+        retentionByPackage
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/admin/analytics/peak-usage', async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const end = endDate ? new Date(endDate as string) : new Date();
+
+      const sessions = await storage.getAllSessions();
+      const videoProgress = await VideoProgress.find();
+
+      const activity = [
+        ...sessions.map((s: any) => ({ timestamp: new Date(s.scheduledAt), type: 'session' })),
+        ...videoProgress.map((vp: any) => ({ timestamp: new Date(vp.lastWatchedAt || vp.createdAt), type: 'video' }))
+      ].filter((a: any) => a.timestamp >= start && a.timestamp <= end);
+
+      const hourlyActivity = Array(24).fill(0);
+      const dailyActivity = Array(7).fill(0);
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+      activity.forEach((a: any) => {
+        const date = new Date(a.timestamp);
+        hourlyActivity[date.getHours()]++;
+        dailyActivity[date.getDay()]++;
+      });
+
+      const hourlyData = hourlyActivity.map((count, hour) => ({
+        hour: `${hour}:00`,
+        activity: count
+      }));
+
+      const dailyData = dailyActivity.map((count, day) => ({
+        day: dayNames[day],
+        activity: count
+      }));
+
+      const peakHour = hourlyActivity.indexOf(Math.max(...hourlyActivity));
+      const peakDay = dailyActivity.indexOf(Math.max(...dailyActivity));
+
+      res.json({
+        hourlyData,
+        dailyData,
+        peakHour: `${peakHour}:00`,
+        peakDay: dayNames[peakDay],
+        totalActivity: activity.length
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/admin/analytics/popular-trainers', async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+      const end = endDate ? new Date(endDate as string) : new Date();
+
+      const sessions = await storage.getAllSessions();
+      const filteredSessions = sessions.filter((s: any) => {
+        const scheduledDate = new Date(s.scheduledAt);
+        return scheduledDate >= start && scheduledDate <= end;
+      });
+
+      const trainerStats: Record<string, any> = {};
+
+      for (const session of filteredSessions) {
+        const trainer = (session as any).trainerName || 'Unknown';
+        if (!trainerStats[trainer]) {
+          trainerStats[trainer] = {
+            trainerName: trainer,
+            totalSessions: 0,
+            completedSessions: 0,
+            totalBookings: 0,
+            totalAttendance: 0,
+            avgAttendanceRate: 0
+          };
+        }
+
+        trainerStats[trainer].totalSessions++;
+        if ((session as any).status === 'completed') {
+          trainerStats[trainer].completedSessions++;
+        }
+
+        const sessionClients = await storage.getSessionClients((session as any)._id);
+        trainerStats[trainer].totalBookings += sessionClients.length;
+        trainerStats[trainer].totalAttendance += sessionClients.filter((sc: any) => sc.attended).length;
+      }
+
+      const trainerList = Object.values(trainerStats).map((trainer: any) => ({
+        ...trainer,
+        avgAttendanceRate: trainer.totalBookings > 0 
+          ? Math.round((trainer.totalAttendance / trainer.totalBookings) * 100) 
+          : 0
+      }));
+
+      trainerList.sort((a, b) => b.totalSessions - a.totalSessions);
+
+      res.json({
+        trainers: trainerList,
+        totalTrainers: trainerList.length
+      });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

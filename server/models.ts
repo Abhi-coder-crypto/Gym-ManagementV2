@@ -650,6 +650,23 @@ const PaymentReminderSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+export interface IClientActivity extends Document {
+  clientId: string;
+  activityType: string;
+  timestamp: Date;
+  metadata?: any;
+}
+
+const ClientActivitySchema = new Schema({
+  clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
+  activityType: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+  metadata: Schema.Types.Mixed,
+});
+
+ClientActivitySchema.index({ clientId: 1, timestamp: -1 });
+ClientActivitySchema.index({ timestamp: -1 });
+
 export const Package = mongoose.model<IPackage>('Package', PackageSchema);
 export const Client = mongoose.model<IClient>('Client', ClientSchema);
 export const BodyMetrics = mongoose.model<IBodyMetrics>('BodyMetrics', BodyMetricsSchema);
@@ -671,3 +688,4 @@ export const PaymentHistory = mongoose.model<IPaymentHistory>('PaymentHistory', 
 export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema);
 export const Refund = mongoose.model<IRefund>('Refund', RefundSchema);
 export const PaymentReminder = mongoose.model<IPaymentReminder>('PaymentReminder', PaymentReminderSchema);
+export const ClientActivity = mongoose.model<IClientActivity>('ClientActivity', ClientActivitySchema);
