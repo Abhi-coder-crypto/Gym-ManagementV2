@@ -14,6 +14,7 @@ import {
   VideoBookmark,
   ProgressPhoto,
   Achievement,
+  Goal,
   type IPackage,
   type IClient,
   type IBodyMetrics,
@@ -28,6 +29,7 @@ import {
   type IVideoBookmark,
   type IProgressPhoto,
   type IAchievement,
+  type IGoal,
 } from './models';
 
 export interface IStorage {
@@ -139,6 +141,14 @@ export interface IStorage {
   // Progress Tracking - Weekly Completion methods
   getClientWeeklyCompletion(clientId: string): Promise<any>;
   getWeeklyCompletionHistory(clientId: string): Promise<any[]>;
+  
+  // Goal methods
+  getClientGoals(clientId: string): Promise<IGoal[]>;
+  getGoal(id: string): Promise<IGoal | null>;
+  createGoal(data: Partial<IGoal>): Promise<IGoal>;
+  updateGoal(id: string, data: Partial<IGoal>): Promise<IGoal | null>;
+  deleteGoal(id: string): Promise<boolean>;
+  updateGoalProgress(goalId: string, currentValue: number): Promise<IGoal | null>;
 }
 
 export class MongoStorage implements IStorage {
@@ -663,6 +673,61 @@ export class MongoStorage implements IStorage {
     }
     
     return weeks;
+  }
+  
+  // Goal methods
+  async getClientGoals(clientId: string): Promise<IGoal[]> {
+    return await Goal.find({ clientId, status: { $ne: 'abandoned' } }).sort({ createdAt: -1 });
+  }
+  
+  async getGoal(id: string): Promise<IGoal | null> {
+    return await Goal.findById(id);
+  }
+  
+  async createGoal(data: Partial<IGoal>): Promise<IGoal> {
+    const goal = new Goal(data);
+    return await goal.save();
+  }
+  
+  async updateGoal(id: string, data: Partial<IGoal>): Promise<IGoal | null> {
+    data.updatedAt = new Date();
+    return await Goal.findByIdAndUpdate(id, data, { new: true });
+  }
+  
+  async deleteGoal(id: string): Promise<boolean> {
+    const result = await Goal.findByIdAndDelete(id);
+    return !!result;
+  }
+  
+  async updateGoalProgress(goalId: string, currentValue: number): Promise<IGoal | null> {
+    const goal = await Goal.findById(goalId);
+    if (!goal) return null;
+    
+    const progress = Math.min(100, Math.round((currentValue / goal.targetValue) * 100));
+    const updatedMilestones = goal.milestones.map(milestone => {
+      if (!milestone.achieved && currentValue >= milestone.value) {
+        return {
+          ...milestone.toObject(),
+          achieved: true,
+          achievedAt: new Date(),
+        };
+      }
+      return milestone;
+    });
+    
+    const status = progress >= 100 ? 'completed' : 'active';
+    
+    return await Goal.findByIdAndUpdate(
+      goalId,
+      {
+        currentValue,
+        progress,
+        status,
+        milestones: updatedMilestones,
+        updatedAt: new Date(),
+      },
+      { new: true }
+    );
   }
 }
 

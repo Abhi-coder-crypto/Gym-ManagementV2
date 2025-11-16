@@ -304,6 +304,48 @@ const AchievementSchema = new Schema({
   metadata: Schema.Types.Mixed,
 });
 
+export interface IGoal extends Document {
+  clientId: string;
+  goalType: 'weight' | 'fitness' | 'nutrition';
+  title: string;
+  description?: string;
+  targetValue: number;
+  currentValue: number;
+  unit: string;
+  targetDate?: Date;
+  status: 'active' | 'completed' | 'abandoned';
+  progress: number;
+  milestones: Array<{
+    value: number;
+    label: string;
+    achieved: boolean;
+    achievedAt?: Date;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const GoalSchema = new Schema({
+  clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
+  goalType: { type: String, enum: ['weight', 'fitness', 'nutrition'], required: true },
+  title: { type: String, required: true },
+  description: String,
+  targetValue: { type: Number, required: true },
+  currentValue: { type: Number, required: true, default: 0 },
+  unit: { type: String, required: true },
+  targetDate: Date,
+  status: { type: String, enum: ['active', 'completed', 'abandoned'], default: 'active' },
+  progress: { type: Number, default: 0 },
+  milestones: [{
+    value: { type: Number, required: true },
+    label: { type: String, required: true },
+    achieved: { type: Boolean, default: false },
+    achievedAt: Date,
+  }],
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
 export const Package = mongoose.model<IPackage>('Package', PackageSchema);
 export const Client = mongoose.model<IClient>('Client', ClientSchema);
 export const BodyMetrics = mongoose.model<IBodyMetrics>('BodyMetrics', BodyMetricsSchema);
@@ -318,3 +360,4 @@ export const VideoProgress = mongoose.model<IVideoProgress>('VideoProgress', Vid
 export const VideoBookmark = mongoose.model<IVideoBookmark>('VideoBookmark', VideoBookmarkSchema);
 export const ProgressPhoto = mongoose.model<IProgressPhoto>('ProgressPhoto', ProgressPhotoSchema);
 export const Achievement = mongoose.model<IAchievement>('Achievement', AchievementSchema);
+export const Goal = mongoose.model<IGoal>('Goal', GoalSchema);
