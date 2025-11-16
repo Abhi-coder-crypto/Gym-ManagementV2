@@ -24,9 +24,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
-import strengthImage from "@assets/generated_images/Strength_training_video_thumbnail_e7f2ebd6.png";
-import yogaImage from "@assets/generated_images/Yoga_class_video_thumbnail_a8a89f8b.png";
-import cardioImage from "@assets/generated_images/Cardio_workout_video_thumbnail_2c386154.png";
+import placeholderImage from "@assets/generated_images/Strength_training_video_thumbnail_e7f2ebd6.png";
 
 export default function ClientVideos() {
   const [, setLocation] = useLocation();
@@ -122,10 +120,8 @@ export default function ClientVideos() {
     bookmarkMutation.mutate({ videoId, isBookmarked });
   };
 
-  const getThumbnail = (category: string) => {
-    if (category === "Strength") return strengthImage;
-    if (category === "Yoga") return yogaImage;
-    return cardioImage;
+  const getVideoThumbnail = (video: any) => {
+    return video.thumbnail || placeholderImage;
   };
 
   const VideoCard = ({ video, showProgress = false, progress = 0 }: any) => {
@@ -133,11 +129,14 @@ export default function ClientVideos() {
     
     return (
       <Card className="overflow-hidden hover-elevate" data-testid={`card-video-${video._id}`}>
-        <div className="relative aspect-video">
+        <div className="relative aspect-video bg-muted">
           <img
-            src={getThumbnail(video.category)}
+            src={getVideoThumbnail(video)}
             alt={video.title}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.src = placeholderImage;
+            }}
           />
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
             <Button size="icon" className="h-12 w-12 rounded-full" data-testid={`button-play-${video._id}`}>
@@ -194,7 +193,7 @@ export default function ClientVideos() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <ClientHeader currentPage="workouts" />
+      <ClientHeader currentPage="videos" />
 
       <main className="flex-1 py-8">
         <div className="container mx-auto px-6 space-y-8">

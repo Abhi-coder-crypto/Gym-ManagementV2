@@ -78,7 +78,7 @@ export default function ClientProgressPhotos() {
 
   const deleteMutation = useMutation({
     mutationFn: async (photoId: string) => {
-      return apiRequest('DELETE', `/api/progress-photos/${photoId}`);
+      return apiRequest('DELETE', `/api/clients/${clientId}/progress-photos/${photoId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/clients', clientId, 'progress-photos'] });
@@ -107,6 +107,16 @@ export default function ClientProgressPhotos() {
   };
 
   const handleDelete = (photoId: string) => {
+    if (!clientId) {
+      toast({
+        title: "Session expired",
+        description: "Please log in again to delete photos.",
+        variant: "destructive",
+      });
+      setLocation('/client-access');
+      return;
+    }
+    
     if (confirm("Are you sure you want to delete this progress photo?")) {
       deleteMutation.mutate(photoId);
     }
@@ -226,14 +236,14 @@ export default function ClientProgressPhotos() {
               </CardContent>
             </Card>
 
-            {photos.length > 0 && photos[0].weight && (
+            {sortedPhotos.length > 0 && sortedPhotos[0].weight && (
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Latest Weight</p>
                       <p className="text-3xl font-bold font-display mt-1" data-testid="text-latest-weight">
-                        {photos[0].weight} lbs
+                        {sortedPhotos[0].weight} lbs
                       </p>
                     </div>
                     <Weight className="h-10 w-10 text-chart-2" />

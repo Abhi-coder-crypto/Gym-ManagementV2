@@ -448,11 +448,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/progress-photos/:id", async (req, res) => {
+  app.delete("/api/clients/:clientId/progress-photos/:photoId", async (req, res) => {
     try {
-      const success = await storage.deleteProgressPhoto(req.params.id);
+      const success = await storage.deleteProgressPhoto(req.params.clientId, req.params.photoId);
       if (!success) {
-        return res.status(404).json({ message: "Progress photo not found" });
+        return res.status(404).json({ message: "Progress photo not found or access denied" });
       }
       res.json({ success: true });
     } catch (error: any) {

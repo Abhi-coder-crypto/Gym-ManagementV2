@@ -84,7 +84,7 @@ export interface IStorage {
   // Progress Photo methods
   getProgressPhotos(clientId: string): Promise<IProgressPhoto[]>;
   createProgressPhoto(data: Partial<IProgressPhoto>): Promise<IProgressPhoto>;
-  deleteProgressPhoto(id: string): Promise<boolean>;
+  deleteProgressPhoto(clientId: string, photoId: string): Promise<boolean>;
   
   // Workout Plan methods
   getClientWorkoutPlans(clientId: string): Promise<IWorkoutPlan[]>;
@@ -364,8 +364,12 @@ export class MongoStorage implements IStorage {
     return await photo.save();
   }
 
-  async deleteProgressPhoto(id: string): Promise<boolean> {
-    const result = await ProgressPhoto.findByIdAndDelete(id);
+  async deleteProgressPhoto(clientId: string, photoId: string): Promise<boolean> {
+    const photo = await ProgressPhoto.findById(photoId);
+    if (!photo || photo.clientId.toString() !== clientId) {
+      return false;
+    }
+    const result = await ProgressPhoto.findByIdAndDelete(photoId);
     return !!result;
   }
 
