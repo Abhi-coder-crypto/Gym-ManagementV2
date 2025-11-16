@@ -48,6 +48,7 @@ interface DashboardData {
   achievements: any[];
   hasWorkoutPlan: boolean;
   hasDietPlan: boolean;
+  calendarData: Array<{ date: string; hasWorkout: boolean; isToday: boolean }>;
 }
 
 export default function ClientDashboard() {
@@ -89,7 +90,7 @@ export default function ClientDashboard() {
     );
   }
 
-  const { client, stats, progress, nextSession, upcomingSessions, achievements } = dashboardData;
+  const { client, stats, progress, nextSession, upcomingSessions, achievements, calendarData = [] } = dashboardData;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -208,22 +209,21 @@ export default function ClientDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-7 gap-2">
-                    {[...Array(28)].map((_, i) => {
-                      const isWorkoutDay = Math.random() > 0.6;
-                      const isToday = i === 27;
+                    {calendarData.map((day, i) => {
                       return (
                         <div
-                          key={i}
+                          key={day.date}
                           className={`aspect-square rounded-md flex items-center justify-center text-xs ${
-                            isToday
+                            day.isToday
                               ? 'border-2 border-primary'
-                              : isWorkoutDay
+                              : day.hasWorkout
                               ? 'bg-chart-2 text-chart-2-foreground'
                               : 'bg-muted'
                           }`}
                           data-testid={`calendar-day-${i}`}
+                          title={day.date}
                         >
-                          {isToday ? 'T' : ''}
+                          {day.isToday ? 'T' : day.hasWorkout ? '✓' : ''}
                         </div>
                       );
                     })}

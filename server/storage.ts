@@ -309,7 +309,8 @@ export class MongoStorage implements IStorage {
   }
 
   async getWorkoutSessionStats(clientId: string): Promise<any> {
-    const sessions = await WorkoutSession.find({ clientId }).sort({ completedAt: -1 });
+    const allSessions = await WorkoutSession.find({ clientId }).sort({ completedAt: -1 });
+    const sessions = allSessions;
     
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -367,6 +368,7 @@ export class MongoStorage implements IStorage {
       currentStreak,
       maxStreak,
       recentSessions: sessions.slice(0, 10),
+      allSessions: sessions,
     };
   }
 

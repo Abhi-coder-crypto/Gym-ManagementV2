@@ -760,6 +760,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentWeight = metrics?.weight || client.weight || 0;
       const weightProgress = targetWeight ? Math.round(((initialWeight - currentWeight) / (initialWeight - targetWeight)) * 100) : 0;
       
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const workoutDays = new Set<string>();
+      
+      for (const session of stats.allSessions) {
+        const sessionDate = new Date(session.completedAt);
+        sessionDate.setHours(0, 0, 0, 0);
+        const dayKey = sessionDate.toISOString().split('T')[0];
+        workoutDays.add(dayKey);
+      }
+      
+      const last28Days = [];
+      for (let i = 27; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dayKey = date.toISOString().split('T')[0];
+        last28Days.push({
+          date: dayKey,
+          hasWorkout: workoutDays.has(dayKey),
+          isToday: i === 0,
+        });
+      }
+      
       res.json({
         client: {
           name: client.name,
@@ -788,6 +811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         achievements: achievements.slice(0, 5),
         hasWorkoutPlan: workoutPlans.length > 0,
         hasDietPlan: dietPlans.length > 0,
+        calendarData: last28Days,
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
