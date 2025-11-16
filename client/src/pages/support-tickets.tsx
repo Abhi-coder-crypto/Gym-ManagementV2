@@ -159,12 +159,26 @@ export default function SupportTicketsPage() {
   };
 
   const getPriorityBadge = (priority: string) => {
-    const variant = priority === 'high' ? 'destructive' : priority === 'medium' ? 'default' : 'secondary';
+    let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
+    let label = t('comm.priorityLow');
+    
+    if (priority === 'urgent') {
+      variant = 'destructive';
+      label = t('comm.priorityUrgent');
+    } else if (priority === 'high') {
+      variant = 'destructive';
+      label = t('comm.priorityHigh');
+    } else if (priority === 'medium') {
+      variant = 'default';
+      label = t('comm.priorityMedium');
+    } else if (priority === 'low') {
+      variant = 'secondary';
+      label = t('comm.priorityLow');
+    }
+    
     return (
       <Badge variant={variant} data-testid={`badge-priority-${priority}`}>
-        {priority === 'high' ? t('comm.priorityHigh') : 
-         priority === 'medium' ? t('comm.priorityMedium') : 
-         t('comm.priorityLow')}
+        {label}
       </Badge>
     );
   };
@@ -243,8 +257,8 @@ export default function SupportTicketsPage() {
                               <SelectItem value="general">{t('comm.categoryGeneral')}</SelectItem>
                               <SelectItem value="technical">{t('comm.categoryTechnical')}</SelectItem>
                               <SelectItem value="billing">{t('comm.categoryBilling')}</SelectItem>
-                              <SelectItem value="workout">{t('comm.categoryWorkout')}</SelectItem>
-                              <SelectItem value="diet">{t('comm.categoryDiet')}</SelectItem>
+                              <SelectItem value="account">{t('comm.categoryAccount')}</SelectItem>
+                              <SelectItem value="training">{t('comm.categoryTraining')}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -268,6 +282,7 @@ export default function SupportTicketsPage() {
                               <SelectItem value="low">{t('comm.priorityLow')}</SelectItem>
                               <SelectItem value="medium">{t('comm.priorityMedium')}</SelectItem>
                               <SelectItem value="high">{t('comm.priorityHigh')}</SelectItem>
+                              <SelectItem value="urgent">{t('comm.priorityUrgent')}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
