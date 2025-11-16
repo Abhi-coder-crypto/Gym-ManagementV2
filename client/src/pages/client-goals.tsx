@@ -128,7 +128,7 @@ export default function ClientGoals() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/goals'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/goals', clientId] });
       setIsCreateOpen(false);
       form.reset();
       toast({
@@ -151,7 +151,7 @@ export default function ClientGoals() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/goals'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/goals', clientId] });
       setEditingGoal(null);
       toast({
         title: "Goal updated",
@@ -173,7 +173,7 @@ export default function ClientGoals() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/goals'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/goals', clientId] });
       toast({
         title: "Goal deleted",
         description: "Your goal has been deleted successfully.",
@@ -194,7 +194,7 @@ export default function ClientGoals() {
       return await response.json();
     },
     onSuccess: (data: Goal) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/goals'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/goals', clientId] });
       
       const newMilestones = data.milestones.filter(m => 
         m.achieved && new Date(m.achievedAt || '').getTime() > Date.now() - 5000
