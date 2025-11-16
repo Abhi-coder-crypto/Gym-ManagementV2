@@ -98,8 +98,10 @@ export interface IWorkoutPlan extends Document {
 }
 
 export interface IDietPlan extends Document {
-  clientId: string;
+  clientId?: string;
   name: string;
+  description?: string;
+  category?: string;
   targetCalories: number;
   protein?: number;
   carbs?: number;
@@ -112,6 +114,30 @@ export interface IDietPlan extends Document {
     dosage: string;
     timing: string;
   }>;
+  isTemplate?: boolean;
+  createdBy?: string;
+  assignedCount?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IMeal extends Document {
+  name: string;
+  category: string;
+  mealType: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  ingredients: string[];
+  instructions?: string;
+  prepTime?: number;
+  cookTime?: number;
+  servings?: number;
+  tags?: string[];
+  imageUrl?: string;
+  createdBy?: string;
+  isPublic?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -277,8 +303,10 @@ const WorkoutPlanSchema = new Schema({
 });
 
 const DietPlanSchema = new Schema({
-  clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
+  clientId: { type: Schema.Types.ObjectId, ref: 'Client' },
   name: { type: String, required: true },
+  description: String,
+  category: String,
   targetCalories: { type: Number, required: true },
   protein: Number,
   carbs: Number,
@@ -291,6 +319,30 @@ const DietPlanSchema = new Schema({
     dosage: String,
     timing: String
   }],
+  isTemplate: { type: Boolean, default: false },
+  createdBy: String,
+  assignedCount: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+const MealSchema = new Schema({
+  name: { type: String, required: true },
+  category: { type: String, required: true },
+  mealType: { type: String, required: true },
+  calories: { type: Number, required: true },
+  protein: { type: Number, required: true },
+  carbs: { type: Number, required: true },
+  fats: { type: Number, required: true },
+  ingredients: [String],
+  instructions: String,
+  prepTime: Number,
+  cookTime: Number,
+  servings: { type: Number, default: 1 },
+  tags: [String],
+  imageUrl: String,
+  createdBy: String,
+  isPublic: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
@@ -439,6 +491,7 @@ export const Video = mongoose.model<IVideo>('Video', VideoSchema);
 export const ClientVideo = mongoose.model<IClientVideo>('ClientVideo', ClientVideoSchema);
 export const WorkoutPlan = mongoose.model<IWorkoutPlan>('WorkoutPlan', WorkoutPlanSchema);
 export const DietPlan = mongoose.model<IDietPlan>('DietPlan', DietPlanSchema);
+export const Meal = mongoose.model<IMeal>('Meal', MealSchema);
 export const LiveSession = mongoose.model<ILiveSession>('LiveSession', LiveSessionSchema);
 export const SessionClient = mongoose.model<ISessionClient>('SessionClient', SessionClientSchema);
 export const WorkoutSession = mongoose.model<IWorkoutSession>('WorkoutSession', WorkoutSessionSchema);
