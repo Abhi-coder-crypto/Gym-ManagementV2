@@ -96,6 +96,26 @@ export interface ISessionClient extends Document {
   attended: boolean;
 }
 
+export interface IWorkoutSession extends Document {
+  clientId: string;
+  workoutPlanId?: string;
+  workoutName: string;
+  duration: number;
+  caloriesBurned: number;
+  exercises: any;
+  completedAt: Date;
+  notes?: string;
+}
+
+export interface IAchievement extends Document {
+  clientId: string;
+  type: string;
+  title: string;
+  description: string;
+  unlockedAt: Date;
+  metadata?: any;
+}
+
 const PackageSchema = new Schema({
   name: { type: String, required: true },
   description: String,
@@ -192,6 +212,26 @@ const SessionClientSchema = new Schema({
   attended: { type: Boolean, default: false },
 });
 
+const WorkoutSessionSchema = new Schema({
+  clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
+  workoutPlanId: { type: Schema.Types.ObjectId, ref: 'WorkoutPlan' },
+  workoutName: { type: String, required: true },
+  duration: { type: Number, required: true },
+  caloriesBurned: { type: Number, required: true },
+  exercises: { type: Schema.Types.Mixed },
+  completedAt: { type: Date, default: Date.now },
+  notes: String,
+});
+
+const AchievementSchema = new Schema({
+  clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
+  type: { type: String, required: true },
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  unlockedAt: { type: Date, default: Date.now },
+  metadata: Schema.Types.Mixed,
+});
+
 export const Package = mongoose.model<IPackage>('Package', PackageSchema);
 export const Client = mongoose.model<IClient>('Client', ClientSchema);
 export const BodyMetrics = mongoose.model<IBodyMetrics>('BodyMetrics', BodyMetricsSchema);
@@ -201,3 +241,5 @@ export const WorkoutPlan = mongoose.model<IWorkoutPlan>('WorkoutPlan', WorkoutPl
 export const DietPlan = mongoose.model<IDietPlan>('DietPlan', DietPlanSchema);
 export const LiveSession = mongoose.model<ILiveSession>('LiveSession', LiveSessionSchema);
 export const SessionClient = mongoose.model<ISessionClient>('SessionClient', SessionClientSchema);
+export const WorkoutSession = mongoose.model<IWorkoutSession>('WorkoutSession', WorkoutSessionSchema);
+export const Achievement = mongoose.model<IAchievement>('Achievement', AchievementSchema);

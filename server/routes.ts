@@ -648,6 +648,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dashboard routes
+  app.get("/api/dashboard/:clientId", async (req, res) => {
+    try {
+      const { clientId } = req.params;
+      
+      const [client, stats, achievements, sessions, metrics, workoutPlans, dietPlans] = await Promise.all([
+        storage.getClient(clientId),
+        storage.getWorkoutSessionStats(clientId),
+        storage.getClientAchievements(clientId),
+        storage.getClientSessions(clientId),
+        storage.getLatestBodyMetrics(clientId),
+        storage.getClientWorkoutPlans(clientId),
+        storage.getClientDietPlans(clientId),
+      ]);
+      
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      const upcomingSessions = sessions
+        .filter(s => new Date(s.scheduledAt) > new Date() && s.status === 'scheduled')
+        .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+        .slice(0, 3);
+      
+      const nextSession = upcomingSessions[0] || null;
+      
+      const initialWeight = metrics?.weight || client.weight || 0;
+      const targetWeight = metrics?.idealWeight || 0;
+      const currentWeight = metrics?.weight || client.weight || 0;
+      const weightProgress = targetWeight ? Math.round(((initialWeight - currentWeight) / (initialWeight - targetWeight)) * 100) : 0;
+      
+      res.json({
+        client: {
+          name: client.name,
+          packageName: (client.packageId as any)?.name || 'No Package',
+          goal: client.goal || 'General Fitness',
+        },
+        stats: {
+          currentStreak: stats.currentStreak,
+          maxStreak: stats.maxStreak,
+          totalSessions: stats.totalSessions,
+          weekSessions: stats.weekSessions,
+          monthSessions: stats.monthSessions,
+          totalCalories: stats.totalCalories,
+          weekCalories: stats.weekCalories,
+        },
+        progress: {
+          initialWeight,
+          currentWeight,
+          targetWeight,
+          weightProgress: Math.max(0, Math.min(100, weightProgress)),
+          weeklyWorkoutCompletion: Math.round((stats.weekSessions / 5) * 100),
+        },
+        nextSession,
+        upcomingSessions,
+        recentSessions: stats.recentSessions,
+        achievements: achievements.slice(0, 5),
+        hasWorkoutPlan: workoutPlans.length > 0,
+        hasDietPlan: dietPlans.length > 0,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/workout-sessions/:clientId", async (req, res) => {
+    try {
+      const sessions = await storage.getClientWorkoutSessions(req.params.clientId);
+      res.json(sessions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/workout-sessions", async (req, res) => {
+    try {
+      const session = await storage.createWorkoutSession(req.body);
+      
+      const stats = await storage.getWorkoutSessionStats(req.body.clientId);
+      
+      if (stats.totalSessions === 1) {
+        await storage.createAchievement({
+          clientId: req.body.clientId,
+          type: 'first_workout',
+          title: 'First Workout',
+          description: 'Completed your first workout session',
+          metadata: { sessionId: session._id },
+        });
+      }
+      
+      if (stats.totalSessions === 10) {
+        await storage.createAchievement({
+          clientId: req.body.clientId,
+          type: 'workout_milestone',
+          title: '10 Workouts Complete',
+          description: 'Completed 10 workout sessions',
+          metadata: { sessionId: session._id },
+        });
+      }
+      
+      if (stats.currentStreak === 7) {
+        await storage.createAchievement({
+          clientId: req.body.clientId,
+          type: 'streak_week',
+          title: 'Week Streak',
+          description: '7 day workout streak achieved',
+          metadata: { streak: 7 },
+        });
+      }
+      
+      if (stats.totalCalories >= 10000) {
+        const existingAchievements = await storage.getClientAchievements(req.body.clientId);
+        const has10kAchievement = existingAchievements.some(a => a.type === 'calories_10k');
+        
+        if (!has10kAchievement) {
+          await storage.createAchievement({
+            clientId: req.body.clientId,
+            type: 'calories_10k',
+            title: 'Calorie Crusher',
+            description: 'Burned 10,000 total calories',
+            metadata: { calories: stats.totalCalories },
+          });
+        }
+      }
+      
+      res.json(session);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/achievements/:clientId", async (req, res) => {
+    try {
+      const achievements = await storage.getClientAchievements(req.params.clientId);
+      res.json(achievements);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

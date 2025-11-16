@@ -9,6 +9,8 @@ import {
   DietPlan,
   LiveSession,
   SessionClient,
+  WorkoutSession,
+  Achievement,
   type IPackage,
   type IClient,
   type IBodyMetrics,
@@ -18,6 +20,8 @@ import {
   type IDietPlan,
   type ILiveSession,
   type ISessionClient,
+  type IWorkoutSession,
+  type IAchievement,
 } from './models';
 
 export interface IStorage {
@@ -79,6 +83,15 @@ export interface IStorage {
   assignClientToSession(sessionId: string, clientId: string): Promise<ISessionClient>;
   removeClientFromSession(sessionId: string, clientId: string): Promise<boolean>;
   getSessionClients(sessionId: string): Promise<IClient[]>;
+  
+  // Workout Session methods
+  getClientWorkoutSessions(clientId: string): Promise<IWorkoutSession[]>;
+  createWorkoutSession(data: Partial<IWorkoutSession>): Promise<IWorkoutSession>;
+  getWorkoutSessionStats(clientId: string): Promise<any>;
+  
+  // Achievement methods
+  getClientAchievements(clientId: string): Promise<IAchievement[]>;
+  createAchievement(data: Partial<IAchievement>): Promise<IAchievement>;
 }
 
 export class MongoStorage implements IStorage {
@@ -283,6 +296,88 @@ export class MongoStorage implements IStorage {
   async getSessionClients(sessionId: string): Promise<IClient[]> {
     const sessionClients = await SessionClient.find({ sessionId }).populate('clientId');
     return sessionClients.map(sc => sc.clientId as any);
+  }
+
+  // Workout Session methods
+  async getClientWorkoutSessions(clientId: string): Promise<IWorkoutSession[]> {
+    return await WorkoutSession.find({ clientId }).sort({ completedAt: -1 });
+  }
+
+  async createWorkoutSession(data: Partial<IWorkoutSession>): Promise<IWorkoutSession> {
+    const session = new WorkoutSession(data);
+    return await session.save();
+  }
+
+  async getWorkoutSessionStats(clientId: string): Promise<any> {
+    const sessions = await WorkoutSession.find({ clientId }).sort({ completedAt: -1 });
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    const totalSessions = sessions.length;
+    const weekSessions = sessions.filter(s => s.completedAt >= weekAgo).length;
+    const monthSessions = sessions.filter(s => s.completedAt >= monthAgo).length;
+    
+    const totalCalories = sessions.reduce((sum, s) => sum + s.caloriesBurned, 0);
+    const weekCalories = sessions.filter(s => s.completedAt >= weekAgo).reduce((sum, s) => sum + s.caloriesBurned, 0);
+    
+    let currentStreak = 0;
+    let maxStreak = 0;
+    let tempStreak = 0;
+    let lastDate: Date | null = null;
+    
+    const sortedSessions = [...sessions].sort((a, b) => a.completedAt.getTime() - b.completedAt.getTime());
+    
+    for (const session of sortedSessions) {
+      const sessionDate = new Date(session.completedAt.getFullYear(), session.completedAt.getMonth(), session.completedAt.getDate());
+      
+      if (lastDate) {
+        const dayDiff = Math.floor((sessionDate.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000));
+        
+        if (dayDiff === 0) {
+          continue;
+        } else if (dayDiff === 1) {
+          tempStreak++;
+        } else {
+          maxStreak = Math.max(maxStreak, tempStreak);
+          tempStreak = 1;
+        }
+      } else {
+        tempStreak = 1;
+      }
+      
+      lastDate = sessionDate;
+    }
+    
+    maxStreak = Math.max(maxStreak, tempStreak);
+    
+    if (lastDate) {
+      const daysSinceLastWorkout = Math.floor((today.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000));
+      currentStreak = daysSinceLastWorkout <= 1 ? tempStreak : 0;
+    }
+    
+    return {
+      totalSessions,
+      weekSessions,
+      monthSessions,
+      totalCalories,
+      weekCalories,
+      currentStreak,
+      maxStreak,
+      recentSessions: sessions.slice(0, 10),
+    };
+  }
+
+  // Achievement methods
+  async getClientAchievements(clientId: string): Promise<IAchievement[]> {
+    return await Achievement.find({ clientId }).sort({ unlockedAt: -1 });
+  }
+
+  async createAchievement(data: Partial<IAchievement>): Promise<IAchievement> {
+    const achievement = new Achievement(data);
+    return await achievement.save();
   }
 }
 
