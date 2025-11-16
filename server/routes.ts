@@ -642,6 +642,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Seed workout sessions for the demo client
+      const existingWorkoutSessions = await storage.getClientWorkoutSessions(clientId);
+      if (existingWorkoutSessions.length === 0) {
+        const workoutSessionsData = [
+          {
+            clientId,
+            workoutName: "Morning Strength Training",
+            duration: 45,
+            caloriesBurned: 350,
+            completedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+            exercises: { squats: "4x8", benchPress: "4x8", rows: "3x10" }
+          },
+          {
+            clientId,
+            workoutName: "Evening Cardio",
+            duration: 30,
+            caloriesBurned: 280,
+            completedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+            exercises: { running: "20min", cycling: "10min" }
+          },
+          {
+            clientId,
+            workoutName: "Full Body Workout",
+            duration: 60,
+            caloriesBurned: 450,
+            completedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+            exercises: { deadlifts: "4x6", overhead: "3x8", pullups: "3xMax" }
+          },
+          {
+            clientId,
+            workoutName: "HIIT Session",
+            duration: 25,
+            caloriesBurned: 320,
+            completedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+            exercises: { burpees: "4x10", jumpSquats: "4x12", mountainClimbers: "4x20" }
+          },
+          {
+            clientId,
+            workoutName: "Upper Body Focus",
+            duration: 50,
+            caloriesBurned: 380,
+            completedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+            exercises: { benchPress: "5x5", rows: "4x8", curls: "3x12" }
+          },
+          {
+            clientId,
+            workoutName: "Leg Day",
+            duration: 55,
+            caloriesBurned: 420,
+            completedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+            exercises: { squats: "5x5", legPress: "4x12", lunges: "3x10" }
+          },
+          {
+            clientId,
+            workoutName: "Core & Conditioning",
+            duration: 35,
+            caloriesBurned: 250,
+            completedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+            exercises: { planks: "3x60s", crunches: "3x20", russian: "3x15" }
+          },
+        ];
+
+        for (const sessionData of workoutSessionsData) {
+          await storage.createWorkoutSession(sessionData);
+        }
+
+        await storage.createAchievement({
+          clientId,
+          type: 'first_workout',
+          title: 'First Workout Complete',
+          description: 'Completed your very first workout session',
+        });
+
+        await storage.createAchievement({
+          clientId,
+          type: 'streak_week',
+          title: 'Week Streak Champion',
+          description: 'Maintained a 7-day workout streak',
+        });
+      }
+
       res.json({ message: "Demo data seeded successfully" });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
