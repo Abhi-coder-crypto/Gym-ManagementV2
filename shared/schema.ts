@@ -122,14 +122,24 @@ export const liveSessions = pgTable("live_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   description: text("description"),
+  sessionType: text("session_type").notNull(), // Power Yoga, HIIT, Cardio Bootcamp, Strength Building, Flexibility
   scheduledAt: timestamp("scheduled_at").notNull(),
-  duration: integer("duration").notNull(),
+  duration: integer("duration").notNull(), // in minutes
   meetingLink: text("meeting_link"),
-  status: text("status").notNull().default('scheduled'),
+  trainerName: text("trainer_name"), // Trainer assigned to lead session
+  maxCapacity: integer("max_capacity").notNull().default(15),
+  currentCapacity: integer("current_capacity").notNull().default(0),
+  status: text("status").notNull().default('upcoming'), // upcoming, live, completed, cancelled
+  isRecurring: boolean("is_recurring").notNull().default(false),
+  recurringPattern: text("recurring_pattern"), // weekly, biweekly - stored as JSON string
+  recurringDays: text("recurring_days").array(), // ['monday', 'wednesday', 'friday']
+  recurringEndDate: timestamp("recurring_end_date"),
+  parentSessionId: varchar("parent_session_id"), // Reference to parent if part of recurring series
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
-export const insertLiveSessionSchema = createInsertSchema(liveSessions).omit({ id: true, createdAt: true });
+export const insertLiveSessionSchema = createInsertSchema(liveSessions).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertLiveSession = z.infer<typeof insertLiveSessionSchema>;
 export type LiveSession = typeof liveSessions.$inferSelect;
 
@@ -138,11 +148,24 @@ export const sessionClients = pgTable("session_clients", {
   sessionId: varchar("session_id").notNull().references(() => liveSessions.id),
   clientId: varchar("client_id").notNull().references(() => clients.id),
   attended: boolean("attended").default(false),
+  bookedAt: timestamp("booked_at").notNull().default(sql`now()`),
 });
 
-export const insertSessionClientSchema = createInsertSchema(sessionClients).omit({ id: true });
+export const insertSessionClientSchema = createInsertSchema(sessionClients).omit({ id: true, bookedAt: true });
 export type InsertSessionClient = z.infer<typeof insertSessionClientSchema>;
 export type SessionClient = typeof sessionClients.$inferSelect;
+
+export const sessionWaitlist = pgTable("session_waitlist", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").notNull().references(() => liveSessions.id),
+  clientId: varchar("client_id").notNull().references(() => clients.id),
+  position: integer("position").notNull(), // Position in waitlist queue
+  addedAt: timestamp("added_at").notNull().default(sql`now()`),
+});
+
+export const insertSessionWaitlistSchema = createInsertSchema(sessionWaitlist).omit({ id: true, addedAt: true });
+export type InsertSessionWaitlist = z.infer<typeof insertSessionWaitlistSchema>;
+export type SessionWaitlist = typeof sessionWaitlist.$inferSelect;
 
 export const weightTracking = pgTable("weight_tracking", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
