@@ -82,6 +82,5 @@ const ticketSchema = new Schema<ITicket>({
 });
 
 ticketSchema.index({ clientId: 1, status: 1 });
-ticketSchema.index({ ticketNumber: 1 });
 
 export const Ticket = mongoose.model<ITicket>('Ticket', ticketSchema);
