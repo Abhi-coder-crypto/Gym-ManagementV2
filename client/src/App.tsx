@@ -10,7 +10,7 @@ import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminClientsEnhanced from "@/pages/admin-clients-enhanced";
 import AdminVideos from "@/pages/admin-videos";
-import AdminDiet from "@/pages/admin-diet";
+import AdminDiet from "@/pages/admin-diet-plans";
 import AdminSessions from "@/pages/admin-sessions";
 import AdminAnalyticsEnhanced from "@/pages/admin-analytics-enhanced";
 import AdminRevenue from "@/pages/admin-revenue";

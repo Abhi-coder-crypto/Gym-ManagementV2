@@ -1,0 +1,498 @@
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AdminSidebar } from "@/components/admin-sidebar";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Plus,
+  Users,
+  Copy,
+  Edit,
+  Trash2,
+  Search,
+  UtensilsCrossed,
+  Filter,
+  BookOpen,
+  ChefHat,
+} from "lucide-react";
+import { CreateDietPlanModal } from "@/components/create-diet-plan-modal";
+import { MealBuilderModal } from "@/components/meal-builder-modal";
+import { AssignPlanDialog } from "@/components/assign-plan-dialog";
+
+export default function AdminDietPlans() {
+  const style = { "--sidebar-width": "16rem" };
+  const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [createPlanOpen, setCreatePlanOpen] = useState(false);
+  const [createMealOpen, setCreateMealOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [editingMeal, setEditingMeal] = useState<any>(null);
+
+  const { data: templates = [], isLoading: templatesLoading } = useQuery<any[]>({
+    queryKey: ['/api/diet-plan-templates', categoryFilter],
+    queryFn: async () => {
+      const params = categoryFilter !== 'all' ? `?category=${categoryFilter}` : '';
+      const res = await fetch(`/api/diet-plan-templates${params}`);
+      return res.json();
+    },
+  });
+
+  const { data: meals = [], isLoading: mealsLoading } = useQuery<any[]>({
+    queryKey: ['/api/meals', searchQuery],
+    queryFn: async () => {
+      const params = searchQuery ? `?search=${searchQuery}` : '';
+      const res = await fetch(`/api/meals${params}`);
+      return res.json();
+    },
+  });
+
+  const { data: assignments = [], isLoading: assignmentsLoading } = useQuery<any[]>({
+    queryKey: ['/api/diet-plans-with-assignments'],
+  });
+
+  const deletePlanMutation = useMutation({
+    mutationFn: async (planId: string) => {
+      return apiRequest('DELETE', `/api/diet-plans/${planId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/diet-plan-templates'] });
+      toast({
+        title: "Success",
+        description: "Diet plan deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete diet plan",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMealMutation = useMutation({
+    mutationFn: async (mealId: string) => {
+      return apiRequest('DELETE', `/api/meals/${mealId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/meals'] });
+      toast({
+        title: "Success",
+        description: "Meal deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete meal",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const clonePlanMutation = useMutation({
+    mutationFn: async (planId: string) => {
+      return apiRequest('POST', `/api/diet-plans/${planId}/clone`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/diet-plan-templates'] });
+      toast({
+        title: "Success",
+        description: "Diet plan cloned successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to clone diet plan",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAssign = (plan: any) => {
+    setSelectedPlan(plan);
+    setAssignDialogOpen(true);
+  };
+
+  const handleClone = (planId: string) => {
+    clonePlanMutation.mutate(planId);
+  };
+
+  const handleDelete = (planId: string) => {
+    if (confirm("Are you sure you want to delete this diet plan?")) {
+      deletePlanMutation.mutate(planId);
+    }
+  };
+
+  const handleDeleteMeal = (mealId: string) => {
+    if (confirm("Are you sure you want to delete this meal?")) {
+      deleteMealMutation.mutate(mealId);
+    }
+  };
+
+  const handleEditMeal = (meal: any) => {
+    setEditingMeal(meal);
+    setCreateMealOpen(true);
+  };
+
+  const filteredTemplates = templates.filter(plan =>
+    plan.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const categories = [
+    "Low Carb",
+    "High Protein",
+    "Ketogenic",
+    "Vegan",
+    "Balanced",
+    "Paleo",
+    "Mediterranean",
+  ];
+
+  return (
+    <SidebarProvider style={style as React.CSSProperties}>
+      <div className="flex h-screen w-full">
+        <AdminSidebar />
+        <div className="flex flex-col flex-1">
+          <header className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center gap-4">
+              <SidebarTrigger data-testid="button-sidebar-toggle" />
+              <h1 className="text-2xl font-display font-bold tracking-tight flex items-center gap-2">
+                <UtensilsCrossed className="h-6 w-6" />
+                Diet Plan Management
+              </h1>
+            </div>
+            <ThemeToggle />
+          </header>
+
+          <main className="flex-1 overflow-auto p-8">
+            <div className="max-w-7xl mx-auto space-y-6">
+              <Tabs defaultValue="templates" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="templates" data-testid="tab-templates">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Plan Templates
+                  </TabsTrigger>
+                  <TabsTrigger value="meals" data-testid="tab-meals">
+                    <ChefHat className="h-4 w-4 mr-2" />
+                    Meal Database
+                  </TabsTrigger>
+                  <TabsTrigger value="assignments" data-testid="tab-assignments">
+                    <Users className="h-4 w-4 mr-2" />
+                    Assignments
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Plan Templates Tab */}
+                <TabsContent value="templates" className="space-y-6 mt-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search diet plans..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10"
+                          data-testid="input-search-plans"
+                        />
+                      </div>
+                      <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                        <SelectTrigger className="w-48" data-testid="select-category-filter">
+                          <Filter className="h-4 w-4 mr-2" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        setSelectedPlan(null);
+                        setCreatePlanOpen(true);
+                      }}
+                      data-testid="button-create-template"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Template
+                    </Button>
+                  </div>
+
+                  {templatesLoading ? (
+                    <div className="text-center py-12 text-muted-foreground">Loading templates...</div>
+                  ) : filteredTemplates.length === 0 ? (
+                    <div className="text-center py-12">
+                      <UtensilsCrossed className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">No diet plan templates found</p>
+                      <Button onClick={() => setCreatePlanOpen(true)} className="mt-4" variant="outline">
+                        Create Your First Template
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {filteredTemplates.map((plan) => (
+                        <Card key={plan._id} data-testid={`card-template-${plan._id}`} className="hover-elevate">
+                          <CardHeader>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <CardTitle className="font-display text-lg">{plan.name}</CardTitle>
+                                {plan.description && (
+                                  <CardDescription className="mt-2">{plan.description}</CardDescription>
+                                )}
+                              </div>
+                              <Badge variant="outline">{plan.category || "Balanced"}</Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Target Calories</span>
+                                <span className="font-semibold">{plan.targetCalories} cal</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Protein</span>
+                                <span className="font-semibold">{plan.protein || 0}g</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Carbs / Fats</span>
+                                <span className="font-semibold">{plan.carbs || 0}g / {plan.fats || 0}g</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  Assigned
+                                </span>
+                                <span className="font-semibold">{plan.assignedCount || 0} clients</span>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleAssign(plan)}
+                                data-testid="button-assign"
+                              >
+                                <Users className="h-3 w-3 mr-1" />
+                                Assign
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleClone(plan._id)}
+                                data-testid="button-clone"
+                              >
+                                <Copy className="h-3 w-3 mr-1" />
+                                Clone
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPlan(plan);
+                                  setCreatePlanOpen(true);
+                                }}
+                                data-testid="button-edit"
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDelete(plan._id)}
+                                data-testid="button-delete"
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Meal Database Tab */}
+                <TabsContent value="meals" className="space-y-6 mt-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="relative flex-1 max-w-md">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search meals..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                        data-testid="input-search-meals"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => {
+                        setEditingMeal(null);
+                        setCreateMealOpen(true);
+                      }}
+                      data-testid="button-create-meal"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Meal
+                    </Button>
+                  </div>
+
+                  {mealsLoading ? (
+                    <div className="text-center py-12 text-muted-foreground">Loading meals...</div>
+                  ) : meals.length === 0 ? (
+                    <div className="text-center py-12">
+                      <ChefHat className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">No meals in database</p>
+                      <Button onClick={() => setCreateMealOpen(true)} className="mt-4" variant="outline">
+                        Add Your First Meal
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {meals.map((meal) => (
+                        <Card key={meal._id} data-testid={`card-meal-${meal._id}`} className="hover-elevate">
+                          <CardHeader>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <CardTitle className="font-display text-lg">{meal.name}</CardTitle>
+                                <div className="flex gap-2 mt-2">
+                                  <Badge variant="secondary" className="text-xs">{meal.category}</Badge>
+                                  <Badge variant="outline" className="text-xs">{meal.mealType}</Badge>
+                                </div>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div className="text-center p-2 bg-muted rounded-md">
+                                <div className="font-semibold text-lg">{meal.calories}</div>
+                                <div className="text-xs text-muted-foreground">Calories</div>
+                              </div>
+                              <div className="text-center p-2 bg-muted rounded-md">
+                                <div className="font-semibold text-lg">{meal.protein}g</div>
+                                <div className="text-xs text-muted-foreground">Protein</div>
+                              </div>
+                              <div className="text-center p-2 bg-muted rounded-md">
+                                <div className="font-semibold text-lg">{meal.carbs}g</div>
+                                <div className="text-xs text-muted-foreground">Carbs</div>
+                              </div>
+                              <div className="text-center p-2 bg-muted rounded-md">
+                                <div className="font-semibold text-lg">{meal.fats}g</div>
+                                <div className="text-xs text-muted-foreground">Fats</div>
+                              </div>
+                            </div>
+                            {meal.prepTime && (
+                              <div className="text-xs text-muted-foreground">
+                                Prep: {meal.prepTime} min {meal.cookTime && `| Cook: ${meal.cookTime} min`}
+                              </div>
+                            )}
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => handleEditMeal(meal)}
+                                data-testid="button-edit-meal"
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => handleDeleteMeal(meal._id)}
+                                data-testid="button-delete-meal"
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Assignments Tab */}
+                <TabsContent value="assignments" className="space-y-6 mt-6">
+                  {assignmentsLoading ? (
+                    <div className="text-center py-12 text-muted-foreground">Loading assignments...</div>
+                  ) : assignments.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">No diet plans assigned to clients yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {assignments.filter(plan => plan.clientId).map((plan) => (
+                        <Card key={plan._id} data-testid={`card-assignment-${plan._id}`}>
+                          <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4 flex-1">
+                                <div className="flex-1">
+                                  <h3 className="font-semibold">{plan.name}</h3>
+                                  <p className="text-sm text-muted-foreground">
+                                    Assigned to: {plan.clientId?.name || "Unknown Client"}
+                                  </p>
+                                </div>
+                                <div className="flex gap-6 text-sm">
+                                  <div>
+                                    <span className="text-muted-foreground">Calories: </span>
+                                    <span className="font-semibold">{plan.targetCalories}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Category: </span>
+                                    <span className="font-semibold">{plan.category || "N/A"}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <Badge>{plan.clientId?.status || "Active"}</Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+          </main>
+        </div>
+      </div>
+
+      <CreateDietPlanModal
+        open={createPlanOpen}
+        onOpenChange={setCreatePlanOpen}
+        plan={selectedPlan}
+      />
+      <MealBuilderModal
+        open={createMealOpen}
+        onOpenChange={setCreateMealOpen}
+        meal={editingMeal}
+      />
+      <AssignPlanDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        plan={selectedPlan}
+      />
+    </SidebarProvider>
+  );
+}
