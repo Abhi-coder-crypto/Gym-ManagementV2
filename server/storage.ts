@@ -707,7 +707,8 @@ export class MongoStorage implements IStorage {
     const updatedMilestones = goal.milestones.map(milestone => {
       if (!milestone.achieved && currentValue >= milestone.value) {
         return {
-          ...milestone.toObject(),
+          value: milestone.value,
+          label: milestone.label,
           achieved: true,
           achievedAt: new Date(),
         };

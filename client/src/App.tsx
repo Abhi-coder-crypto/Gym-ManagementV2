@@ -30,6 +30,7 @@ import ClientAchievements from "@/pages/client-achievements";
 import ClientPersonalRecords from "@/pages/client-personal-records";
 import ClientWeeklyCompletion from "@/pages/client-weekly-completion";
 import ClientMonthlyReports from "@/pages/client-monthly-reports";
+import ClientGoals from "@/pages/client-goals";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -63,6 +64,7 @@ function Router() {
       <Route path="/client/progress/personal-records" component={ClientPersonalRecords} />
       <Route path="/client/progress/weekly-completion" component={ClientWeeklyCompletion} />
       <Route path="/client/progress/monthly-reports" component={ClientMonthlyReports} />
+      <Route path="/client/goals" component={ClientGoals} />
       <Route component={NotFound} />
     </Switch>
   );

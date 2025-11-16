@@ -14,7 +14,7 @@ import { Dumbbell, Calendar, Video, UtensilsCrossed, User, History, Image, Chevr
 import { useLocation } from "wouter";
 
 interface ClientHeaderProps {
-  currentPage?: 'dashboard' | 'workouts' | 'videos' | 'diet' | 'sessions' | 'history' | 'workout-history' | 'progress' | 'profile' | 'weight-tracking' | 'body-measurements' | 'progress-charts' | 'weekly-completion' | 'achievements' | 'achievement-gallery' | 'personal-records' | 'monthly-reports';
+  currentPage?: 'dashboard' | 'workouts' | 'videos' | 'diet' | 'sessions' | 'history' | 'workout-history' | 'progress' | 'profile' | 'weight-tracking' | 'body-measurements' | 'progress-charts' | 'weekly-completion' | 'achievements' | 'achievement-gallery' | 'personal-records' | 'monthly-reports' | 'goals';
 }
 
 export function ClientHeader({ currentPage }: ClientHeaderProps) {
@@ -41,6 +41,16 @@ export function ClientHeader({ currentPage }: ClientHeaderProps) {
                 data-testid="link-dashboard"
               >
                 Dashboard
+              </Button>
+
+              <Button 
+                variant="ghost" 
+                className={currentPage === 'goals' ? 'bg-accent' : ''} 
+                onClick={() => setLocation("/client/goals")}
+                data-testid="link-goals"
+              >
+                <Target className="h-4 w-4 mr-2" />
+                Goals
               </Button>
 
               <DropdownMenu>
