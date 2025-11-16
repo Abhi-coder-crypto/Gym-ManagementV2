@@ -1187,6 +1187,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Goal routes
+  app.get("/api/goals", async (req, res) => {
+    try {
+      const clientId = req.query.clientId as string;
+      if (!clientId) {
+        return res.status(400).json({ message: "Client ID is required" });
+      }
+      const goals = await storage.getClientGoals(clientId);
+      res.json(goals);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/goals/:id", async (req, res) => {
+    try {
+      const goal = await storage.getGoal(req.params.id);
+      if (!goal) {
+        return res.status(404).json({ message: "Goal not found" });
+      }
+      res.json(goal);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/goals", async (req, res) => {
+    try {
+      const goal = await storage.createGoal(req.body);
+      res.json(goal);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/goals/:id", async (req, res) => {
+    try {
+      const goal = await storage.updateGoal(req.params.id, req.body);
+      if (!goal) {
+        return res.status(404).json({ message: "Goal not found" });
+      }
+      res.json(goal);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/goals/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteGoal(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Goal not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/goals/:id/progress", async (req, res) => {
+    try {
+      const { currentValue } = req.body;
+      if (currentValue === undefined) {
+        return res.status(400).json({ message: "Current value is required" });
+      }
+      const goal = await storage.updateGoalProgress(req.params.id, currentValue);
+      if (!goal) {
+        return res.status(404).json({ message: "Goal not found" });
+      }
+      res.json(goal);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
