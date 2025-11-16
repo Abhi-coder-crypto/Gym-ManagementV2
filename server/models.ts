@@ -21,6 +21,24 @@ export interface IClient extends Document {
   height?: number;
   weight?: number;
   goal?: string;
+  bio?: string;
+  address?: string;
+  profilePhoto?: string;
+  medicalConditions?: string[];
+  injuries?: string[];
+  fitnessLevel?: 'beginner' | 'intermediate' | 'advanced';
+  limitations?: string;
+  language?: 'en' | 'hi';
+  notificationPreferences?: {
+    email: boolean;
+    sessionReminders: boolean;
+    achievements: boolean;
+  };
+  privacySettings?: {
+    showEmail: boolean;
+    showPhone: boolean;
+    showProgress: boolean;
+  };
   createdAt: Date;
 }
 
@@ -173,6 +191,24 @@ const ClientSchema = new Schema({
   height: Number,
   weight: Number,
   goal: String,
+  bio: String,
+  address: String,
+  profilePhoto: String,
+  medicalConditions: [String],
+  injuries: [String],
+  fitnessLevel: { type: String, enum: ['beginner', 'intermediate', 'advanced'] },
+  limitations: String,
+  language: { type: String, enum: ['en', 'hi'], default: 'en' },
+  notificationPreferences: {
+    email: { type: Boolean, default: true },
+    sessionReminders: { type: Boolean, default: true },
+    achievements: { type: Boolean, default: true },
+  },
+  privacySettings: {
+    showEmail: { type: Boolean, default: false },
+    showPhone: { type: Boolean, default: false },
+    showProgress: { type: Boolean, default: true },
+  },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -346,6 +382,38 @@ const GoalSchema = new Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
+export interface IPaymentHistory extends Document {
+  clientId: string;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  transactionId?: string;
+  invoiceNumber: string;
+  paymentMethod: string;
+  packageId?: string;
+  packageName?: string;
+  billingDate: Date;
+  nextBillingDate?: Date;
+  receiptUrl?: string;
+  createdAt: Date;
+}
+
+const PaymentHistorySchema = new Schema({
+  clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
+  amount: { type: Number, required: true },
+  currency: { type: String, default: 'USD' },
+  status: { type: String, enum: ['pending', 'completed', 'failed', 'refunded'], default: 'completed' },
+  transactionId: String,
+  invoiceNumber: { type: String, required: true },
+  paymentMethod: { type: String, required: true },
+  packageId: { type: Schema.Types.ObjectId, ref: 'Package' },
+  packageName: String,
+  billingDate: { type: Date, required: true },
+  nextBillingDate: Date,
+  receiptUrl: String,
+  createdAt: { type: Date, default: Date.now },
+});
+
 export const Package = mongoose.model<IPackage>('Package', PackageSchema);
 export const Client = mongoose.model<IClient>('Client', ClientSchema);
 export const BodyMetrics = mongoose.model<IBodyMetrics>('BodyMetrics', BodyMetricsSchema);
@@ -361,3 +429,4 @@ export const VideoBookmark = mongoose.model<IVideoBookmark>('VideoBookmark', Vid
 export const ProgressPhoto = mongoose.model<IProgressPhoto>('ProgressPhoto', ProgressPhotoSchema);
 export const Achievement = mongoose.model<IAchievement>('Achievement', AchievementSchema);
 export const Goal = mongoose.model<IGoal>('Goal', GoalSchema);
+export const PaymentHistory = mongoose.model<IPaymentHistory>('PaymentHistory', PaymentHistorySchema);

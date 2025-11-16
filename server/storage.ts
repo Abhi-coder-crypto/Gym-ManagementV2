@@ -15,6 +15,7 @@ import {
   ProgressPhoto,
   Achievement,
   Goal,
+  PaymentHistory,
   type IPackage,
   type IClient,
   type IBodyMetrics,
@@ -30,6 +31,7 @@ import {
   type IProgressPhoto,
   type IAchievement,
   type IGoal,
+  type IPaymentHistory,
 } from './models';
 
 export interface IStorage {
@@ -149,6 +151,10 @@ export interface IStorage {
   updateGoal(id: string, data: Partial<IGoal>): Promise<IGoal | null>;
   deleteGoal(id: string): Promise<boolean>;
   updateGoalProgress(goalId: string, currentValue: number): Promise<IGoal | null>;
+  
+  // Payment History methods
+  getClientPaymentHistory(clientId: string): Promise<IPaymentHistory[]>;
+  createPaymentRecord(data: Partial<IPaymentHistory>): Promise<IPaymentHistory>;
 }
 
 export class MongoStorage implements IStorage {
@@ -729,6 +735,18 @@ export class MongoStorage implements IStorage {
       },
       { new: true }
     );
+  }
+  
+  // Payment History methods
+  async getClientPaymentHistory(clientId: string): Promise<IPaymentHistory[]> {
+    return await PaymentHistory.find({ clientId })
+      .populate('packageId')
+      .sort({ billingDate: -1 });
+  }
+  
+  async createPaymentRecord(data: Partial<IPaymentHistory>): Promise<IPaymentHistory> {
+    const payment = new PaymentHistory(data);
+    return await payment.save();
   }
 }
 

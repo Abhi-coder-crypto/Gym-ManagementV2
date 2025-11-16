@@ -167,6 +167,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Payment History routes
+  app.get("/api/payment-history/:clientId", async (req, res) => {
+    try {
+      const payments = await storage.getClientPaymentHistory(req.params.clientId);
+      res.json(payments);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/payment-history", async (req, res) => {
+    try {
+      const payment = await storage.createPaymentRecord(req.body);
+      res.json(payment);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Body Metrics routes
   app.get("/api/body-metrics/:clientId", async (req, res) => {
     try {
