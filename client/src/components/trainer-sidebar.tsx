@@ -36,7 +36,7 @@ export function TrainerSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild data-testid="link-home">
-                  <Link href="/">
+                  <Link href="/admin">
                     <Home />
                     <span>Home</span>
                   </Link>

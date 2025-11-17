@@ -50,17 +50,6 @@ export default function Landing() {
               <User className="h-5 w-5 mr-2" />
               Client Login
             </Button>
-            
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-lg px-12 py-6 h-auto w-full sm:w-auto backdrop-blur-sm bg-white/10 hover:bg-white/20 text-white border-white/30"
-              onClick={() => setLocation("/admin")}
-              data-testid="button-admin-login"
-            >
-              <ShieldCheck className="h-5 w-5 mr-2" />
-              Admin Login
-            </Button>
           </div>
 
           <p className="text-white/70 text-sm mt-8">

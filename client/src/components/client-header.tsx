@@ -28,7 +28,7 @@ export function ClientHeader({ currentPage }: ClientHeaderProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             <button 
-              onClick={() => setLocation("/")} 
+              onClick={() => setLocation("/client-access")} 
               className="flex items-center gap-2 hover-elevate active-elevate-2 rounded-md px-2 py-1"
               data-testid="button-logo-home"
             >

@@ -49,7 +49,7 @@ export function AdminSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild data-testid="link-home">
-                  <Link href="/admin/dashboard">
+                  <Link href="/admin">
                     <Home />
                     <span>Home</span>
                   </Link>
