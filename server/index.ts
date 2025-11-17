@@ -8,6 +8,9 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 import { setupWebSocket } from "./websocket";
+import { hashPassword } from "./utils/auth";
+import { User } from "./models/user";
+import { Trainer } from "./models";
 
 const app = express();
 
@@ -134,6 +137,53 @@ app.use((req, res, next) => {
           goal: "Build Muscle"
         });
         log(`👤 Created demo client: Abhijeet Singh`);
+      }
+      
+      // Create default admin and trainer users if they don't exist
+      // NOTE: These are DEMO credentials for development only. 
+      // In production, create users securely and change these passwords immediately.
+      const adminEmail = "admin@fitpro.com";
+      const trainerEmail = "trainer@fitpro.com";
+      
+      let adminUser = await User.findOne({ email: adminEmail });
+      if (!adminUser) {
+        // Use environment variable or default for demo/development
+        const adminPassword = process.env.ADMIN_PASSWORD || "Admin@123";
+        const hashedAdminPassword = await hashPassword(adminPassword);
+        
+        adminUser = await User.create({
+          email: adminEmail,
+          password: hashedAdminPassword,
+          role: 'admin',
+        });
+        log(`🔐 Created default admin user (email: ${adminEmail})`);
+      }
+      
+      let trainerUser = await User.findOne({ email: trainerEmail });
+      let demoTrainer = null;
+      if (!trainerUser) {
+        // Create trainer profile first
+        demoTrainer = await Trainer.create({
+          name: "John Doe",
+          email: trainerEmail,
+          phone: "9876543210",
+          specialty: "Strength & Conditioning",
+          bio: "Certified personal trainer with 5+ years experience",
+          experience: 5,
+          status: 'active',
+        });
+        
+        // Create trainer user account
+        const trainerPassword = process.env.TRAINER_PASSWORD || "Trainer@123";
+        const hashedTrainerPassword = await hashPassword(trainerPassword);
+        
+        trainerUser = await User.create({
+          email: trainerEmail,
+          password: hashedTrainerPassword,
+          role: 'trainer',
+          trainerId: demoTrainer._id,
+        });
+        log(`🔐 Created default trainer user (email: ${trainerEmail})`);
       }
       
       // Seed videos if none exist

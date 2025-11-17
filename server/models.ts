@@ -42,6 +42,13 @@ export interface IClient extends Document {
     showPhone: boolean;
     showProgress: boolean;
   };
+  subscription?: {
+    startDate?: Date;
+    endDate?: Date;
+    renewalType?: 'monthly' | 'yearly';
+    autoRenewal?: boolean;
+    paymentMethodId?: string;
+  };
   createdAt: Date;
 }
 
@@ -151,6 +158,7 @@ export interface ILiveSession extends Document {
   scheduledAt: Date;
   duration: number;
   meetingLink?: string;
+  meetingPassword?: string;
   trainerName?: string;
   maxCapacity: number;
   currentCapacity: number;
@@ -160,6 +168,9 @@ export interface ILiveSession extends Document {
   recurringDays?: string[];
   recurringEndDate?: Date;
   parentSessionId?: string;
+  recordingUrl?: string;
+  recordingPassword?: string;
+  recordingAvailableUntil?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -221,6 +232,52 @@ export interface IAchievement extends Document {
   metadata?: any;
 }
 
+export interface ITrainer extends Document {
+  name: string;
+  email: string;
+  phone?: string;
+  specialty?: string;
+  bio?: string;
+  profilePhoto?: string;
+  certifications?: string[];
+  experience?: number;
+  assignedClients?: string[];
+  availability?: {
+    monday?: { start: string; end: string };
+    tuesday?: { start: string; end: string };
+    wednesday?: { start: string; end: string };
+    thursday?: { start: string; end: string };
+    friday?: { start: string; end: string };
+    saturday?: { start: string; end: string };
+    sunday?: { start: string; end: string };
+  };
+  status?: 'active' | 'inactive';
+  createdAt: Date;
+}
+
+const TrainerSchema = new Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  phone: String,
+  specialty: String,
+  bio: String,
+  profilePhoto: String,
+  certifications: [String],
+  experience: Number,
+  assignedClients: [{ type: Schema.Types.ObjectId, ref: 'Client' }],
+  availability: {
+    monday: { start: String, end: String },
+    tuesday: { start: String, end: String },
+    wednesday: { start: String, end: String },
+    thursday: { start: String, end: String },
+    friday: { start: String, end: String },
+    saturday: { start: String, end: String },
+    sunday: { start: String, end: String },
+  },
+  status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  createdAt: { type: Date, default: Date.now },
+});
+
 const PackageSchema = new Schema({
   name: { type: String, required: true },
   description: String,
@@ -262,6 +319,13 @@ const ClientSchema = new Schema({
     showEmail: { type: Boolean, default: false },
     showPhone: { type: Boolean, default: false },
     showProgress: { type: Boolean, default: true },
+  },
+  subscription: {
+    startDate: Date,
+    endDate: Date,
+    renewalType: { type: String, enum: ['monthly', 'yearly'] },
+    autoRenewal: { type: Boolean, default: false },
+    paymentMethodId: String,
   },
   createdAt: { type: Date, default: Date.now },
 });
@@ -372,6 +436,7 @@ const LiveSessionSchema = new Schema({
   scheduledAt: { type: Date, required: true },
   duration: { type: Number, required: true },
   meetingLink: String,
+  meetingPassword: String,
   trainerName: String,
   maxCapacity: { type: Number, default: 15, required: true },
   currentCapacity: { type: Number, default: 0, required: true },
@@ -381,6 +446,9 @@ const LiveSessionSchema = new Schema({
   recurringDays: [String],
   recurringEndDate: Date,
   parentSessionId: { type: Schema.Types.ObjectId, ref: 'LiveSession' },
+  recordingUrl: String,
+  recordingPassword: String,
+  recordingAvailableUntil: Date,
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
@@ -714,8 +782,26 @@ export interface ISystemSettings extends Document {
   integrations?: {
     payment?: {
       provider: string;
-      apiKey?: string;
-      enabled: boolean;
+      stripe?: {
+        publicKey?: string;
+        secretKey?: string;
+        webhookSecret?: string;
+        enabled: boolean;
+      };
+      paypal?: {
+        clientId?: string;
+        clientSecret?: string;
+        webhookId?: string;
+        enabled: boolean;
+      };
+      razorpay?: {
+        keyId?: string;
+        keySecret?: string;
+        webhookSecret?: string;
+        enabled: boolean;
+      };
+      autoRetryFailed: boolean;
+      maxRetryAttempts: number;
     };
     email?: {
       provider: string;
@@ -731,6 +817,28 @@ export interface ISystemSettings extends Document {
     calendar?: {
       provider: string;
       enabled: boolean;
+    };
+    videoHosting?: {
+      provider: string;
+      cdnUrl?: string;
+      apiKey?: string;
+      enabled: boolean;
+    };
+    videoConferencing?: {
+      provider: string;
+      zoom?: {
+        apiKey?: string;
+        apiSecret?: string;
+        webhookSecret?: string;
+        enabled: boolean;
+      };
+      googleMeet?: {
+        clientId?: string;
+        clientSecret?: string;
+        enabled: boolean;
+      };
+      autoCreateMeetings: boolean;
+      recordingSaveEnabled: boolean;
     };
   };
   backup?: {
@@ -807,8 +915,26 @@ const SystemSettingsSchema = new Schema({
   integrations: {
     payment: {
       provider: { type: String, default: 'stripe' },
-      apiKey: String,
-      enabled: { type: Boolean, default: false },
+      stripe: {
+        publicKey: String,
+        secretKey: String,
+        webhookSecret: String,
+        enabled: { type: Boolean, default: false },
+      },
+      paypal: {
+        clientId: String,
+        clientSecret: String,
+        webhookId: String,
+        enabled: { type: Boolean, default: false },
+      },
+      razorpay: {
+        keyId: String,
+        keySecret: String,
+        webhookSecret: String,
+        enabled: { type: Boolean, default: false },
+      },
+      autoRetryFailed: { type: Boolean, default: true },
+      maxRetryAttempts: { type: Number, default: 3 },
     },
     email: {
       provider: { type: String, default: 'sendgrid' },
@@ -824,6 +950,28 @@ const SystemSettingsSchema = new Schema({
     calendar: {
       provider: { type: String, default: 'google' },
       enabled: { type: Boolean, default: false },
+    },
+    videoHosting: {
+      provider: { type: String, default: 'youtube' },
+      cdnUrl: String,
+      apiKey: String,
+      enabled: { type: Boolean, default: false },
+    },
+    videoConferencing: {
+      provider: { type: String, default: 'zoom' },
+      zoom: {
+        apiKey: String,
+        apiSecret: String,
+        webhookSecret: String,
+        enabled: { type: Boolean, default: false },
+      },
+      googleMeet: {
+        clientId: String,
+        clientSecret: String,
+        enabled: { type: Boolean, default: false },
+      },
+      autoCreateMeetings: { type: Boolean, default: false },
+      recordingSaveEnabled: { type: Boolean, default: true },
     },
   },
   backup: {
@@ -854,6 +1002,7 @@ const SystemSettingsSchema = new Schema({
 });
 
 export const Package = mongoose.model<IPackage>('Package', PackageSchema);
+export const Trainer = mongoose.model<ITrainer>('Trainer', TrainerSchema);
 export const Client = mongoose.model<IClient>('Client', ClientSchema);
 export const BodyMetrics = mongoose.model<IBodyMetrics>('BodyMetrics', BodyMetricsSchema);
 export const Video = mongoose.model<IVideo>('Video', VideoSchema);

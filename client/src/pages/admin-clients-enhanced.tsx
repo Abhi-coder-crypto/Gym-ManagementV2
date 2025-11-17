@@ -100,7 +100,12 @@ export default function AdminClientsEnhanced() {
       if (sortBy) params.append('sortBy', sortBy);
       
       const response = await fetch(`/api/admin/clients/search?${params.toString()}`);
-      return response.json();
+      if (!response.ok) {
+        throw new Error('Failed to fetch clients');
+      }
+      const data = await response.json();
+      // Ensure we always return an array
+      return Array.isArray(data) ? data : [];
     },
   });
 
@@ -114,6 +119,9 @@ export default function AdminClientsEnhanced() {
     queryFn: async () => {
       if (!viewingClient) return null;
       const response = await fetch(`/api/admin/clients/${viewingClient._id}/activity`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch client activity');
+      }
       return response.json();
     },
   });
@@ -292,10 +300,11 @@ export default function AdminClientsEnhanced() {
   };
 
   const handleSelectAll = () => {
-    if (selectedClients.size === clients.length) {
+    const clientsArray = Array.isArray(clients) ? clients : [];
+    if (selectedClients.size === clientsArray.length) {
       setSelectedClients(new Set());
     } else {
-      setSelectedClients(new Set(clients.map((c: any) => c._id)));
+      setSelectedClients(new Set(clientsArray.map((c: any) => c._id)));
     }
   };
 
@@ -348,10 +357,11 @@ export default function AdminClientsEnhanced() {
     );
   };
 
-  const totalClients = clients.length;
-  const activeCount = clients.filter((c: any) => c.status === 'active').length;
-  const inactiveCount = clients.filter((c: any) => c.status === 'inactive').length;
-  const pendingCount = clients.filter((c: any) => c.status === 'pending').length;
+  const clientsArray = Array.isArray(clients) ? clients : [];
+  const totalClients = clientsArray.length;
+  const activeCount = clientsArray.filter((c: any) => c.status === 'active').length;
+  const inactiveCount = clientsArray.filter((c: any) => c.status === 'inactive').length;
+  const pendingCount = clientsArray.filter((c: any) => c.status === 'pending').length;
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
@@ -530,7 +540,7 @@ export default function AdminClientsEnhanced() {
                       <TableRow>
                         <TableHead className="w-[50px]">
                           <Checkbox
-                            checked={selectedClients.size === clients.length && clients.length > 0}
+                            checked={selectedClients.size === clientsArray.length && clientsArray.length > 0}
                             onCheckedChange={handleSelectAll}
                             data-testid="checkbox-select-all"
                           />
@@ -550,14 +560,14 @@ export default function AdminClientsEnhanced() {
                             Loading clients...
                           </TableCell>
                         </TableRow>
-                      ) : clients.length === 0 ? (
+                      ) : clientsArray.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={7} className="text-center text-muted-foreground">
                             No clients found
                           </TableCell>
                         </TableRow>
                       ) : (
-                        clients.map((client: any) => (
+                        clientsArray.map((client: any) => (
                           <TableRow key={client._id} data-testid={`row-client-${client._id}`}>
                             <TableCell>
                               <Checkbox
