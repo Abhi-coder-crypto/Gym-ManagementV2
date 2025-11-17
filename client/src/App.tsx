@@ -40,6 +40,7 @@ import ClientPersonalRecords from "@/pages/client-personal-records";
 import ClientWeeklyCompletion from "@/pages/client-weekly-completion";
 import ClientMonthlyReports from "@/pages/client-monthly-reports";
 import ClientGoals from "@/pages/client-goals";
+import ClientNotifications from "@/pages/client-notifications";
 import AnnouncementsPage from "@/pages/announcements";
 import SupportTicketsPage from "@/pages/support-tickets";
 import TrainerMessaging from "@/pages/trainer-messaging";
@@ -87,6 +88,7 @@ function Router() {
       <Route path="/client/progress/weekly-completion" component={ClientWeeklyCompletion} />
       <Route path="/client/progress/monthly-reports" component={ClientMonthlyReports} />
       <Route path="/client/goals" component={ClientGoals} />
+      <Route path="/client/notifications" component={ClientNotifications} />
       <Route path="/client/announcements" component={AnnouncementsPage} />
       <Route path="/client/support-tickets" component={SupportTicketsPage} />
       <Route path="/client/messages" component={TrainerMessaging} />

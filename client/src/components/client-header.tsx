@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { NotificationCenter } from "@/components/notification-center";
+import { NotificationBell } from "@/components/notification-bell";
 import { CalculatorDialog } from "@/components/calculator-dialog";
 import { SessionReminders } from "@/components/session-reminders";
 import {
@@ -177,7 +177,7 @@ export function ClientHeader({ currentPage }: ClientHeaderProps) {
           <div className="flex items-center gap-3 flex-shrink-0">
             <CalculatorDialog />
             <SessionReminders />
-            <NotificationCenter />
+            <NotificationBell />
             <ThemeToggle />
             <Button 
               variant="ghost" 
