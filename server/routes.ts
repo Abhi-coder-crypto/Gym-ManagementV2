@@ -979,7 +979,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         client.email,
         client.name,
         invoice.invoiceNumber,
-        invoice.totalAmount,
+        invoice.total,
         invoice.dueDate,
         client._id?.toString()
       );
