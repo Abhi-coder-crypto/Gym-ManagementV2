@@ -167,6 +167,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin route to create user account for existing client
+  app.post("/api/admin/create-client-user", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { clientId, email, password } = req.body;
+      
+      // Validate input
+      if (!clientId || !email || !password) {
+        return res.status(400).json({ message: "Client ID, email, and password are required" });
+      }
+      
+      if (!validateEmail(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+      
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.valid) {
+        return res.status(400).json({ message: passwordValidation.message });
+      }
+      
+      // Check if client exists
+      const client = await storage.getClient(clientId);
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      // Check if user already exists for this email
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+      
+      // Hash password and create user account
+      const hashedPassword = await hashPassword(password);
+      const user = await storage.createUser({
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        role: 'client',
+        name: client.name,
+        phone: client.phone || '',
+        clientId: clientId,
+      });
+      
+      // Update client with email if not set
+      if (!client.email || client.email !== email.toLowerCase()) {
+        await storage.updateClient(clientId, { email: email.toLowerCase() });
+      }
+      
+      // Return user data without password
+      const { password: _, ...userWithoutPassword } = user.toObject();
+      res.json({
+        message: "User account created successfully for client",
+        user: userWithoutPassword,
+        client: client,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
   // Admin route to create trainer credentials (protected)
   app.post("/api/admin/trainers", authenticateToken, requireAdmin, async (req, res) => {
     try {

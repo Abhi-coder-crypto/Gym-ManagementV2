@@ -9,6 +9,7 @@ import ClientAccess from "@/pages/client-access";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminClientsEnhanced from "@/pages/admin-clients-enhanced";
+import AdminClientSetup from "@/pages/admin-client-setup";
 import AdminVideos from "@/pages/admin-videos";
 import AdminDiet from "@/pages/admin-diet-plans";
 import AdminSessions from "@/pages/admin-sessions";
@@ -50,6 +51,7 @@ function Router() {
       <Route path="/admin" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/clients" component={AdminClientsEnhanced} />
+      <Route path="/admin/client-setup" component={AdminClientSetup} />
       <Route path="/admin/videos" component={AdminVideos} />
       <Route path="/admin/diet" component={AdminDiet} />
       <Route path="/admin/sessions" component={AdminSessions} />
