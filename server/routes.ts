@@ -117,6 +117,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin route to create trainer credentials
+  app.post("/api/admin/trainers", async (req, res) => {
+    try {
+      const { email, password, name, phone } = req.body;
+      
+      // Validate input
+      if (!email || !password || !name) {
+        return res.status(400).json({ message: "Email, password, and name are required" });
+      }
+      
+      if (!validateEmail(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+      
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.valid) {
+        return res.status(400).json({ message: passwordValidation.message });
+      }
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+      
+      // Hash password and create trainer user
+      const hashedPassword = await hashPassword(password);
+      const trainer = await storage.createUser({
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        role: 'trainer',
+        name,
+        phone: phone || '',
+      });
+      
+      // Return trainer data without password
+      const { password: _, ...trainerWithoutPassword } = trainer.toObject();
+      res.json({
+        message: "Trainer created successfully",
+        trainer: trainerWithoutPassword,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get all trainers (admin only)
+  app.get("/api/admin/trainers", async (_req, res) => {
+    try {
+      const trainers = await storage.getAllTrainers();
+      // Remove passwords from response
+      const trainersWithoutPasswords = trainers.map(trainer => {
+        const { password: _, ...trainerWithoutPassword } = trainer.toObject();
+        return trainerWithoutPassword;
+      });
+      res.json(trainersWithoutPasswords);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Delete trainer (admin only)
+  app.delete("/api/admin/trainers/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteUser(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Trainer not found" });
+      }
+      res.json({ message: "Trainer deleted successfully" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
   // Initialize default packages if none exist
   app.post("/api/init", async (_req, res) => {
     try {

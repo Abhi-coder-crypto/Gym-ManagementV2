@@ -52,6 +52,7 @@ export interface IStorage {
   createUser(data: Partial<IUser>): Promise<IUser>;
   updateUser(id: string, data: Partial<IUser>): Promise<IUser | null>;
   getAllUsers(role?: string): Promise<IUser[]>;
+  getAllTrainers(): Promise<IUser[]>;
   deleteUser(id: string): Promise<boolean>;
   initializeDefaultUsers(): Promise<void>;
   
@@ -1308,6 +1309,10 @@ export class MongoStorage implements IStorage {
   async getAllUsers(role?: string): Promise<IUser[]> {
     const query = role ? { role } : {};
     return await User.find(query).populate('clientId').sort({ createdAt: -1 });
+  }
+  
+  async getAllTrainers(): Promise<IUser[]> {
+    return await this.getAllUsers('trainer');
   }
   
   async deleteUser(id: string): Promise<boolean> {
