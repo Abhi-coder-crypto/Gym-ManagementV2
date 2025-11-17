@@ -86,7 +86,7 @@ export default function ForgotPassword() {
                 asChild
                 data-testid="button-back-to-login"
               >
-                <Link href="/admin/login">
+                <Link href="/client-access">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Login
                 </Link>
@@ -131,7 +131,7 @@ export default function ForgotPassword() {
                   asChild
                   data-testid="button-back-to-login-link"
                 >
-                  <Link href="/admin/login">
+                  <Link href="/client-access">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Back to Login
                   </Link>
