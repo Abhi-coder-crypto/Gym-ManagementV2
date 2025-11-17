@@ -222,9 +222,7 @@ export default function AdminRevenueEnhanced() {
 
   const sendInvoiceEmailMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
-      const response = await apiRequest(`/api/invoices/${invoiceId}/send`, {
-        method: 'POST',
-      });
+      const response = await apiRequest('POST', `/api/invoices/${invoiceId}/send`);
       return response;
     },
     onSuccess: () => {

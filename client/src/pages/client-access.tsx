@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Dumbbell, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Dumbbell, ArrowLeft, Eye, EyeOff, KeyRound } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -226,6 +226,18 @@ export default function ClientAccess() {
                         )}
                       </Button>
                     </div>
+                  </div>
+                  <div className="flex items-center justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-sm px-0 h-auto text-primary hover:underline"
+                      onClick={() => setLocation("/forgot-password")}
+                      data-testid="link-forgot-password"
+                    >
+                      <KeyRound className="h-3 w-3 mr-1" />
+                      Forgot Password?
+                    </Button>
                   </div>
                   <Button
                     type="submit"
