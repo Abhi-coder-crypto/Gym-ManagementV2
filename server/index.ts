@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 dotenv.config({ override: true });
 
 import express, { type Request, Response, NextFunction } from "express";
+import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
@@ -23,6 +24,7 @@ app.use(express.json({
   },
 }));
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 
 // Middleware to log API requests
 app.use((req, res, next) => {

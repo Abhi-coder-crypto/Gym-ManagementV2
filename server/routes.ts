@@ -3,6 +3,9 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { PaymentHistory, Invoice, Refund, PaymentReminder, VideoProgress, LiveSession } from "./models";
 import { hashPassword, comparePassword, validateEmail, validatePassword } from "./utils/auth";
+import { generateAccessToken, generateRefreshToken } from "./utils/jwt";
+import { authenticateToken, requireAdmin, requireRole, optionalAuth, requireOwnershipOrAdmin } from "./middleware/auth";
+import { exportUserData } from "./utils/data-export";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -90,6 +93,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         client = await storage.getClient(user.clientId.toString());
       }
       
+      // Generate JWT tokens
+      const tokenPayload = {
+        userId: user._id.toString(),
+        email: user.email,
+        role: user.role,
+        clientId: user.clientId?.toString(),
+      };
+      
+      const accessToken = generateAccessToken(tokenPayload);
+      const refreshToken = generateRefreshToken(tokenPayload);
+      
+      // Set HTTP-only cookies for security
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+      
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      });
+      
       // Return user data without password
       const { password: _, ...userWithoutPassword } = user.toObject();
       res.json({
@@ -102,23 +131,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/auth/me/:userId", async (req, res) => {
+  // Logout route
+  app.post("/api/auth/logout", (req, res) => {
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+    res.json({ message: "Logged out successfully" });
+  });
+  
+  // Get current authenticated user
+  app.get("/api/auth/me", authenticateToken, async (req, res) => {
     try {
-      const user = await storage.getUserById(req.params.userId);
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const user = await storage.getUserById(req.user.userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
       
+      // Get client data if user is a client
+      let client = null;
+      if (user.role === 'client' && user.clientId) {
+        client = await storage.getClient(user.clientId.toString());
+      }
+      
       // Return user data without password
       const { password: _, ...userWithoutPassword } = user.toObject();
-      res.json(userWithoutPassword);
+      res.json({
+        user: userWithoutPassword,
+        client: client,
+      });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
   
-  // Admin route to create trainer credentials
-  app.post("/api/admin/trainers", async (req, res) => {
+  // Admin route to create trainer credentials (protected)
+  app.post("/api/admin/trainers", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const { email, password, name, phone } = req.body;
       
@@ -163,8 +213,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all trainers (admin only)
-  app.get("/api/admin/trainers", async (_req, res) => {
+  // Get all trainers (admin only - protected)
+  app.get("/api/admin/trainers", authenticateToken, requireAdmin, async (_req, res) => {
     try {
       const trainers = await storage.getAllTrainers();
       // Remove passwords from response
@@ -178,8 +228,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Delete trainer (admin only)
-  app.delete("/api/admin/trainers/:id", async (req, res) => {
+  // Delete trainer (admin only - protected)
+  app.delete("/api/admin/trainers/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const deleted = await storage.deleteUser(req.params.id);
       if (!deleted) {
@@ -255,7 +305,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/packages", async (req, res) => {
+  // Create package (admin only - protected)
+  app.post("/api/packages", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const pkg = await storage.createPackage(req.body);
       res.json(pkg);
@@ -264,7 +315,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/packages/:id", async (req, res) => {
+  // Update package (admin only - protected)
+  app.patch("/api/packages/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const pkg = await storage.updatePackage(req.params.id, req.body);
       if (!pkg) {
@@ -276,8 +328,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Client routes
-  app.get("/api/clients", async (_req, res) => {
+  // Client routes (admin only - protected)
+  app.get("/api/clients", authenticateToken, requireAdmin, async (_req, res) => {
     try {
       const clients = await storage.getAllClients();
       res.json(clients);
@@ -286,7 +338,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/clients/phone/:phone", async (req, res) => {
+  // Get client by phone (admin only - protected)
+  app.get("/api/clients/phone/:phone", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const client = await storage.getClientByPhone(req.params.phone);
       if (!client) {
@@ -298,7 +351,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/clients/:id", async (req, res) => {
+  // Get client by ID (admin only - protected)
+  app.get("/api/clients/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const client = await storage.getClient(req.params.id);
       if (!client) {
@@ -310,7 +364,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/clients", async (req, res) => {
+  // Create client (admin only - protected)
+  app.post("/api/clients", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const client = await storage.createClient(req.body);
       res.json(client);
@@ -319,7 +374,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/clients/:id", async (req, res) => {
+  // Update client (admin only - protected)
+  app.patch("/api/clients/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const client = await storage.updateClient(req.params.id, req.body);
       if (!client) {
@@ -331,7 +387,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/clients/:id", async (req, res) => {
+  // Delete client (admin only - protected)
+  app.delete("/api/clients/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const success = await storage.deleteClient(req.params.id);
       if (!success) {
@@ -343,8 +400,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin Client Management routes
-  app.get("/api/admin/clients/search", async (req, res) => {
+  // Admin Client Management routes (all protected)
+  app.get("/api/admin/clients/search", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const { query, status, packageId, sortBy } = req.query;
       const clients = await storage.getAllClients();
@@ -386,7 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/clients/:id/activity", async (req, res) => {
+  app.get("/api/admin/clients/:id/activity", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const clientId = req.params.id;
       
@@ -410,7 +467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/clients/bulk-update", async (req, res) => {
+  app.post("/api/admin/clients/bulk-update", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const { clientIds, updates } = req.body;
       
@@ -436,7 +493,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/clients/bulk-assign-plan", async (req, res) => {
+  app.post("/api/admin/clients/bulk-assign-plan", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const { clientIds, planType, planId } = req.body;
       
@@ -493,7 +550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/clients/export", async (_req, res) => {
+  app.get("/api/admin/clients/export", authenticateToken, requireAdmin, async (_req, res) => {
     try {
       const clients = await storage.getAllClients();
       const packages = await storage.getAllPackages();
@@ -537,8 +594,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Payment History routes
-  app.get("/api/payment-history/:clientId", async (req, res) => {
+  // Payment History routes (admin only - protected)
+  app.get("/api/payment-history/:clientId", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const payments = await storage.getClientPaymentHistory(req.params.clientId);
       res.json(payments);
@@ -547,7 +604,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/payment-history", async (req, res) => {
+  // Create payment record (admin only - protected)
+  app.post("/api/payment-history", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const payment = await storage.createPaymentRecord(req.body);
       res.json(payment);
@@ -556,8 +614,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all payments with filtering
-  app.get("/api/payments", async (req, res) => {
+  // Get all payments with filtering (admin only - protected)
+  app.get("/api/payments", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const { status, startDate, endDate, packageId } = req.query;
       const query: any = {};
@@ -581,8 +639,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get payment statistics
-  app.get("/api/payments/stats", async (req, res) => {
+  // Get payment statistics (admin only - protected)
+  app.get("/api/payments/stats", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
       const dateFilter: any = {};
@@ -635,8 +693,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get monthly revenue trends
-  app.get("/api/payments/monthly-trends", async (req, res) => {
+  // Get monthly revenue trends (admin only - protected)
+  app.get("/api/payments/monthly-trends", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const { months = 6 } = req.query;
       const trends = [];
@@ -669,8 +727,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Invoice routes
-  app.get("/api/invoices", async (req, res) => {
+  // Invoice routes (admin only - protected)
+  app.get("/api/invoices", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const { status, clientId } = req.query;
       const query: any = {};
@@ -689,7 +747,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/invoices", async (req, res) => {
+  // Create invoice (admin only - protected)
+  app.post("/api/invoices", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const invoiceCount = await Invoice.countDocuments();
       const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoiceCount + 1).padStart(5, '0')}`;
@@ -709,7 +768,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/invoices/:id", async (req, res) => {
+  // Update invoice (admin only - protected)
+  app.patch("/api/invoices/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const invoice = await Invoice.findByIdAndUpdate(
         req.params.id,
@@ -722,7 +782,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/invoices/:id/send", async (req, res) => {
+  // Send invoice (admin only - protected)
+  app.post("/api/invoices/:id/send", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const invoice = await Invoice.findByIdAndUpdate(
         req.params.id,
@@ -740,8 +801,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Refund routes
-  app.get("/api/refunds", async (req, res) => {
+  // Refund routes (admin only - protected)
+  app.get("/api/refunds", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const { status, clientId } = req.query;
       const query: any = {};
@@ -760,7 +821,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/refunds", async (req, res) => {
+  // Create refund (admin only - protected)
+  app.post("/api/refunds", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const refund = new Refund(req.body);
       await refund.save();
@@ -782,7 +844,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/refunds/:id", async (req, res) => {
+  // Update refund (admin only - protected)
+  app.patch("/api/refunds/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const refund = await Refund.findByIdAndUpdate(
         req.params.id,
@@ -807,8 +870,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Payment reminder routes
-  app.post("/api/payment-reminders", async (req, res) => {
+  // Payment reminder routes (admin only - protected)
+  app.post("/api/payment-reminders", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const reminder = new PaymentReminder(req.body);
       await reminder.save();
@@ -818,7 +881,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/payment-reminders/pending", async (req, res) => {
+  // Get pending payment reminders (admin only - protected)
+  app.get("/api/payment-reminders/pending", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const reminders = await PaymentReminder.find({
         status: 'pending',
@@ -833,8 +897,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Body Metrics routes
-  app.get("/api/body-metrics/:clientId", async (req, res) => {
+  // Body Metrics routes (owner or admin only - sensitive health data)
+  app.get("/api/body-metrics/:clientId", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const metrics = await storage.getClientBodyMetrics(req.params.clientId);
       res.json(metrics);
@@ -843,7 +907,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/body-metrics/:clientId/latest", async (req, res) => {
+  // Get latest body metrics (owner or admin only)
+  app.get("/api/body-metrics/:clientId/latest", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const metrics = await storage.getLatestBodyMetrics(req.params.clientId);
       res.json(metrics);
@@ -852,7 +917,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/body-metrics", async (req, res) => {
+  // Create body metrics (owner or admin only - validates ownership via clientId in body)
+  app.post("/api/body-metrics", authenticateToken, async (req, res) => {
+    // Check ownership before creating
+    if (req.user?.role !== 'admin' && req.user?.clientId?.toString() !== req.body.clientId) {
+      return res.status(403).json({ message: 'Access denied. You can only create your own data.' });
+    }
     try {
       const metrics = await storage.createBodyMetrics(req.body);
       res.json(metrics);
@@ -967,8 +1037,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Client Video routes
-  app.get("/api/clients/:clientId/videos", async (req, res) => {
+  // Client Video routes (owner or admin only)
+  app.get("/api/clients/:clientId/videos", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const videos = await storage.getClientVideos(req.params.clientId);
       res.json(videos);
@@ -977,7 +1047,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/clients/:clientId/videos/:videoId", async (req, res) => {
+  // Assign video to client (admin only - protected)
+  app.post("/api/clients/:clientId/videos/:videoId", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const assignment = await storage.assignVideoToClient(req.params.clientId, req.params.videoId);
       res.json(assignment);
@@ -986,7 +1057,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/clients/:clientId/videos/:videoId", async (req, res) => {
+  // Remove video from client (admin only - protected)
+  app.delete("/api/clients/:clientId/videos/:videoId", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const success = await storage.removeVideoFromClient(req.params.clientId, req.params.videoId);
       if (!success) {
@@ -1036,8 +1108,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Video Progress routes (Continue Watching)
-  app.get("/api/clients/:clientId/video-progress/:videoId", async (req, res) => {
+  // Video Progress routes (Continue Watching) - owner or admin only
+  app.get("/api/clients/:clientId/video-progress/:videoId", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const progress = await storage.getVideoProgress(req.params.clientId, req.params.videoId);
       res.json(progress);
@@ -1046,7 +1118,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/clients/:clientId/video-progress/:videoId", async (req, res) => {
+  // Update video progress (owner or admin only)
+  app.post("/api/clients/:clientId/video-progress/:videoId", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const { watchedDuration, totalDuration } = req.body;
       
@@ -1068,7 +1141,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/clients/:clientId/continue-watching", async (req, res) => {
+  // Get continue watching videos (owner or admin only)
+  app.get("/api/clients/:clientId/continue-watching", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const videos = await storage.getContinueWatching(req.params.clientId);
       res.json(videos);
@@ -1077,8 +1151,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Video Bookmark routes
-  app.get("/api/clients/:clientId/bookmarks", async (req, res) => {
+  // Video Bookmark routes (owner or admin only)
+  app.get("/api/clients/:clientId/bookmarks", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const bookmarks = await storage.getVideoBookmarks(req.params.clientId);
       res.json(bookmarks);
@@ -1087,7 +1161,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/clients/:clientId/bookmarks/:videoId", async (req, res) => {
+  // Create bookmark (owner or admin only)
+  app.post("/api/clients/:clientId/bookmarks/:videoId", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const bookmark = await storage.createVideoBookmark(req.params.clientId, req.params.videoId);
       res.json(bookmark);
@@ -1096,7 +1171,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/clients/:clientId/bookmarks/:videoId", async (req, res) => {
+  // Delete bookmark (owner or admin only)
+  app.delete("/api/clients/:clientId/bookmarks/:videoId", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const success = await storage.deleteVideoBookmark(req.params.clientId, req.params.videoId);
       if (!success) {
@@ -1108,7 +1184,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/clients/:clientId/bookmarks/:videoId/check", async (req, res) => {
+  // Check if video is bookmarked (owner or admin only)
+  app.get("/api/clients/:clientId/bookmarks/:videoId/check", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const isBookmarked = await storage.isVideoBookmarked(req.params.clientId, req.params.videoId);
       res.json({ isBookmarked });
@@ -1117,8 +1194,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Progress Photo routes
-  app.get("/api/clients/:clientId/progress-photos", async (req, res) => {
+  // Progress Photo routes (owner or admin only)
+  app.get("/api/clients/:clientId/progress-photos", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const photos = await storage.getProgressPhotos(req.params.clientId);
       res.json(photos);
@@ -1127,7 +1204,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/clients/:clientId/progress-photos", async (req, res) => {
+  // Create progress photo (owner or admin only)
+  app.post("/api/clients/:clientId/progress-photos", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const { photoUrl, description, weight } = req.body;
       const photo = await storage.createProgressPhoto({
@@ -1142,7 +1220,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/clients/:clientId/progress-photos/:photoId", async (req, res) => {
+  // Delete progress photo (owner or admin only)
+  app.delete("/api/clients/:clientId/progress-photos/:photoId", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const success = await storage.deleteProgressPhoto(req.params.clientId, req.params.photoId);
       if (!success) {
@@ -1540,7 +1619,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/clients/:id/waitlist", async (req, res) => {
+  // Get client waitlist (owner or admin only)
+  app.get("/api/clients/:id/waitlist", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
       const waitlist = await storage.getClientWaitlist(req.params.id);
       res.json(waitlist);
@@ -2980,6 +3060,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filename: `fitpro-backup-${timestamp}.json`,
         data: backupData
       });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GDPR Compliance: User Data Export (authenticated users only)
+  app.get("/api/user/export-data", authenticateToken, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const userData = await exportUserData(req.user.userId, req.user.clientId);
+      
+      // Return as downloadable JSON file
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `user-data-export-${timestamp}.json`;
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.json(userData);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
