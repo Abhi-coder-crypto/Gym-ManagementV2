@@ -6,16 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UtensilsCrossed, Users, BookTemplate, Plus } from "lucide-react";
 import { AssignPlanDialog } from "@/components/assign-plan-dialog";
 
 export default function TrainerDiet() {
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [trainerId, setTrainerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = localStorage.getItem('trainerId');
+    if (id) {
+      setTrainerId(id);
+    }
+  }, []);
 
   const { data: dietPlans = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/diet-plans-with-assignments'],
+    queryKey: [`/api/trainers/${trainerId}/diet-plans`],
+    enabled: !!trainerId,
   });
 
   const { data: templates = [] } = useQuery<any[]>({

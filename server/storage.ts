@@ -54,6 +54,7 @@ export interface IStorage {
   updateUser(id: string, data: Partial<IUser>): Promise<IUser | null>;
   getAllUsers(role?: string): Promise<IUser[]>;
   getAllTrainers(): Promise<IUser[]>;
+  getTrainer(id: string): Promise<IUser | null>;
   deleteUser(id: string): Promise<boolean>;
   initializeDefaultUsers(): Promise<void>;
   
@@ -141,6 +142,9 @@ export interface IStorage {
   getDietPlanTemplates(category?: string): Promise<IDietPlan[]>;
   cloneDietPlan(planId: string, clientId?: string): Promise<IDietPlan>;
   getAllDietPlansWithAssignments(): Promise<any[]>;
+  getTrainerClients(trainerId: string): Promise<IClient[]>;
+  getTrainerDietPlans(trainerId: string): Promise<IDietPlan[]>;
+  getTrainerSessions(trainerId: string): Promise<ILiveSession[]>;
   
   // Meal methods
   getAllMeals(filters?: { category?: string; mealType?: string; search?: string }): Promise<IMeal[]>;
@@ -614,6 +618,41 @@ export class MongoStorage implements IStorage {
   async getAllDietPlansWithAssignments(): Promise<any[]> {
     const plans = await DietPlan.find().populate('clientId');
     return plans;
+  }
+
+  async getTrainerClients(trainerId: string): Promise<IClient[]> {
+    // Get the user to find their trainer profile
+    const user = await User.findById(trainerId);
+    if (!user || !user.trainerId) {
+      return [];
+    }
+    
+    // Get the trainer profile which has the assignedClients
+    const trainerProfile = await Trainer.findById(user.trainerId);
+    if (!trainerProfile || !trainerProfile.assignedClients) {
+      return [];
+    }
+    
+    const assignedClientIds = trainerProfile.assignedClients.map((c: any) => 
+      typeof c === 'object' ? c._id : c
+    );
+    
+    return await Client.find({ _id: { $in: assignedClientIds } })
+      .populate('packageId')
+      .sort({ createdAt: -1 });
+  }
+
+  async getTrainerDietPlans(trainerId: string): Promise<IDietPlan[]> {
+    return await DietPlan.find({ assignedTrainerId: trainerId })
+      .populate('clientId')
+      .populate('assignedTrainerId')
+      .sort({ createdAt: -1 });
+  }
+
+  async getTrainerSessions(trainerId: string): Promise<ILiveSession[]> {
+    return await LiveSession.find({ trainerId: trainerId })
+      .populate('trainerId')
+      .sort({ date: -1 });
   }
 
   // Meal methods
@@ -1322,6 +1361,10 @@ export class MongoStorage implements IStorage {
   
   async getAllTrainers(): Promise<IUser[]> {
     return await this.getAllUsers('trainer');
+  }
+  
+  async getTrainer(id: string): Promise<IUser | null> {
+    return await User.findById(id);
   }
   
   async deleteUser(id: string): Promise<boolean> {

@@ -32,13 +32,9 @@ export default function TrainerClients() {
     }
   }, [setLocation]);
 
-  const { data: trainer } = useQuery<any>({
-    queryKey: ['/api/trainers', trainerId],
+  const { data: myClients = [], isLoading } = useQuery<any[]>({
+    queryKey: [`/api/trainers/${trainerId}/clients`],
     enabled: !!trainerId,
-  });
-
-  const { data: allClients = [] } = useQuery<any[]>({
-    queryKey: ['/api/clients'],
   });
 
   const { data: packages = [] } = useQuery<any[]>({
@@ -50,12 +46,7 @@ export default function TrainerClients() {
     return map;
   }, {});
 
-  const assignedClientIds = trainer?.assignedClients?.map((c: any) => 
-    typeof c === 'object' ? String(c._id) : String(c)
-  ) || [];
-
-  const myClients = allClients
-    .filter(client => assignedClientIds.includes(String(client._id)))
+  const filteredClients = myClients
     .filter(client => 
       client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -97,7 +88,7 @@ export default function TrainerClients() {
                 </div>
                 <Badge className="bg-chart-1" data-testid="badge-total-clients">
                   <Users className="h-3 w-3 mr-1" />
-                  {myClients.length} Active Clients
+                  {filteredClients.length} Active Clients
                 </Badge>
               </div>
 
@@ -112,7 +103,13 @@ export default function TrainerClients() {
                 />
               </div>
 
-              {myClients.length === 0 ? (
+              {isLoading ? (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    Loading clients...
+                  </CardContent>
+                </Card>
+              ) : filteredClients.length === 0 ? (
                 <Card>
                   <CardContent className="py-12 text-center text-muted-foreground">
                     <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -121,7 +118,7 @@ export default function TrainerClients() {
                 </Card>
               ) : (
                 <div className="grid gap-6 md:grid-cols-2">
-                  {myClients.map((client) => (
+                  {filteredClients.map((client) => (
                     <Card key={client._id} data-testid={`card-client-${client._id}`}>
                       <CardHeader>
                         <div className="flex items-start justify-between gap-4">

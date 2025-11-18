@@ -4,12 +4,23 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { Calendar, Clock, Users, Video } from "lucide-react";
 import { format } from "date-fns";
 
 export default function TrainerSessions() {
+  const [trainerId, setTrainerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = localStorage.getItem('trainerId');
+    if (id) {
+      setTrainerId(id);
+    }
+  }, []);
+
   const { data: sessions = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/live-sessions'],
+    queryKey: [`/api/trainers/${trainerId}/sessions`],
+    enabled: !!trainerId,
   });
 
   const upcomingSessions = sessions.filter(s => 

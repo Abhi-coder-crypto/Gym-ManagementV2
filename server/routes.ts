@@ -540,14 +540,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete client (admin only - protected)
-  app.delete("/api/clients/:id", authenticateToken, requireAdmin, async (req, res) => {
+  // Delete client (admin and trainers can delete their assigned clients)
+  app.delete("/api/clients/:id", authenticateToken, async (req, res) => {
     try {
-      const success = await storage.deleteClient(req.params.id);
-      if (!success) {
-        return res.status(404).json({ message: "Client not found" });
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
       }
-      res.json({ success: true });
+
+      // Admins can delete any client
+      if (req.user.role === 'admin') {
+        const success = await storage.deleteClient(req.params.id);
+        if (!success) {
+          return res.status(404).json({ message: "Client not found" });
+        }
+        return res.json({ success: true });
+      }
+
+      // Trainers can only delete their assigned clients
+      if (req.user.role === 'trainer') {
+        const trainerClients = await storage.getTrainerClients(req.user.userId);
+        const clientIds = trainerClients.map(c => String(c._id));
+        
+        if (!clientIds.includes(req.params.id)) {
+          return res.status(403).json({ message: "You can only delete your assigned clients" });
+        }
+        
+        const success = await storage.deleteClient(req.params.id);
+        if (!success) {
+          return res.status(404).json({ message: "Client not found" });
+        }
+        return res.json({ success: true });
+      }
+
+      return res.status(403).json({ message: "Insufficient permissions" });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -3378,6 +3403,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Notification not found" });
       }
       res.json({ message: "Notification deleted successfully" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Trainer-specific API endpoints with authorization
+  app.get("/api/trainers/:id", authenticateToken, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only trainers and admins can access trainer endpoints
+      if (req.user.role !== 'trainer' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied. Trainer or admin role required." });
+      }
+      
+      // Trainers can only access their own data; admins can access any trainer
+      if (req.user.role === 'trainer' && String(req.user.userId) !== req.params.id) {
+        return res.status(403).json({ message: "Access denied. You can only access your own data." });
+      }
+      
+      const trainer = await storage.getTrainer(req.params.id);
+      if (!trainer) {
+        return res.status(404).json({ message: "Trainer not found" });
+      }
+      res.json(trainer);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/trainers/:trainerId/clients", authenticateToken, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only trainers and admins can access trainer endpoints
+      if (req.user.role !== 'trainer' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied. Trainer or admin role required." });
+      }
+      
+      // Trainers can only access their own clients; admins can access any trainer's clients
+      if (req.user.role === 'trainer' && String(req.user.userId) !== req.params.trainerId) {
+        return res.status(403).json({ message: "Access denied. You can only access your own clients." });
+      }
+      
+      const clients = await storage.getTrainerClients(req.params.trainerId);
+      res.json(clients);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/trainers/:trainerId/diet-plans", authenticateToken, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only trainers and admins can access trainer endpoints
+      if (req.user.role !== 'trainer' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied. Trainer or admin role required." });
+      }
+      
+      // Trainers can only access their own diet plans; admins can access any trainer's plans
+      if (req.user.role === 'trainer' && String(req.user.userId) !== req.params.trainerId) {
+        return res.status(403).json({ message: "Access denied. You can only access your own diet plans." });
+      }
+      
+      const plans = await storage.getTrainerDietPlans(req.params.trainerId);
+      res.json(plans);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/trainers/:trainerId/sessions", authenticateToken, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only trainers and admins can access trainer endpoints
+      if (req.user.role !== 'trainer' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied. Trainer or admin role required." });
+      }
+      
+      // Trainers can only access their own sessions; admins can access any trainer's sessions
+      if (req.user.role === 'trainer' && String(req.user.userId) !== req.params.trainerId) {
+        return res.status(403).json({ message: "Access denied. You can only access your own sessions." });
+      }
+      
+      const sessions = await storage.getTrainerSessions(req.params.trainerId);
+      res.json(sessions);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
