@@ -112,22 +112,22 @@ export default function AdminClients() {
     },
   });
 
-  const deleteClientMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const response = await apiRequest(`/api/clients/${id}`, 'DELETE');
+  const toggleClientStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const response = await apiRequest(`/api/clients/${id}/status`, 'PATCH', { status });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
       toast({
         title: "Success",
-        description: "Client deleted successfully",
+        description: `Client status updated to ${variables.status}`,
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to delete client",
+        description: "Failed to update client status",
         variant: "destructive",
       });
     },
@@ -391,6 +391,7 @@ export default function AdminClients() {
                       <TableHead>Email</TableHead>
                       <TableHead>Package</TableHead>
                       <TableHead>Goal</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -435,6 +436,14 @@ export default function AdminClients() {
                               <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={client.status === 'active' ? 'default' : client.status === 'inactive' ? 'secondary' : 'outline'}
+                              data-testid={`badge-status-${client._id}`}
+                            >
+                              {client.status || 'active'}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
                               <Button
@@ -446,12 +455,15 @@ export default function AdminClients() {
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => deleteClientMutation.mutate(client._id)}
-                                data-testid={`button-delete-${client._id}`}
+                                variant={client.status === 'active' ? 'ghost' : 'default'}
+                                size="sm"
+                                onClick={() => toggleClientStatusMutation.mutate({
+                                  id: client._id,
+                                  status: client.status === 'active' ? 'inactive' : 'active'
+                                })}
+                                data-testid={`button-toggle-status-${client._id}`}
                               >
-                                <Trash2 className="h-4 w-4 text-destructive" />
+                                {client.status === 'active' ? 'Deactivate' : 'Activate'}
                               </Button>
                             </div>
                           </TableCell>

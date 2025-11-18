@@ -1665,38 +1665,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to sanitize session data for clients
+  const sanitizeSessionForClient = (session: any, userRole?: string) => {
+    // Only admins and trainers can see startUrl and hostId
+    if (userRole === 'admin' || userRole === 'trainer') {
+      return session;
+    }
+    
+    // For clients, remove sensitive fields
+    const { startUrl, hostId, ...clientSafeSession } = session.toObject ? session.toObject() : session;
+    return clientSafeSession;
+  };
+
   // Live Session routes
-  app.get("/api/sessions", async (_req, res) => {
+  app.get("/api/sessions", optionalAuth, async (req, res) => {
     try {
       const sessions = await storage.getAllSessions();
-      res.json(sessions);
+      const sanitizedSessions = sessions.map(s => sanitizeSessionForClient(s, req.user?.role));
+      res.json(sanitizedSessions);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.get("/api/sessions/:id", async (req, res) => {
+  app.get("/api/sessions/:id", optionalAuth, async (req, res) => {
     try {
       const session = await storage.getSession(req.params.id);
       if (!session) {
         return res.status(404).json({ message: "Session not found" });
       }
-      res.json(session);
+      const sanitizedSession = sanitizeSessionForClient(session, req.user?.role);
+      res.json(sanitizedSession);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.get("/api/sessions/client/:clientId", async (req, res) => {
+  app.get("/api/sessions/client/:clientId", optionalAuth, async (req, res) => {
     try {
       const sessions = await storage.getClientSessions(req.params.clientId);
-      res.json(sessions);
+      const sanitizedSessions = sessions.map(s => sanitizeSessionForClient(s, req.user?.role));
+      res.json(sanitizedSessions);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.post("/api/sessions", async (req, res) => {
+  app.post("/api/sessions", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const session = await storage.createSession(req.body);
       res.json(session);
@@ -1705,7 +1720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/sessions/:id", async (req, res) => {
+  app.patch("/api/sessions/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const session = await storage.updateSession(req.params.id, req.body);
       if (!session) {

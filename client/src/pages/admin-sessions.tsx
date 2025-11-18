@@ -19,7 +19,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar as CalendarIcon, Users, Clock, Trash2, UserPlus, List } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Users, Clock, Trash2, UserPlus, List, Video } from "lucide-react";
 import { format } from "date-fns";
 
 const SESSION_TYPES = ["Power Yoga", "HIIT", "Cardio Bootcamp", "Strength Building", "Flexibility"];
@@ -131,6 +131,19 @@ export default function AdminSessions() {
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message || "Failed to book session", variant: "destructive" });
+    },
+  });
+
+  const createZoomMeetingMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      return await apiRequest("POST", `/api/sessions/${sessionId}/create-zoom`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+      toast({ title: "Success", description: "Zoom meeting created successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create Zoom meeting", variant: "destructive" });
     },
   });
 
@@ -251,6 +264,24 @@ export default function AdminSessions() {
                         </div>
 
                         <div className="flex gap-2">
+                          {!session.joinUrl && session.status === "upcoming" && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => createZoomMeetingMutation.mutate(session._id)}
+                              data-testid={`button-create-zoom-${session._id}`}
+                              disabled={createZoomMeetingMutation.isPending}
+                            >
+                              <Video className="h-4 w-4 mr-1" />
+                              Create Zoom
+                            </Button>
+                          )}
+                          {session.joinUrl && (
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <Video className="h-3 w-3" />
+                              Zoom Ready
+                            </Badge>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"

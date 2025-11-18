@@ -56,9 +56,10 @@ export default function ClientSessions() {
         participants: session.currentParticipants || 0,
         maxParticipants: session.maxParticipants || 15,
         status: session.status,
-        meetingLink: session.meetingLink,
+        meetingLink: session.joinUrl || session.meetingLink,
         sessionType: session.sessionType,
         scheduledAt: session.scheduledAt,
+        joinUrl: session.joinUrl,
       };
     };
 
