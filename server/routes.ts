@@ -8,12 +8,23 @@ import { authenticateToken, requireAdmin, requireRole, optionalAuth, requireOwne
 import { exportUserData } from "./utils/data-export";
 import { emailService } from "./utils/email";
 import crypto from "crypto";
+import { 
+  loginRateLimiter, 
+  uploadRateLimiter, 
+  paymentWebhookRateLimiter,
+  signupRateLimiter,
+  passwordResetRateLimiter,
+  generalApiRateLimiter
+} from "./middleware/rate-limit";
 
 const resetTokens = new Map<string, { email: string; expiry: Date }>();
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Apply general API rate limiting to all /api routes
+  app.use('/api', generalApiRateLimiter);
+  
   // Authentication routes
-  app.post("/api/auth/signup", async (req, res) => {
+  app.post("/api/auth/signup", signupRateLimiter, async (req, res) => {
     try {
       const { email, password, name, phone } = req.body;
       
@@ -76,7 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", loginRateLimiter, async (req, res) => {
     try {
       const { email, password } = req.body;
       
@@ -148,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Request password reset
-  app.post("/api/auth/forgot-password", async (req, res) => {
+  app.post("/api/auth/forgot-password", passwordResetRateLimiter, async (req, res) => {
     try {
       const { email } = req.body;
       
@@ -185,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Reset password with token
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.post("/api/auth/reset-password", passwordResetRateLimiter, async (req, res) => {
     try {
       const { token, newPassword } = req.body;
       
@@ -216,41 +227,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       resetTokens.delete(token);
       
       res.json({ message: "Password reset successfully" });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-  
-  // Direct password reset (NO EMAIL/TOKEN REQUIRED)
-  app.post("/api/auth/reset-password-direct", async (req, res) => {
-    try {
-      const { email, newPassword } = req.body;
-      
-      if (!email || !newPassword) {
-        return res.status(400).json({ message: "Email and new password are required" });
-      }
-      
-      if (!validateEmail(email)) {
-        return res.status(400).json({ message: "Invalid email format" });
-      }
-      
-      const passwordValidation = validatePassword(newPassword);
-      if (!passwordValidation.valid) {
-        return res.status(400).json({ message: passwordValidation.message });
-      }
-      
-      const normalizedEmail = email.toLowerCase();
-      const user = await storage.getUserByEmail(normalizedEmail);
-      if (!user) {
-        return res.status(404).json({ message: "No account found with this email address" });
-      }
-      
-      const hashedPassword = await hashPassword(newPassword);
-      await storage.updateUser(user._id.toString(), { password: hashedPassword });
-      
-      res.json({ 
-        message: "Password reset successfully. You can now login with your new password." 
-      });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -3406,6 +3382,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
+
+  // Import and use encrypted files routes
+  const encryptedFilesRouter = await import('./routes/encrypted-files');
+  app.use('/api/encrypted-files', encryptedFilesRouter.default);
 
   const httpServer = createServer(app);
 

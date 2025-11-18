@@ -221,6 +221,12 @@ export interface IProgressPhoto extends Document {
   description?: string;
   weight?: number;
   uploadedAt: Date;
+  isEncrypted?: boolean;
+  encryptionIV?: string;
+  encryptionSalt?: string;
+  encryptionTag?: string;
+  originalName?: string;
+  mimetype?: string;
 }
 
 export interface IAchievement extends Document {
@@ -499,6 +505,12 @@ const ProgressPhotoSchema = new Schema({
   description: String,
   weight: Number,
   uploadedAt: { type: Date, default: Date.now },
+  isEncrypted: { type: Boolean, default: false },
+  encryptionIV: String,
+  encryptionSalt: String,
+  encryptionTag: String,
+  originalName: String,
+  mimetype: String,
 });
 
 const AchievementSchema = new Schema({
