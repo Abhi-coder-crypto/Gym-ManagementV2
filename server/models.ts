@@ -160,6 +160,7 @@ export interface ILiveSession extends Document {
   meetingLink?: string;
   meetingPassword?: string;
   trainerName?: string;
+  trainerId?: string;
   maxCapacity: number;
   currentCapacity: number;
   status: string;
@@ -171,6 +172,10 @@ export interface ILiveSession extends Document {
   recordingUrl?: string;
   recordingPassword?: string;
   recordingAvailableUntil?: Date;
+  zoomMeetingId?: string;
+  joinUrl?: string;
+  startUrl?: string;
+  hostId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -444,6 +449,7 @@ const LiveSessionSchema = new Schema({
   meetingLink: String,
   meetingPassword: String,
   trainerName: String,
+  trainerId: String,
   maxCapacity: { type: Number, default: 15, required: true },
   currentCapacity: { type: Number, default: 0, required: true },
   status: { type: String, default: 'upcoming', required: true },
@@ -455,6 +461,10 @@ const LiveSessionSchema = new Schema({
   recordingUrl: String,
   recordingPassword: String,
   recordingAvailableUntil: Date,
+  zoomMeetingId: String,
+  joinUrl: String,
+  startUrl: String,
+  hostId: String,
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
