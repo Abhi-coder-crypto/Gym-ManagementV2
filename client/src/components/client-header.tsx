@@ -37,7 +37,7 @@ export function ClientHeader({ currentPage }: ClientHeaderProps) {
           </button>
 
           {/* Main Navigation */}
-          <nav className="hidden md:flex items-center gap-2 flex-1 justify-center">
+          <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
               <Button 
                 variant="ghost" 
                 className={currentPage === 'dashboard' ? 'bg-accent' : ''} 
@@ -181,7 +181,7 @@ export function ClientHeader({ currentPage }: ClientHeaderProps) {
             </nav>
 
           {/* Icon Buttons */}
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-1 flex-shrink-0">
             <CalculatorDialog />
             <SessionReminders />
             <NotificationBell />
