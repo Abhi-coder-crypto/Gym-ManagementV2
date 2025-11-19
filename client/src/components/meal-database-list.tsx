@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Copy, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AssignPlanDialog } from "@/components/assign-plan-dialog";
 
 const MEAL_TYPES = [
   { value: 'breakfast', label: 'Breakfast' },
@@ -21,9 +22,33 @@ export function MealDatabaseList() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [mealTypeFilter, setMealTypeFilter] = useState<string>("all");
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState<any>(null);
 
   const { data: meals = [], isLoading } = useQuery<any[]>({
     queryKey: ['/api/meals'],
+  });
+
+  const cloneMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("POST", `/api/meals/${id}/clone`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/meals'] });
+      toast({ title: "Success", description: "Meal cloned successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/meals/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/meals'] });
+      toast({ title: "Success", description: "Meal deleted successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
   });
 
   const filteredMeals = meals.filter((meal) => {
@@ -82,7 +107,7 @@ export function MealDatabaseList() {
                   <Badge variant="outline">{meal.mealType}</Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Calories:</span>
@@ -101,11 +126,58 @@ export function MealDatabaseList() {
                     <span className="font-semibold">{meal.fats}g</span>
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    variant="default" 
+                    size="sm"
+                    onClick={() => {
+                      setSelectedMeal(meal);
+                      setAssignDialogOpen(true);
+                    }}
+                    data-testid={`button-assign-${meal._id}`}
+                  >
+                    <UserPlus className="h-3 w-3 mr-1" />
+                    Assign
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => cloneMutation.mutate(meal._id)}
+                    data-testid={`button-clone-${meal._id}`}
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Clone
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    data-testid={`button-edit-${meal._id}`}
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    Edit
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => deleteMutation.mutate(meal._id)}
+                    data-testid={`button-delete-${meal._id}`}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Delete
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <AssignPlanDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        plan={selectedMeal}
+        resourceType="meal"
+      />
     </div>
   );
 }
