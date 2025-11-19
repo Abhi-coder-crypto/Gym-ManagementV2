@@ -16,6 +16,7 @@ const MEAL_TYPES = [
   { value: 'snack', label: 'Snack' },
 ];
 
+// Force rebuild - filters should display
 export function MealDatabaseList() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");

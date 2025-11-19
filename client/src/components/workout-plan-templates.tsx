@@ -42,6 +42,7 @@ interface WorkoutPlanFormData {
   exercises: Record<string, { exercises: Array<{ name: string; sets: number; reps: string; rest: string; notes: string }> }>;
 }
 
+// Force rebuild - filters should display
 export function WorkoutPlanTemplates() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
