@@ -14,7 +14,7 @@ interface AssignPlanDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   plan: any;
-  resourceType?: 'diet' | 'workout';
+  resourceType?: 'diet' | 'workout' | 'meal';
 }
 
 export function AssignPlanDialog({ open, onOpenChange, plan, resourceType = 'diet' }: AssignPlanDialogProps) {
@@ -54,6 +54,8 @@ export function AssignPlanDialog({ open, onOpenChange, plan, resourceType = 'die
       
       const endpoint = resourceType === 'workout' 
         ? `/api/workout-plan-templates/${plan._id}/clone`
+        : resourceType === 'meal'
+        ? `/api/meals/${plan._id}/clone`
         : `/api/diet-plans/${plan._id}/clone`;
       
       const assignments = clientIds.map(clientId => 
@@ -65,22 +67,26 @@ export function AssignPlanDialog({ open, onOpenChange, plan, resourceType = 'die
     onSuccess: (_, clientIds) => {
       if (resourceType === 'workout') {
         queryClient.invalidateQueries({ queryKey: ['/api/workout-plan-templates'] });
+      } else if (resourceType === 'meal') {
+        queryClient.invalidateQueries({ queryKey: ['/api/meals'] });
       } else {
         queryClient.invalidateQueries({ queryKey: ['/api/diet-plans-with-assignments'] });
         queryClient.invalidateQueries({ queryKey: ['/api/diet-plan-templates'] });
       }
+      const resourceLabel = resourceType === 'workout' ? 'Workout' : resourceType === 'meal' ? 'Meal' : 'Diet';
       toast({
         title: "Success",
-        description: `${resourceType === 'workout' ? 'Workout' : 'Diet'} plan assigned to ${clientIds.length} client(s)`,
+        description: `${resourceLabel} plan assigned to ${clientIds.length} client(s)`,
       });
       onOpenChange(false);
       setSelectedClients(new Set());
       setSearchQuery("");
     },
     onError: () => {
+      const resourceLabel = resourceType === 'workout' ? 'workout' : resourceType === 'meal' ? 'meal' : 'diet';
       toast({
         title: "Error",
-        description: `Failed to assign ${resourceType === 'workout' ? 'workout' : 'diet'} plan`,
+        description: `Failed to assign ${resourceLabel} plan`,
         variant: "destructive",
       });
     },
@@ -123,7 +129,7 @@ export function AssignPlanDialog({ open, onOpenChange, plan, resourceType = 'die
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
-            Assign {resourceType === 'workout' ? 'Workout' : 'Diet'} Plan
+            Assign {resourceType === 'workout' ? 'Workout' : resourceType === 'meal' ? 'Meal' : 'Diet'} Plan
           </DialogTitle>
           <DialogDescription>
             Assign "{plan.name}" to one or more clients
@@ -150,6 +156,21 @@ export function AssignPlanDialog({ open, onOpenChange, plan, resourceType = 'die
                   </div>
                   <div>
                     <span className="text-muted-foreground">Days:</span> {Object.keys(plan.exercises || {}).length} configured
+                  </div>
+                </>
+              ) : resourceType === 'meal' ? (
+                <>
+                  <div>
+                    <span className="text-muted-foreground">Calories:</span> {plan.calories || 0}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Meal Type:</span> {plan.mealType || 'N/A'}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Protein:</span> {plan.protein || 0}g
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Carbs/Fats:</span> {plan.carbs || 0}g / {plan.fats || 0}g
                   </div>
                 </>
               ) : (

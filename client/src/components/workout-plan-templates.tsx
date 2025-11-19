@@ -97,6 +97,17 @@ export function WorkoutPlanTemplates() {
     },
   });
 
+  const cloneMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("POST", `/api/workout-plan-templates/${id}/clone`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/workout-plan-templates'] });
+      toast({ title: "Success", description: "Workout plan template cloned successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/workout-plan-templates/${id}`),
     onSuccess: () => {
@@ -448,11 +459,10 @@ export function WorkoutPlanTemplates() {
                 <div className="text-sm text-muted-foreground">
                   {Object.keys(plan.exercises || {}).length} day(s) configured
                 </div>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <Button 
                     variant="default" 
-                    size="sm" 
-                    className="flex-1"
+                    size="sm"
                     onClick={() => {
                       setSelectedPlan(plan);
                       setAssignDialogOpen(true);
@@ -462,7 +472,21 @@ export function WorkoutPlanTemplates() {
                     <UserPlus className="h-3 w-3 mr-1" />
                     Assign
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleEdit(plan)} className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => cloneMutation.mutate(plan._id)}
+                    data-testid={`button-clone-${plan._id}`}
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Clone
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleEdit(plan)}
+                    data-testid={`button-edit-${plan._id}`}
+                  >
                     <Edit className="h-3 w-3 mr-1" />
                     Edit
                   </Button>
@@ -470,7 +494,6 @@ export function WorkoutPlanTemplates() {
                     variant="outline" 
                     size="sm" 
                     onClick={() => deleteMutation.mutate(plan._id)}
-                    className="flex-1"
                     data-testid={`button-delete-${plan._id}`}
                   >
                     <Trash2 className="h-3 w-3 mr-1" />
