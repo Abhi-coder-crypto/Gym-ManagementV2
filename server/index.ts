@@ -131,6 +131,7 @@ app.use((req, res, next) => {
         
         demoClient = await storage.createClient({
           name: "Abhijeet Singh",
+          email: "abhijeet@gmail.com",
           phone: demoClientPhone,
           packageId: premiumPackage?._id?.toString() || "",
           age: 28,
@@ -248,10 +249,10 @@ app.use((req, res, next) => {
         yesterday.setHours(17, 30, 0, 0);
         
         const sessions = [
-          { title: "Power Yoga Session", description: "Energizing yoga flow", scheduledAt: tomorrow, duration: 60, status: "upcoming", meetingLink: "https://meet.example.com/yoga1" },
-          { title: "HIIT Training", description: "High intensity interval training", scheduledAt: dayAfter, duration: 45, status: "upcoming", meetingLink: "https://meet.example.com/hiit1" },
-          { title: "Strength Building", description: "Full body strength", scheduledAt: yesterday, duration: 50, status: "completed", meetingLink: "https://meet.example.com/strength1" },
-          { title: "Cardio Bootcamp", description: "Morning cardio session", scheduledAt: tomorrow, duration: 40, status: "upcoming", meetingLink: "https://meet.example.com/cardio1" },
+          { title: "Power Yoga Session", description: "Energizing yoga flow", sessionType: "Power Yoga", scheduledAt: tomorrow, duration: 60, status: "upcoming", meetingLink: "https://meet.example.com/yoga1" },
+          { title: "HIIT Training", description: "High intensity interval training", sessionType: "HIIT", scheduledAt: dayAfter, duration: 45, status: "upcoming", meetingLink: "https://meet.example.com/hiit1" },
+          { title: "Strength Building", description: "Full body strength", sessionType: "Strength Building", scheduledAt: yesterday, duration: 50, status: "completed", meetingLink: "https://meet.example.com/strength1" },
+          { title: "Cardio Bootcamp", description: "Morning cardio session", sessionType: "Cardio Bootcamp", scheduledAt: tomorrow, duration: 40, status: "upcoming", meetingLink: "https://meet.example.com/cardio1" },
         ];
         
         for (const session of sessions) {
