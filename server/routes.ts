@@ -1713,7 +1713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/diet-plans/:id", async (req, res) => {
+  app.delete("/api/diet-plans/:id", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
     try {
       const success = await storage.deleteDietPlan(req.params.id);
       if (!success) {
@@ -1746,9 +1746,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/diet-plans-with-assignments", async (_req, res) => {
+  app.get("/api/diet-plans-with-assignments", authenticateToken, async (req, res) => {
     try {
-      const plans = await storage.getAllDietPlansWithAssignments();
+      let plans = await storage.getAllDietPlansWithAssignments();
+      
+      // Filter by trainer if user is a trainer
+      if (req.user?.role === 'trainer') {
+        plans = plans.filter((plan: any) => plan.trainerId?.toString() === req.user?.userId?.toString());
+      }
+      
       res.json(plans);
     } catch (error: any) {
       res.status(500).json({ message: error.message });

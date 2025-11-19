@@ -44,7 +44,7 @@ export default function AdminSettings() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('/api/settings', 'PUT', data);
+      const response = await apiRequest('PUT', '/api/settings', data);
       return response.json();
     },
     onSuccess: () => {
@@ -115,7 +115,7 @@ export default function AdminSettings() {
           <main className="flex-1 overflow-auto p-8">
             <div className="max-w-6xl mx-auto space-y-6">
               <Tabs defaultValue="branding" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
+                <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
                   <TabsTrigger value="branding" data-testid="tab-branding">
                     <Palette className="w-4 h-4 mr-2" />
                     Branding
@@ -131,10 +131,6 @@ export default function AdminSettings() {
                   <TabsTrigger value="email" data-testid="tab-email">
                     <Mail className="w-4 h-4 mr-2" />
                     Email
-                  </TabsTrigger>
-                  <TabsTrigger value="roles" data-testid="tab-roles">
-                    <Users className="w-4 h-4 mr-2" />
-                    Roles
                   </TabsTrigger>
                   <TabsTrigger value="notifications" data-testid="tab-notifications">
                     <Bell className="w-4 h-4 mr-2" />
@@ -458,88 +454,6 @@ export default function AdminSettings() {
                   </div>
                 </TabsContent>
 
-                {/* User Roles */}
-                <TabsContent value="roles">
-                  <div className="space-y-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Users className="w-5 h-5" />
-                          Trainer Management
-                        </CardTitle>
-                        <CardDescription>
-                          Create and manage trainer accounts with login credentials
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <p className="text-sm text-muted-foreground">
-                          Use the Trainers page to create new trainer accounts, assign clients, and manage their credentials. 
-                          Each trainer will receive a unique email and password to access the system.
-                        </p>
-                        <div className="flex flex-col gap-4 sm:flex-row">
-                          <Button 
-                            onClick={() => window.location.href = '/admin/trainers'}
-                            data-testid="button-manage-trainers"
-                          >
-                            <Users className="w-4 h-4 mr-2" />
-                            Manage Trainers
-                          </Button>
-                          <Button 
-                            variant="outline"
-                            onClick={() => window.location.href = '/admin/client-setup'}
-                            data-testid="button-setup-clients"
-                          >
-                            <Users className="w-4 h-4 mr-2" />
-                            Setup Client Credentials
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>User Roles Overview</CardTitle>
-                        <CardDescription>
-                          System roles and their capabilities
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="p-4 border rounded-md space-y-2">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium">Admin</h4>
-                            <Badge>Full Access</Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Complete system control including client management, trainer management, 
-                            package configuration, billing, and system settings.
-                          </p>
-                        </div>
-
-                        <div className="p-4 border rounded-md space-y-2">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium">Trainer</h4>
-                            <Badge variant="secondary">Limited Access</Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Manage assigned clients, create diet plans and workout programs, 
-                            conduct live sessions, and track client progress.
-                          </p>
-                        </div>
-
-                        <div className="p-4 border rounded-md space-y-2">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium">Client</h4>
-                            <Badge variant="outline">User Access</Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Access personal dashboard, view assigned workouts and diet plans, 
-                            track progress, join live sessions, and communicate with trainers.
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
 
                 {/* Notification Settings */}
                 <TabsContent value="notifications">

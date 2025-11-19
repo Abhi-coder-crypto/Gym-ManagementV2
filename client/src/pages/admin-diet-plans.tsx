@@ -42,6 +42,14 @@ export default function AdminDietPlans() {
   const [editingMeal, setEditingMeal] = useState<any>(null);
   const [createWorkoutOpen, setCreateWorkoutOpen] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
+  const [assignMode, setAssignMode] = useState<'assign' | 'reassign'>('assign');
+
+  const { data: currentUser } = useQuery<any>({
+    queryKey: ['/api/auth/me'],
+  });
+
+  const isAdmin = currentUser?.role === 'admin';
+  const isTrainer = currentUser?.role === 'trainer';
 
   const { data: templates = [], isLoading: templatesLoading } = useQuery<any[]>({
     queryKey: ['/api/diet-plan-templates', categoryFilter],
@@ -66,6 +74,7 @@ export default function AdminDietPlans() {
 
   const { data: assignments = [], isLoading: assignmentsLoading } = useQuery<any[]>({
     queryKey: ['/api/diet-plans-with-assignments'],
+    enabled: !!currentUser, // Only run query when user is loaded
   });
 
   const { data: workoutPlans = [], isLoading: workoutPlansLoading } = useQuery<any[]>({
@@ -621,12 +630,40 @@ export default function AdminDietPlans() {
 
                 {/* Assignments Tab */}
                 <TabsContent value="assignments" className="space-y-6 mt-6">
+                  {isAdmin && (
+                    <div className="flex items-center justify-between mb-6 p-4 bg-muted rounded-md">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant={assignMode === 'assign' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setAssignMode('assign')}
+                          data-testid="button-mode-assign"
+                        >
+                          Assign New
+                        </Button>
+                        <Button
+                          variant={assignMode === 'reassign' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setAssignMode('reassign')}
+                          data-testid="button-mode-reassign"
+                        >
+                          Reassign Existing
+                        </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {assignMode === 'assign' ? 'Assign new plans to clients' : 'Reassign existing plans to different clients'}
+                      </p>
+                    </div>
+                  )}
+                  
                   {assignmentsLoading ? (
                     <div className="text-center py-12 text-muted-foreground">Loading assignments...</div>
                   ) : assignments.length === 0 ? (
                     <div className="text-center py-12">
                       <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">No diet plans assigned to clients yet</p>
+                      <p className="text-muted-foreground">
+                        {isTrainer ? 'No diet plans assigned to your clients yet' : 'No diet plans assigned to clients yet'}
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -652,7 +689,22 @@ export default function AdminDietPlans() {
                                   </div>
                                 </div>
                               </div>
-                              <Badge>{plan.clientId?.status || "Active"}</Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={plan.clientId?.status === 'active' ? 'default' : 'outline'}>
+                                  {plan.clientId?.status || "Active"}
+                                </Badge>
+                                {isAdmin && assignMode === 'reassign' && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleAssign(plan)}
+                                    data-testid="button-reassign"
+                                  >
+                                    <Users className="h-3 w-3 mr-1" />
+                                    Reassign
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
