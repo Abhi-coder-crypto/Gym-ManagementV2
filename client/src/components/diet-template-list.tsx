@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Edit, Trash2, Copy } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Copy, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AssignPlanDialog } from "@/components/assign-plan-dialog";
 
 const DIET_CATEGORIES = [
   { value: 'weight_loss', label: 'Weight Loss' },
@@ -22,6 +23,8 @@ export function DietTemplateList() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
 
   const { data: templates = [], isLoading } = useQuery<any[]>({
     queryKey: ['/api/diet-plan-templates'],
@@ -114,6 +117,19 @@ export function DietTemplateList() {
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => {
+                      setSelectedPlan(template);
+                      setAssignDialogOpen(true);
+                    }}
+                    data-testid={`button-assign-${template._id}`}
+                  >
+                    <UserPlus className="h-3 w-3 mr-1" />
+                    Assign
+                  </Button>
                   <Button variant="outline" size="sm" className="flex-1">
                     <Edit className="h-3 w-3 mr-1" />
                     Edit
@@ -133,6 +149,12 @@ export function DietTemplateList() {
           ))}
         </div>
       )}
+
+      <AssignPlanDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        plan={selectedPlan}
+      />
     </div>
   );
 }

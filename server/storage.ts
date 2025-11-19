@@ -132,11 +132,12 @@ export interface IStorage {
   // Workout Plan methods
   getClientWorkoutPlans(clientId: string): Promise<IWorkoutPlan[]>;
   getWorkoutPlan(id: string): Promise<IWorkoutPlan | null>;
-  getWorkoutPlanTemplates(): Promise<IWorkoutPlan[]>;
   getAllWorkoutPlans(search?: string, category?: string): Promise<IWorkoutPlan[]>;
   createWorkoutPlan(data: Partial<IWorkoutPlan>): Promise<IWorkoutPlan>;
   updateWorkoutPlan(id: string, data: Partial<IWorkoutPlan>): Promise<IWorkoutPlan | null>;
   deleteWorkoutPlan(id: string): Promise<boolean>;
+  getWorkoutPlanTemplates(category?: string): Promise<IWorkoutPlan[]>;
+  cloneWorkoutPlan(planId: string, clientId?: string): Promise<IWorkoutPlan>;
   
   // Diet Plan methods
   getClientDietPlans(clientId: string): Promise<IDietPlan[]>;
@@ -576,10 +577,6 @@ export class MongoStorage implements IStorage {
     return await WorkoutPlan.findById(id);
   }
 
-  async getWorkoutPlanTemplates(): Promise<IWorkoutPlan[]> {
-    return await WorkoutPlan.find({ isTemplate: true }).sort({ createdAt: -1 });
-  }
-
   async getAllWorkoutPlans(search?: string, category?: string): Promise<IWorkoutPlan[]> {
     const filter: any = {};
     if (search) {
@@ -608,6 +605,43 @@ export class MongoStorage implements IStorage {
   async deleteWorkoutPlan(id: string): Promise<boolean> {
     const result = await WorkoutPlan.findByIdAndDelete(id);
     return !!result;
+  }
+
+  async getWorkoutPlanTemplates(category?: string): Promise<IWorkoutPlan[]> {
+    const query: any = { isTemplate: true };
+    if (category) {
+      query.category = category;
+    }
+    return await WorkoutPlan.find(query).sort({ createdAt: -1 });
+  }
+
+  async cloneWorkoutPlan(planId: string, clientId?: string): Promise<IWorkoutPlan> {
+    const originalPlan = await WorkoutPlan.findById(planId);
+    if (!originalPlan) {
+      throw new Error('Workout plan not found');
+    }
+    
+    const clonedPlan = new WorkoutPlan({
+      clientId: clientId || undefined,
+      name: clientId ? originalPlan.name : `${originalPlan.name} (Copy)`,
+      description: originalPlan.description,
+      goal: originalPlan.goal,
+      category: originalPlan.category,
+      durationWeeks: originalPlan.durationWeeks,
+      exercises: originalPlan.exercises,
+      isTemplate: clientId ? false : originalPlan.isTemplate,
+      createdBy: originalPlan.createdBy,
+      difficulty: originalPlan.difficulty,
+      clonedFrom: planId,
+    });
+    
+    if (originalPlan.isTemplate) {
+      await WorkoutPlan.findByIdAndUpdate(planId, { 
+        $inc: { assignedCount: 1, timesCloned: 1 } 
+      });
+    }
+    
+    return await clonedPlan.save();
   }
 
   // Diet Plan methods

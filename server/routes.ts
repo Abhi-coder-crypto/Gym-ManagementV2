@@ -1604,6 +1604,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/workout-plan-templates/:id/clone", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
+    try {
+      const { clientId } = req.body;
+      const clonedPlan = await storage.cloneWorkoutPlan(req.params.id, clientId);
+      res.json(clonedPlan);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get all workout plans (for admin/trainer) with optional search and category filter
   app.get("/api/workout-plans", async (req, res) => {
     try {
@@ -1756,6 +1766,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(plans);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get plan assignments (diet + workout) for clients
+  app.get("/api/diet-plan-assignments", authenticateToken, async (req, res) => {
+    try {
+      let clients = await storage.getAllClients();
+      
+      // Filter by trainer if user is a trainer
+      if (req.user?.role === 'trainer') {
+        clients = clients.filter((client: any) => 
+          client.trainerId?.toString() === req.user?.userId?.toString()
+        );
+      }
+      
+      // Get assignments for each client
+      const assignments = await Promise.all(
+        clients.map(async (client: any) => {
+          const dietPlans = await storage.getClientDietPlans(client._id.toString());
+          const workoutPlans = await storage.getClientWorkoutPlans(client._id.toString());
+          
+          return {
+            _id: client._id,
+            clientName: client.name,
+            clientEmail: client.email,
+            dietPlanName: dietPlans.length > 0 ? dietPlans[0].name : null,
+            workoutPlanName: workoutPlans.length > 0 ? workoutPlans[0].name : null,
+            dietPlanId: dietPlans.length > 0 ? dietPlans[0]._id : null,
+            workoutPlanId: workoutPlans.length > 0 ? workoutPlans[0]._id : null,
+          };
+        })
+      );
+      
+      // Filter out clients with no assignments
+      const assignmentsWithPlans = assignments.filter(
+        (a: any) => a.dietPlanName || a.workoutPlanName
+      );
+      
+      res.json(assignmentsWithPlans);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

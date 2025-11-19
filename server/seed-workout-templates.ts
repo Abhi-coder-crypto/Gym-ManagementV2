@@ -267,6 +267,274 @@ const workoutTemplates = [
         ]
       }
     }
+  },
+
+  // GENERAL FITNESS PLANS - 7 Different Programs
+  {
+    name: "Beginner's Full Body Routine",
+    description: "Perfect for beginners starting their fitness journey. Focuses on basic movements and building foundational strength.",
+    category: "general",
+    difficulty: "beginner",
+    durationWeeks: 6,
+    isTemplate: true,
+    createdBy: "admin",
+    exercises: {
+      Monday: {
+        muscleGroup: "Full Body",
+        exercises: [
+          { name: "Bodyweight Squats", sets: 3, reps: "12-15", rest: "60s", notes: "Focus on form" },
+          { name: "Push-ups (Modified if needed)", sets: 3, reps: "8-12", rest: "60s", notes: "Chest to ground" },
+          { name: "Walking Lunges", sets: 3, reps: "10 each leg", rest: "60s", notes: "Keep torso upright" },
+          { name: "Plank", sets: 3, reps: "20-30 seconds", rest: "45s", notes: "Straight body line" },
+          { name: "Glute Bridges", sets: 3, reps: "15-20", rest: "45s", notes: "Squeeze at top" },
+        ]
+      },
+      Wednesday: {
+        muscleGroup: "Cardio & Core",
+        exercises: [
+          { name: "Brisk Walking", sets: 1, reps: "20-25 minutes", rest: "N/A", notes: "Maintain steady pace" },
+          { name: "Dead Bug", sets: 3, reps: "10 each side", rest: "30s", notes: "Press lower back down" },
+          { name: "Bird Dog", sets: 3, reps: "10 each side", rest: "30s", notes: "Maintain balance" },
+          { name: "Side Plank", sets: 2, reps: "15-20 seconds each", rest: "30s", notes: "Both sides" },
+          { name: "Cat-Cow Stretch", sets: 2, reps: "10 reps", rest: "20s", notes: "Slow and controlled" },
+        ]
+      },
+      Friday: {
+        muscleGroup: "Strength & Balance",
+        exercises: [
+          { name: "Wall Push-ups", sets: 3, reps: "12-15", rest: "60s", notes: "Easier variation" },
+          { name: "Chair Squats", sets: 3, reps: "12-15", rest: "60s", notes: "Touch and stand" },
+          { name: "Standing Leg Raises", sets: 3, reps: "12 each leg", rest: "45s", notes: "Hold for balance" },
+          { name: "Seated Knee Lifts", sets: 3, reps: "15-20", rest: "45s", notes: "Engage core" },
+          { name: "Arm Circles", sets: 2, reps: "20 each direction", rest: "30s", notes: "Light warmup" },
+        ]
+      }
+    }
+  },
+  {
+    name: "Morning Energy Boost Workout",
+    description: "Quick and effective morning routine to energize your day. Perfect for all fitness levels.",
+    category: "general",
+    difficulty: "beginner",
+    durationWeeks: 4,
+    isTemplate: true,
+    createdBy: "admin",
+    exercises: {
+      "Monday/Wednesday/Friday": {
+        muscleGroup: "Full Body Wake-Up",
+        exercises: [
+          { name: "Jumping Jacks", sets: 3, reps: "30 seconds", rest: "30s", notes: "Get the heart pumping" },
+          { name: "Bodyweight Squats", sets: 3, reps: "15-20", rest: "45s", notes: "Deep and controlled" },
+          { name: "Push-ups", sets: 3, reps: "10-15", rest: "45s", notes: "Modified on knees if needed" },
+          { name: "High Knees", sets: 3, reps: "20 seconds", rest: "30s", notes: "Bring knees to chest" },
+          { name: "Plank", sets: 2, reps: "30-45 seconds", rest: "30s", notes: "Hold steady" },
+          { name: "Burpees (Light)", sets: 2, reps: "8-10", rest: "60s", notes: "Step back variation OK" },
+          { name: "Stretching", sets: 1, reps: "5 minutes", rest: "N/A", notes: "Full body stretch" },
+        ]
+      }
+    }
+  },
+  {
+    name: "Intermediate Full Body Conditioning",
+    description: "Well-rounded program for intermediate exercisers. Builds strength, endurance, and flexibility.",
+    category: "general",
+    difficulty: "intermediate",
+    durationWeeks: 8,
+    isTemplate: true,
+    createdBy: "admin",
+    exercises: {
+      Monday: {
+        muscleGroup: "Upper Body & Core",
+        exercises: [
+          { name: "Push-ups", sets: 4, reps: "15-20", rest: "60s", notes: "Standard form" },
+          { name: "Dumbbell Rows", sets: 4, reps: "12-15 each", rest: "60s", notes: "Squeeze at top" },
+          { name: "Shoulder Press", sets: 3, reps: "12-15", rest: "60s", notes: "Dumbbells or barbell" },
+          { name: "Bicep Curls", sets: 3, reps: "12-15", rest: "45s", notes: "Controlled movement" },
+          { name: "Tricep Dips", sets: 3, reps: "12-15", rest: "45s", notes: "Bench or chair" },
+          { name: "Plank to Downward Dog", sets: 3, reps: "10-12", rest: "45s", notes: "Flow movement" },
+        ]
+      },
+      Wednesday: {
+        muscleGroup: "Lower Body & Cardio",
+        exercises: [
+          { name: "Goblet Squats", sets: 4, reps: "15-20", rest: "60s", notes: "Hold weight at chest" },
+          { name: "Romanian Deadlifts", sets: 4, reps: "12-15", rest: "60s", notes: "Feel hamstring stretch" },
+          { name: "Walking Lunges", sets: 3, reps: "12 each leg", rest: "60s", notes: "Long strides" },
+          { name: "Jump Squats", sets: 3, reps: "12-15", rest: "60s", notes: "Explosive power" },
+          { name: "Mountain Climbers", sets: 3, reps: "30 seconds", rest: "45s", notes: "Fast pace" },
+          { name: "Calf Raises", sets: 3, reps: "20-25", rest: "30s", notes: "Full extension" },
+        ]
+      },
+      Friday: {
+        muscleGroup: "Full Body Circuit",
+        exercises: [
+          { name: "Burpees", sets: 4, reps: "12-15", rest: "60s", notes: "Full movement" },
+          { name: "Kettlebell Swings", sets: 4, reps: "15-20", rest: "60s", notes: "Hip drive" },
+          { name: "Box Jumps", sets: 3, reps: "10-12", rest: "75s", notes: "Soft landing" },
+          { name: "Battle Ropes", sets: 3, reps: "30 seconds", rest: "60s", notes: "Maximum intensity" },
+          { name: "Russian Twists", sets: 3, reps: "20 each side", rest: "30s", notes: "Use weight" },
+          { name: "Bicycle Crunches", sets: 3, reps: "20 each side", rest: "30s", notes: "Slow and controlled" },
+        ]
+      }
+    }
+  },
+  {
+    name: "Advanced Athletic Performance",
+    description: "High-intensity program for advanced athletes. Focuses on power, agility, and peak performance.",
+    category: "general",
+    difficulty: "advanced",
+    durationWeeks: 10,
+    isTemplate: true,
+    createdBy: "admin",
+    exercises: {
+      Monday: {
+        muscleGroup: "Power & Strength",
+        exercises: [
+          { name: "Power Cleans", sets: 5, reps: "5-6", rest: "120s", notes: "Explosive movement" },
+          { name: "Barbell Squats", sets: 5, reps: "6-8", rest: "120s", notes: "Heavy weight" },
+          { name: "Deadlifts", sets: 4, reps: "6-8", rest: "120s", notes: "Perfect form" },
+          { name: "Bench Press", sets: 4, reps: "8-10", rest: "90s", notes: "Progressive overload" },
+          { name: "Pull-ups (Weighted)", sets: 4, reps: "8-10", rest: "90s", notes: "Add weight" },
+          { name: "Box Jumps", sets: 4, reps: "10-12", rest: "60s", notes: "Maximum height" },
+        ]
+      },
+      Tuesday: {
+        muscleGroup: "Speed & Agility",
+        exercises: [
+          { name: "Sprint Intervals", sets: 8, reps: "30s sprint/30s rest", rest: "N/A", notes: "Maximum effort" },
+          { name: "Ladder Drills", sets: 4, reps: "3 patterns", rest: "60s", notes: "Quick feet" },
+          { name: "Cone Drills", sets: 4, reps: "5-5-5 pattern", rest: "60s", notes: "Sharp cuts" },
+          { name: "Plyometric Lunges", sets: 4, reps: "10 each leg", rest: "60s", notes: "Explosive jumps" },
+          { name: "Burpee Box Jump Over", sets: 4, reps: "10-12", rest: "75s", notes: "Continuous movement" },
+        ]
+      },
+      Thursday: {
+        muscleGroup: "Olympic Lifts & Core",
+        exercises: [
+          { name: "Snatch", sets: 5, reps: "3-5", rest: "150s", notes: "Technical precision" },
+          { name: "Front Squats", sets: 4, reps: "8-10", rest: "90s", notes: "Upright torso" },
+          { name: "Push Press", sets: 4, reps: "8-10", rest: "90s", notes: "Leg drive" },
+          { name: "Barbell Rows", sets: 4, reps: "10-12", rest: "75s", notes: "Heavy weight" },
+          { name: "Hanging Leg Raises", sets: 4, reps: "12-15", rest: "60s", notes: "Straight legs" },
+          { name: "Ab Wheel Rollouts", sets: 3, reps: "10-12", rest: "60s", notes: "Full extension" },
+        ]
+      },
+      Saturday: {
+        muscleGroup: "Metabolic Conditioning",
+        exercises: [
+          { name: "Rowing Machine", sets: 5, reps: "500m", rest: "90s", notes: "Sprint pace" },
+          { name: "Assault Bike", sets: 4, reps: "30 seconds", rest: "60s", notes: "All out effort" },
+          { name: "Kettlebell Swings", sets: 4, reps: "20-25", rest: "60s", notes: "Heavy weight" },
+          { name: "Thrusters", sets: 4, reps: "12-15", rest: "75s", notes: "Squat to press" },
+          { name: "Battle Ropes", sets: 4, reps: "45 seconds", rest: "60s", notes: "Waves/slams" },
+          { name: "Sled Push", sets: 4, reps: "30 meters", rest: "90s", notes: "Heavy load" },
+        ]
+      }
+    }
+  },
+  {
+    name: "Active Senior Wellness Program",
+    description: "Safe and effective program designed for seniors and older adults. Focuses on mobility, balance, and functional strength.",
+    category: "general",
+    difficulty: "beginner",
+    durationWeeks: 8,
+    isTemplate: true,
+    createdBy: "admin",
+    exercises: {
+      "Monday/Wednesday/Friday": {
+        muscleGroup: "Functional Fitness",
+        exercises: [
+          { name: "Chair Squats", sets: 3, reps: "10-12", rest: "60s", notes: "Use chair for support" },
+          { name: "Wall Push-ups", sets: 3, reps: "10-15", rest: "60s", notes: "Easier than floor" },
+          { name: "Standing Leg Raises", sets: 3, reps: "10 each leg", rest: "45s", notes: "Hold chair for balance" },
+          { name: "Seated Arm Raises", sets: 3, reps: "12-15", rest: "45s", notes: "Light weights optional" },
+          { name: "Marching in Place", sets: 3, reps: "30 seconds", rest: "30s", notes: "Lift knees high" },
+          { name: "Ankle Circles", sets: 2, reps: "10 each direction", rest: "20s", notes: "Both ankles" },
+          { name: "Seated Forward Bend", sets: 2, reps: "Hold 20s", rest: "30s", notes: "Gentle stretch" },
+        ]
+      },
+      "Tuesday/Thursday": {
+        muscleGroup: "Balance & Flexibility",
+        exercises: [
+          { name: "Single Leg Stand", sets: 3, reps: "15-20s each leg", rest: "30s", notes: "Hold chair if needed" },
+          { name: "Heel-to-Toe Walk", sets: 3, reps: "10 steps", rest: "45s", notes: "Like a tightrope" },
+          { name: "Tai Chi Movements", sets: 1, reps: "10 minutes", rest: "N/A", notes: "Slow and flowing" },
+          { name: "Neck Stretches", sets: 2, reps: "10 each direction", rest: "20s", notes: "Gentle movement" },
+          { name: "Shoulder Rolls", sets: 2, reps: "15 each direction", rest: "20s", notes: "Release tension" },
+          { name: "Seated Spinal Twist", sets: 2, reps: "Hold 15s each side", rest: "20s", notes: "Gentle rotation" },
+        ]
+      }
+    }
+  },
+  {
+    name: "30-Minute Express Workout",
+    description: "Time-efficient full body workout for busy schedules. Maximum results in minimal time.",
+    category: "general",
+    difficulty: "intermediate",
+    durationWeeks: 6,
+    isTemplate: true,
+    createdBy: "admin",
+    exercises: {
+      "Any Day": {
+        muscleGroup: "Full Body Express",
+        exercises: [
+          { name: "Jumping Jacks", sets: 1, reps: "2 minutes", rest: "30s", notes: "Warm-up" },
+          { name: "Push-ups", sets: 3, reps: "15-20", rest: "30s", notes: "Quick pace" },
+          { name: "Bodyweight Squats", sets: 3, reps: "20-25", rest: "30s", notes: "Deep squats" },
+          { name: "Burpees", sets: 3, reps: "12-15", rest: "45s", notes: "Full movement" },
+          { name: "Plank", sets: 3, reps: "45-60 seconds", rest: "30s", notes: "Hold strong" },
+          { name: "Mountain Climbers", sets: 3, reps: "30 seconds", rest: "30s", notes: "Fast pace" },
+          { name: "Jump Lunges", sets: 3, reps: "10 each leg", rest: "45s", notes: "Alternating" },
+          { name: "Russian Twists", sets: 3, reps: "20 each side", rest: "30s", notes: "Use weight" },
+          { name: "High Knees", sets: 3, reps: "30 seconds", rest: "30s", notes: "Maximum intensity" },
+          { name: "Cool-down Stretch", sets: 1, reps: "3 minutes", rest: "N/A", notes: "Full body" },
+        ]
+      }
+    }
+  },
+  {
+    name: "Bodyweight Mastery Program",
+    description: "Advanced bodyweight training program. Build impressive strength using only your body weight.",
+    category: "general",
+    difficulty: "advanced",
+    durationWeeks: 12,
+    isTemplate: true,
+    createdBy: "admin",
+    exercises: {
+      Monday: {
+        muscleGroup: "Push Day",
+        exercises: [
+          { name: "Handstand Push-ups", sets: 4, reps: "6-10", rest: "120s", notes: "Wall-assisted if needed" },
+          { name: "Archer Push-ups", sets: 4, reps: "8-10 each side", rest: "90s", notes: "One arm focus" },
+          { name: "Diamond Push-ups", sets: 4, reps: "12-15", rest: "60s", notes: "Tricep emphasis" },
+          { name: "Pike Push-ups", sets: 3, reps: "12-15", rest: "60s", notes: "Shoulder focus" },
+          { name: "Plyo Push-ups", sets: 3, reps: "10-12", rest: "75s", notes: "Explosive power" },
+          { name: "Tricep Dips", sets: 3, reps: "15-20", rest: "60s", notes: "Deep range" },
+        ]
+      },
+      Wednesday: {
+        muscleGroup: "Pull Day",
+        exercises: [
+          { name: "Muscle-ups", sets: 4, reps: "5-8", rest: "120s", notes: "Explosive pull" },
+          { name: "One-Arm Pull-ups (Assisted)", sets: 4, reps: "3-5 each side", rest: "120s", notes: "Use assistance" },
+          { name: "Wide Grip Pull-ups", sets: 4, reps: "10-12", rest: "90s", notes: "Lat focus" },
+          { name: "Australian Pull-ups", sets: 4, reps: "15-20", rest: "60s", notes: "Body rows" },
+          { name: "Hanging Leg Raises", sets: 4, reps: "15-20", rest: "60s", notes: "Straight legs" },
+          { name: "Front Lever Progressions", sets: 3, reps: "10-15s hold", rest: "90s", notes: "Tuck/advanced tuck" },
+        ]
+      },
+      Friday: {
+        muscleGroup: "Legs & Core",
+        exercises: [
+          { name: "Pistol Squats", sets: 4, reps: "8-10 each leg", rest: "90s", notes: "Single leg squats" },
+          { name: "Jump Squats", sets: 4, reps: "15-20", rest: "60s", notes: "Explosive power" },
+          { name: "Bulgarian Split Squats", sets: 4, reps: "12-15 each leg", rest: "75s", notes: "Rear foot elevated" },
+          { name: "Nordic Curls", sets: 3, reps: "6-8", rest: "90s", notes: "Hamstring strength" },
+          { name: "Dragon Flags", sets: 3, reps: "8-10", rest: "75s", notes: "Core strength" },
+          { name: "L-Sit Hold", sets: 3, reps: "15-30 seconds", rest: "60s", notes: "Parallel bars or floor" },
+        ]
+      }
+    }
   }
 ];
 

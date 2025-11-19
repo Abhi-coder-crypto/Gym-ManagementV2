@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Filter, Dumbbell, Edit, Trash2, Copy } from "lucide-react";
+import { Plus, Search, Filter, Dumbbell, Edit, Trash2, Copy, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AssignPlanDialog } from "@/components/assign-plan-dialog";
 
 const CATEGORIES = [
   { value: 'weight_loss', label: 'Weight Loss' },
@@ -50,6 +51,8 @@ export function WorkoutPlanTemplates() {
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<any>(null);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
   
   const [formData, setFormData] = useState<WorkoutPlanFormData>({
     name: "",
@@ -446,6 +449,19 @@ export function WorkoutPlanTemplates() {
                   {Object.keys(plan.exercises || {}).length} day(s) configured
                 </div>
                 <div className="flex gap-2">
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => {
+                      setSelectedPlan(plan);
+                      setAssignDialogOpen(true);
+                    }}
+                    data-testid={`button-assign-${plan._id}`}
+                  >
+                    <UserPlus className="h-3 w-3 mr-1" />
+                    Assign
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => handleEdit(plan)} className="flex-1">
                     <Edit className="h-3 w-3 mr-1" />
                     Edit
@@ -466,6 +482,13 @@ export function WorkoutPlanTemplates() {
           ))}
         </div>
       )}
+
+      <AssignPlanDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        plan={selectedPlan}
+        resourceType="workout"
+      />
     </div>
   );
 }

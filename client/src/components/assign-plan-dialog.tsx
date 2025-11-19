@@ -14,9 +14,10 @@ interface AssignPlanDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   plan: any;
+  resourceType?: 'diet' | 'workout';
 }
 
-export function AssignPlanDialog({ open, onOpenChange, plan }: AssignPlanDialogProps) {
+export function AssignPlanDialog({ open, onOpenChange, plan, resourceType = 'diet' }: AssignPlanDialogProps) {
   const { toast } = useToast();
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,18 +52,26 @@ export function AssignPlanDialog({ open, onOpenChange, plan }: AssignPlanDialogP
     mutationFn: async (clientIds: string[]) => {
       if (!plan) return;
       
+      const endpoint = resourceType === 'workout' 
+        ? `/api/workout-plan-templates/${plan._id}/clone`
+        : `/api/diet-plans/${plan._id}/clone`;
+      
       const assignments = clientIds.map(clientId => 
-        apiRequest('POST', `/api/diet-plans/${plan._id}/clone`, { clientId })
+        apiRequest('POST', endpoint, { clientId })
       );
       
       return Promise.all(assignments);
     },
     onSuccess: (_, clientIds) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/diet-plans-with-assignments'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/diet-plan-templates'] });
+      if (resourceType === 'workout') {
+        queryClient.invalidateQueries({ queryKey: ['/api/workout-plan-templates'] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['/api/diet-plans-with-assignments'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/diet-plan-templates'] });
+      }
       toast({
         title: "Success",
-        description: `Diet plan assigned to ${clientIds.length} client(s)`,
+        description: `${resourceType === 'workout' ? 'Workout' : 'Diet'} plan assigned to ${clientIds.length} client(s)`,
       });
       onOpenChange(false);
       setSelectedClients(new Set());
@@ -71,7 +80,7 @@ export function AssignPlanDialog({ open, onOpenChange, plan }: AssignPlanDialogP
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to assign diet plan",
+        description: `Failed to assign ${resourceType === 'workout' ? 'workout' : 'diet'} plan`,
         variant: "destructive",
       });
     },
@@ -113,7 +122,9 @@ export function AssignPlanDialog({ open, onOpenChange, plan }: AssignPlanDialogP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">Assign Diet Plan</DialogTitle>
+          <DialogTitle className="font-display text-2xl">
+            Assign {resourceType === 'workout' ? 'Workout' : 'Diet'} Plan
+          </DialogTitle>
           <DialogDescription>
             Assign "{plan.name}" to one or more clients
           </DialogDescription>
@@ -122,19 +133,41 @@ export function AssignPlanDialog({ open, onOpenChange, plan }: AssignPlanDialogP
         <div className="space-y-4">
           <div className="p-4 bg-muted rounded-md">
             <h3 className="font-semibold mb-2">{plan.name}</h3>
+            {plan.description && (
+              <p className="text-sm text-muted-foreground mb-3">{plan.description}</p>
+            )}
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-muted-foreground">Calories:</span> {plan.targetCalories}
-              </div>
-              <div>
-                <span className="text-muted-foreground">Category:</span> {plan.category || "Balanced"}
-              </div>
-              <div>
-                <span className="text-muted-foreground">Protein:</span> {plan.protein || 0}g
-              </div>
-              <div>
-                <span className="text-muted-foreground">Carbs/Fats:</span> {plan.carbs || 0}g / {plan.fats || 0}g
-              </div>
+              {resourceType === 'workout' ? (
+                <>
+                  <div>
+                    <span className="text-muted-foreground">Duration:</span> {plan.durationWeeks || 0} weeks
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Difficulty:</span> {plan.difficulty || 'N/A'}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Category:</span> {plan.category || 'N/A'}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Days:</span> {Object.keys(plan.exercises || {}).length} configured
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <span className="text-muted-foreground">Calories:</span> {plan.targetCalories}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Category:</span> {plan.category || "Balanced"}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Protein:</span> {plan.protein || 0}g
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Carbs/Fats:</span> {plan.carbs || 0}g / {plan.fats || 0}g
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
