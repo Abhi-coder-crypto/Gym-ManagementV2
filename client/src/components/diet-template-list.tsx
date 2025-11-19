@@ -45,7 +45,13 @@ export function DietTemplateList() {
   });
 
   const { data: templates = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/diet-plan-templates'],
+    queryKey: ['/api/diet-plan-templates', categoryFilter],
+    queryFn: async () => {
+      const params = categoryFilter !== "all" ? `?category=${categoryFilter}` : '';
+      const res = await fetch(`/api/diet-plan-templates${params}`);
+      if (!res.ok) throw new Error('Failed to fetch diet templates');
+      return res.json();
+    },
   });
 
   const updateMutation = useMutation({

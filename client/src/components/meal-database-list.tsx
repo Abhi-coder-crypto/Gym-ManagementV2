@@ -47,7 +47,16 @@ export function MealDatabaseList() {
   });
 
   const { data: meals = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/meals'],
+    queryKey: ['/api/meals', mealTypeFilter, searchQuery],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (mealTypeFilter && mealTypeFilter !== 'all') params.append('mealType', mealTypeFilter);
+      if (searchQuery) params.append('search', searchQuery);
+      const queryString = params.toString();
+      const res = await fetch(`/api/meals${queryString ? `?${queryString}` : ''}`);
+      if (!res.ok) throw new Error('Failed to fetch meals');
+      return res.json();
+    },
   });
 
   const updateMutation = useMutation({
