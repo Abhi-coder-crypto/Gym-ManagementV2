@@ -30,6 +30,17 @@ export function DietTemplateList() {
     queryKey: ['/api/diet-plan-templates'],
   });
 
+  const cloneMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("POST", `/api/diet-plans/${id}/clone`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/diet-plan-templates'] });
+      toast({ title: "Success", description: "Diet template cloned successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/diet-plans/${id}`),
     onSuccess: () => {
@@ -116,11 +127,10 @@ export function DietTemplateList() {
                     <span className="font-semibold">{template.assignedCount || 0} times</span>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <Button 
                     variant="default" 
-                    size="sm" 
-                    className="flex-1"
+                    size="sm"
                     onClick={() => {
                       setSelectedPlan(template);
                       setAssignDialogOpen(true);
@@ -130,7 +140,20 @@ export function DietTemplateList() {
                     <UserPlus className="h-3 w-3 mr-1" />
                     Assign
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => cloneMutation.mutate(template._id)}
+                    data-testid={`button-clone-${template._id}`}
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Clone
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    data-testid={`button-edit-${template._id}`}
+                  >
                     <Edit className="h-3 w-3 mr-1" />
                     Edit
                   </Button>
@@ -138,7 +161,7 @@ export function DietTemplateList() {
                     variant="outline" 
                     size="sm" 
                     onClick={() => deleteMutation.mutate(template._id)}
-                    className="flex-1"
+                    data-testid={`button-delete-${template._id}`}
                   >
                     <Trash2 className="h-3 w-3 mr-1" />
                     Delete
