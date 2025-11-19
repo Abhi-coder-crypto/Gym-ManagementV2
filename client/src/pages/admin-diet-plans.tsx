@@ -33,6 +33,8 @@ export default function AdminDietPlans() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [workoutCategoryFilter, setWorkoutCategoryFilter] = useState<string>("all");
+  const [mealCategoryFilter, setMealCategoryFilter] = useState<string>("all");
   const [createPlanOpen, setCreatePlanOpen] = useState(false);
   const [createMealOpen, setCreateMealOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -51,10 +53,13 @@ export default function AdminDietPlans() {
   });
 
   const { data: meals = [], isLoading: mealsLoading } = useQuery<any[]>({
-    queryKey: ['/api/meals', searchQuery],
+    queryKey: ['/api/meals', searchQuery, mealCategoryFilter],
     queryFn: async () => {
-      const params = searchQuery ? `?search=${searchQuery}` : '';
-      const res = await fetch(`/api/meals${params}`);
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      if (mealCategoryFilter && mealCategoryFilter !== 'all') params.append('category', mealCategoryFilter);
+      const queryString = params.toString();
+      const res = await fetch(`/api/meals${queryString ? `?${queryString}` : ''}`);
       return res.json();
     },
   });
@@ -64,10 +69,13 @@ export default function AdminDietPlans() {
   });
 
   const { data: workoutPlans = [], isLoading: workoutPlansLoading } = useQuery<any[]>({
-    queryKey: ['/api/workout-plans', searchQuery],
+    queryKey: ['/api/workout-plans', searchQuery, workoutCategoryFilter],
     queryFn: async () => {
-      const params = searchQuery ? `?search=${searchQuery}` : '';
-      const res = await fetch(`/api/workout-plans${params}`);
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      if (workoutCategoryFilter && workoutCategoryFilter !== 'all') params.append('category', workoutCategoryFilter);
+      const queryString = params.toString();
+      const res = await fetch(`/api/workout-plans${queryString ? `?${queryString}` : ''}`);
       return res.json();
     },
   });
@@ -373,15 +381,32 @@ export default function AdminDietPlans() {
                 {/* Meal Database Tab */}
                 <TabsContent value="meals" className="space-y-6 mt-6">
                   <div className="flex items-center justify-between gap-4">
-                    <div className="relative flex-1 max-w-md">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search meals..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                        data-testid="input-search-meals"
-                      />
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search meals..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10"
+                          data-testid="input-search-meals"
+                        />
+                      </div>
+                      <Select value={mealCategoryFilter} onValueChange={setMealCategoryFilter}>
+                        <SelectTrigger className="w-48" data-testid="select-meal-category-filter">
+                          <Filter className="h-4 w-4 mr-2" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          <SelectItem value="Vegetarian">Vegetarian</SelectItem>
+                          <SelectItem value="Non-Vegetarian">Non-Vegetarian</SelectItem>
+                          <SelectItem value="Vegan">Vegan</SelectItem>
+                          <SelectItem value="Keto">Keto</SelectItem>
+                          <SelectItem value="Low-Carb">Low-Carb</SelectItem>
+                          <SelectItem value="High-Protein">High-Protein</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <Button
                       onClick={() => {
@@ -476,15 +501,29 @@ export default function AdminDietPlans() {
                 {/* Workout Plans Tab */}
                 <TabsContent value="workouts" className="space-y-6 mt-6">
                   <div className="flex items-center justify-between gap-4">
-                    <div className="relative flex-1 max-w-md">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search workout plans..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                        data-testid="input-search-workouts"
-                      />
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search workout plans..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10"
+                          data-testid="input-search-workouts"
+                        />
+                      </div>
+                      <Select value={workoutCategoryFilter} onValueChange={setWorkoutCategoryFilter}>
+                        <SelectTrigger className="w-48" data-testid="select-workout-category-filter">
+                          <Filter className="h-4 w-4 mr-2" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          <SelectItem value="weight_loss">Weight Loss</SelectItem>
+                          <SelectItem value="weight_gain">Weight Gain</SelectItem>
+                          <SelectItem value="maintenance">Maintain Weight</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <Button
                       onClick={() => {

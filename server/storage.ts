@@ -133,7 +133,7 @@ export interface IStorage {
   getClientWorkoutPlans(clientId: string): Promise<IWorkoutPlan[]>;
   getWorkoutPlan(id: string): Promise<IWorkoutPlan | null>;
   getWorkoutPlanTemplates(): Promise<IWorkoutPlan[]>;
-  getAllWorkoutPlans(search?: string): Promise<IWorkoutPlan[]>;
+  getAllWorkoutPlans(search?: string, category?: string): Promise<IWorkoutPlan[]>;
   createWorkoutPlan(data: Partial<IWorkoutPlan>): Promise<IWorkoutPlan>;
   updateWorkoutPlan(id: string, data: Partial<IWorkoutPlan>): Promise<IWorkoutPlan | null>;
   deleteWorkoutPlan(id: string): Promise<boolean>;
@@ -580,7 +580,7 @@ export class MongoStorage implements IStorage {
     return await WorkoutPlan.find({ isTemplate: true }).sort({ createdAt: -1 });
   }
 
-  async getAllWorkoutPlans(search?: string): Promise<IWorkoutPlan[]> {
+  async getAllWorkoutPlans(search?: string, category?: string): Promise<IWorkoutPlan[]> {
     const filter: any = {};
     if (search) {
       filter.$or = [
@@ -588,6 +588,9 @@ export class MongoStorage implements IStorage {
         { description: { $regex: search, $options: 'i' } },
         { goal: { $regex: search, $options: 'i' } }
       ];
+    }
+    if (category) {
+      filter.category = category;
     }
     return await WorkoutPlan.find(filter).sort({ createdAt: -1 }).populate('clientId', 'name email');
   }
