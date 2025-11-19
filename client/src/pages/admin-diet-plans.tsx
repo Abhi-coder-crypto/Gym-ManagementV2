@@ -57,7 +57,7 @@ export default function AdminDietPlans() {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
-      if (mealCategoryFilter && mealCategoryFilter !== 'all') params.append('category', mealCategoryFilter);
+      if (mealCategoryFilter && mealCategoryFilter !== 'all') params.append('mealType', mealCategoryFilter);
       const queryString = params.toString();
       const res = await fetch(`/api/meals${queryString ? `?${queryString}` : ''}`);
       return res.json();
@@ -399,12 +399,12 @@ export default function AdminDietPlans() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Categories</SelectItem>
-                          <SelectItem value="Vegetarian">Vegetarian</SelectItem>
-                          <SelectItem value="Non-Vegetarian">Non-Vegetarian</SelectItem>
-                          <SelectItem value="Vegan">Vegan</SelectItem>
-                          <SelectItem value="Keto">Keto</SelectItem>
-                          <SelectItem value="Low-Carb">Low-Carb</SelectItem>
-                          <SelectItem value="High-Protein">High-Protein</SelectItem>
+                          <SelectItem value="Breakfast">Breakfast</SelectItem>
+                          <SelectItem value="Lunch">Lunch</SelectItem>
+                          <SelectItem value="Dinner">Dinner</SelectItem>
+                          <SelectItem value="Pre-Workout">Pre-Workout</SelectItem>
+                          <SelectItem value="Post-Workout">Post-Workout</SelectItem>
+                          <SelectItem value="Snack">Snack</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -559,7 +559,12 @@ export default function AdminDietPlans() {
                                   <CardDescription className="mt-2">{workout.description}</CardDescription>
                                 )}
                               </div>
-                              <Badge variant="outline">{workout.difficulty || "Intermediate"}</Badge>
+                              <Badge variant="outline">
+                                {workout.category === 'weight_loss' ? 'Weight Loss' : 
+                                 workout.category === 'weight_gain' ? 'Weight Gain' : 
+                                 workout.category === 'maintenance' ? 'Maintain Weight' : 
+                                 'General'}
+                              </Badge>
                             </div>
                           </CardHeader>
                           <CardContent className="space-y-4">
