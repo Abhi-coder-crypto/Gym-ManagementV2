@@ -835,39 +835,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete client (admin and trainers can delete their assigned clients)
-  app.delete("/api/clients/:id", authenticateToken, async (req, res) => {
+  // Delete client permanently (admin only for safety)
+  app.delete("/api/clients/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
       if (!req.user) {
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      // Admins can delete any client
-      if (req.user.role === 'admin') {
-        const success = await storage.deleteClient(req.params.id);
-        if (!success) {
-          return res.status(404).json({ message: "Client not found" });
-        }
-        return res.json({ success: true });
+      // Only admins can permanently delete clients
+      const success = await storage.permanentlyDeleteClient(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Client not found" });
       }
-
-      // Trainers can only delete their assigned clients
-      if (req.user.role === 'trainer') {
-        const trainerClients = await storage.getTrainerClients(req.user.userId);
-        const clientIds = trainerClients.map(c => String(c._id));
-        
-        if (!clientIds.includes(req.params.id)) {
-          return res.status(403).json({ message: "You can only delete your assigned clients" });
-        }
-        
-        const success = await storage.deleteClient(req.params.id);
-        if (!success) {
-          return res.status(404).json({ message: "Client not found" });
-        }
-        return res.json({ success: true });
-      }
-
-      return res.status(403).json({ message: "Insufficient permissions" });
+      return res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

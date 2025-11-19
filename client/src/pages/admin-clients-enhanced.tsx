@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin-sidebar";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import Cropper from "react-easy-crop";
 import {
   Table,
   TableBody,
@@ -86,15 +87,19 @@ export default function AdminClientsEnhanced() {
     address: "",
     status: "active",
     profilePhoto: null as File | null,
-    aadharDocument: null as File | null,
-    otherDocument: null as File | null,
+    governmentIdDocument: null as File | null,
   });
   
   const [fileNames, setFileNames] = useState({
     profilePhoto: "",
-    aadharDocument: "",
-    otherDocument: "",
+    governmentIdDocument: "",
   });
+
+  const [profileImageSrc, setProfileImageSrc] = useState<string | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   const style = {
     "--sidebar-width": "16rem",
@@ -272,6 +277,80 @@ export default function AdminClientsEnhanced() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
+
+  const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const createImage = (url: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      image.addEventListener('load', () => resolve(image));
+      image.addEventListener('error', (error) => reject(error));
+      image.src = url;
+    });
+
+  const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<Blob> => {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      throw new Error('No 2d context');
+    }
+
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve(blob as Blob);
+      }, 'image/jpeg');
+    });
+  };
+
+  const handleProfileImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        setProfileImageSrc(reader.result as string);
+        setShowCropper(true);
+      });
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCropSave = async () => {
+    if (!profileImageSrc || !croppedAreaPixels) return;
+
+    try {
+      const croppedBlob = await getCroppedImg(profileImageSrc, croppedAreaPixels);
+      const croppedFile = new File([croppedBlob], 'profile-photo.jpg', { type: 'image/jpeg' });
+      setFormData({ ...formData, profilePhoto: croppedFile });
+      setFileNames({ ...fileNames, profilePhoto: 'profile-photo.jpg (cropped)' });
+      setShowCropper(false);
+    } catch (e) {
+      console.error(e);
+      toast({
+        title: "Error",
+        description: "Failed to crop image",
+        variant: "destructive",
+      });
+    }
+  };
   
   const resetForm = () => {
     setFormData({
@@ -287,14 +366,17 @@ export default function AdminClientsEnhanced() {
       address: "",
       status: "active",
       profilePhoto: null,
-      aadharDocument: null,
-      otherDocument: null,
+      governmentIdDocument: null,
     });
     setFileNames({
       profilePhoto: "",
-      aadharDocument: "",
-      otherDocument: "",
+      governmentIdDocument: "",
     });
+    setProfileImageSrc(null);
+    setShowCropper(false);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -320,6 +402,16 @@ export default function AdminClientsEnhanced() {
       return;
     }
     
+    // Validate Government ID is required for new clients
+    if (!editingClient && !formData.governmentIdDocument) {
+      toast({
+        title: "Missing Required Document",
+        description: "Please upload a Government ID (Aadhar card/Pan card/other)",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Create FormData for file uploads
     const formDataObj = new FormData();
     formDataObj.append('name', formData.name);
@@ -334,8 +426,7 @@ export default function AdminClientsEnhanced() {
     if (formData.weight) formDataObj.append('weight', formData.weight);
     if (formData.address) formDataObj.append('address', formData.address);
     if (formData.profilePhoto) formDataObj.append('profilePhoto', formData.profilePhoto);
-    if (formData.aadharDocument) formDataObj.append('aadharDocument', formData.aadharDocument);
-    if (formData.otherDocument) formDataObj.append('otherDocument', formData.otherDocument);
+    if (formData.governmentIdDocument) formDataObj.append('aadharDocument', formData.governmentIdDocument);
 
     try {
       const endpoint = editingClient ? `/api/clients/${editingClient._id}` : '/api/clients';
@@ -385,6 +476,7 @@ export default function AdminClientsEnhanced() {
       name: client.name || "",
       phone: client.phone || "",
       email: client.email || "",
+      password: "",
       packageId: packageId,
       age: client.age?.toString() || "",
       gender: client.gender || "",
@@ -393,13 +485,11 @@ export default function AdminClientsEnhanced() {
       address: client.address || "",
       status: client.status || "active",
       profilePhoto: null,
-      aadharDocument: null,
-      otherDocument: null,
+      governmentIdDocument: null,
     });
     setFileNames({
       profilePhoto: client.profilePhoto ? "Current: " + client.profilePhoto.split('/').pop() : "",
-      aadharDocument: client.aadharDocument ? "Current: " + client.aadharDocument.split('/').pop() : "",
-      otherDocument: client.otherDocument ? "Current: " + client.otherDocument.split('/').pop() : "",
+      governmentIdDocument: client.aadharDocument ? "Current: " + client.aadharDocument.split('/').pop() : "",
     });
   };
 
@@ -731,7 +821,7 @@ export default function AdminClientsEnhanced() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => {
-                                    if (confirm(`Are you sure you want to delete ${client.name}? This will deactivate their account.`)) {
+                                    if (confirm(`⚠️ Are you sure you want to permanently delete ${client.name}?\n\nThis action CANNOT be undone. All their data, workouts, sessions, and progress will be permanently removed.`)) {
                                       deleteClientMutation.mutate(client._id);
                                     }
                                   }}
@@ -930,13 +1020,7 @@ export default function AdminClientsEnhanced() {
                   id="profilePhoto"
                   type="file"
                   accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setFormData({ ...formData, profilePhoto: file });
-                      setFileNames({ ...fileNames, profilePhoto: file.name });
-                    }
-                  }}
+                  onChange={handleProfileImageSelect}
                   data-testid="input-profile-photo"
                 />
                 {fileNames.profilePhoto && (
@@ -975,73 +1059,41 @@ export default function AdminClientsEnhanced() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="aadharDocument">Aadhar Card</Label>
-                <Input
-                  id="aadharDocument"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setFormData({ ...formData, aadharDocument: file });
-                      setFileNames({ ...fileNames, aadharDocument: file.name });
-                    }
-                  }}
-                  data-testid="input-aadhar-document"
-                />
-                {fileNames.aadharDocument && (
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-muted-foreground">{fileNames.aadharDocument}</p>
-                    {editingClient?.aadharDocument && (
-                      <Button 
-                        type="button"
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => window.open(editingClient.aadharDocument, '_blank')}
-                        data-testid="button-view-aadhar"
-                      >
-                        <Eye className="h-3 w-3 mr-1" />
-                        View
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="otherDocument">Other Document</Label>
-                <Input
-                  id="otherDocument"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setFormData({ ...formData, otherDocument: file });
-                      setFileNames({ ...fileNames, otherDocument: file.name });
-                    }
-                  }}
-                  data-testid="input-other-document"
-                />
-                {fileNames.otherDocument && (
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-muted-foreground">{fileNames.otherDocument}</p>
-                    {editingClient?.otherDocument && (
-                      <Button 
-                        type="button"
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => window.open(editingClient.otherDocument, '_blank')}
-                        data-testid="button-view-other-document"
-                      >
-                        <Eye className="h-3 w-3 mr-1" />
-                        View
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="governmentIdDocument">
+                Government ID (Aadhar card/Pan card/other) {!editingClient && <span className="text-destructive">*</span>}
+              </Label>
+              <Input
+                id="governmentIdDocument"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setFormData({ ...formData, governmentIdDocument: file });
+                    setFileNames({ ...fileNames, governmentIdDocument: file.name });
+                  }
+                }}
+                required={!editingClient}
+                data-testid="input-government-id-document"
+              />
+              {fileNames.governmentIdDocument && (
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">{fileNames.governmentIdDocument}</p>
+                  {editingClient?.aadharDocument && (
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => window.open(editingClient.aadharDocument, '_blank')}
+                      data-testid="button-view-government-id"
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      View
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
 
             <DialogFooter>
@@ -1230,6 +1282,52 @@ export default function AdminClientsEnhanced() {
               </TabsContent>
             </Tabs>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Cropper Dialog */}
+      <Dialog open={showCropper} onOpenChange={setShowCropper}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Crop Profile Photo</DialogTitle>
+            <DialogDescription>
+              Adjust the circular crop area to select your profile photo
+            </DialogDescription>
+          </DialogHeader>
+          <div className="relative h-[400px] w-full">
+            {profileImageSrc && (
+              <Cropper
+                image={profileImageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>Zoom</Label>
+            <Input
+              type="range"
+              min={1}
+              max={3}
+              step={0.1}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCropper(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCropSave}>
+              Save Cropped Image
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </SidebarProvider>
