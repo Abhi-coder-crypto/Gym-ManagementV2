@@ -30,7 +30,7 @@ const menuItems = [
   { title: "Client Setup", icon: UserPlus, url: "/admin/client-setup" },
   { title: "Trainers", icon: Users, url: "/admin/trainers" },
   { title: "Videos", icon: Video, url: "/admin/videos" },
-  { title: "Diet Plans", icon: UtensilsCrossed, url: "/admin/diet" },
+  { title: "Diet, Meals & Workout", icon: UtensilsCrossed, url: "/admin/diet" },
   { title: "Live Sessions", icon: Calendar, url: "/admin/sessions" },
   { title: "Analytics", icon: TrendingUp, url: "/admin/analytics" },
   { title: "Reports", icon: FileText, url: "/admin/reports" },

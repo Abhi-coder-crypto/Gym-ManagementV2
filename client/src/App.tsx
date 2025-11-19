@@ -20,7 +20,7 @@ import AdminAnalyticsEnhanced from "@/pages/admin-analytics-enhanced";
 import AdminRevenueEnhanced from "@/pages/admin-revenue-enhanced";
 import AdminAnalyticsReports from "@/pages/admin-analytics-reports";
 import AdminSettings from "@/pages/admin-settings";
-import AdminTrainers from "@/pages/admin-trainers";
+import AdminTrainersEnhanced from "@/pages/admin-trainers-enhanced";
 import TrainerDashboard from "@/pages/trainer-dashboard";
 import TrainerClients from "@/pages/trainer-clients";
 import TrainerDiet from "@/pages/trainer-diet";
@@ -73,7 +73,7 @@ function Router() {
       <Route path="/admin/reports" component={AdminAnalyticsReports} />
       <Route path="/admin/revenue" component={AdminRevenueEnhanced} />
       <Route path="/admin/settings" component={AdminSettings} />
-      <Route path="/admin/trainers" component={AdminTrainers} />
+      <Route path="/admin/trainers" component={AdminTrainersEnhanced} />
       <Route path="/trainer/dashboard" component={TrainerDashboard} />
       <Route path="/trainer/clients" component={TrainerClients} />
       <Route path="/trainer/diet" component={TrainerDiet} />

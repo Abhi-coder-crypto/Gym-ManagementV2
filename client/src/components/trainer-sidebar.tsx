@@ -16,8 +16,7 @@ const menuItems = [
   { title: "Dashboard", icon: Home, url: "/trainer/dashboard" },
   { title: "My Clients", icon: Users, url: "/trainer/clients" },
   { title: "Live Sessions", icon: Calendar, url: "/trainer/sessions" },
-  { title: "Workout Plans", icon: UtensilsCrossed, url: "/trainer/workouts" },
-  { title: "Diet Plans", icon: UtensilsCrossed, url: "/trainer/diet" },
+  { title: "Diet, Meals & Workout", icon: UtensilsCrossed, url: "/trainer/diet" },
   { title: "Video Library", icon: Video, url: "/trainer/videos" },
   { title: "My Analytics", icon: BarChart3, url: "/trainer/analytics" },
 ];

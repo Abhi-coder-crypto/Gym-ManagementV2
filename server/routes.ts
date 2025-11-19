@@ -1578,7 +1578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/workout-plans", async (req, res) => {
+  app.post("/api/workout-plans", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
     try {
       const plan = await storage.createWorkoutPlan(req.body);
       res.json(plan);
@@ -1633,7 +1633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/diet-plans", async (req, res) => {
+  app.post("/api/diet-plans", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
     try {
       const plan = await storage.createDietPlan(req.body);
       res.json(plan);
@@ -1723,7 +1723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/meals", async (req, res) => {
+  app.post("/api/meals", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
     try {
       const meal = await storage.createMeal(req.body);
       res.json(meal);
