@@ -701,7 +701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/clients/search", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const { query, status, packageId, sortBy } = req.query;
-      const clients = await storage.getAllClients();
+      const clients = await storage.getAllClients(true); // Include ALL clients (active and inactive)
       
       let filtered = clients;
       
