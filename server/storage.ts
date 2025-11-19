@@ -132,6 +132,7 @@ export interface IStorage {
   // Workout Plan methods
   getClientWorkoutPlans(clientId: string): Promise<IWorkoutPlan[]>;
   getWorkoutPlan(id: string): Promise<IWorkoutPlan | null>;
+  getWorkoutPlanTemplates(): Promise<IWorkoutPlan[]>;
   createWorkoutPlan(data: Partial<IWorkoutPlan>): Promise<IWorkoutPlan>;
   updateWorkoutPlan(id: string, data: Partial<IWorkoutPlan>): Promise<IWorkoutPlan | null>;
   deleteWorkoutPlan(id: string): Promise<boolean>;
@@ -572,6 +573,10 @@ export class MongoStorage implements IStorage {
 
   async getWorkoutPlan(id: string): Promise<IWorkoutPlan | null> {
     return await WorkoutPlan.findById(id);
+  }
+
+  async getWorkoutPlanTemplates(): Promise<IWorkoutPlan[]> {
+    return await WorkoutPlan.find({ isTemplate: true }).sort({ createdAt: -1 });
   }
 
   async createWorkoutPlan(data: Partial<IWorkoutPlan>): Promise<IWorkoutPlan> {

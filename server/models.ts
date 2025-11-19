@@ -95,12 +95,19 @@ export interface IClientVideo extends Document {
 }
 
 export interface IWorkoutPlan extends Document {
-  clientId: string;
+  clientId?: string;
   name: string;
   description?: string;
   goal?: string;
+  category?: string;
   durationWeeks: number;
   exercises: any;
+  isTemplate?: boolean;
+  createdBy?: string;
+  assignedCount?: number;
+  clonedFrom?: string;
+  timesCloned?: number;
+  difficulty?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -385,12 +392,19 @@ const ClientVideoSchema = new Schema({
 });
 
 const WorkoutPlanSchema = new Schema({
-  clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
+  clientId: { type: Schema.Types.ObjectId, ref: 'Client' },
   name: { type: String, required: true },
   description: String,
   goal: String,
+  category: { type: String, enum: ['weight_loss', 'weight_gain', 'maintenance', 'general'] },
   durationWeeks: { type: Number, required: true },
   exercises: { type: Schema.Types.Mixed, required: true },
+  isTemplate: { type: Boolean, default: false },
+  createdBy: String,
+  assignedCount: { type: Number, default: 0 },
+  clonedFrom: { type: Schema.Types.ObjectId, ref: 'WorkoutPlan' },
+  timesCloned: { type: Number, default: 0 },
+  difficulty: { type: String, enum: ['beginner', 'intermediate', 'advanced'] },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

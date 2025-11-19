@@ -4,30 +4,22 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users } from "lucide-react";
-import { DietPlanGenerator } from "@/components/diet-plan-generator";
-import { WorkoutPlanGenerator } from "@/components/workout-plan-generator";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Search, UtensilsCrossed, Dumbbell, UserPlus, Filter } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AssignDietPlanDialog } from "@/components/assign-diet-plan-dialog";
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { DietTemplateList } from "@/components/diet-template-list";
+import { MealDatabaseList } from "@/components/meal-database-list";
+import { WorkoutPlanTemplates } from "@/components/workout-plan-templates";
+import { PlanAssignments } from "@/components/plan-assignments";
 
 export default function AdminDiet() {
   const style = { "--sidebar-width": "16rem" };
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
-
-  const dietPlans = [
-    { id: 1, name: "Weight Loss Plan", calories: 1800, assignedTo: 24, meals: 4, type: "Low Carb" },
-    { id: 2, name: "Muscle Gain Plan", calories: 2800, assignedTo: 18, meals: 6, type: "High Protein" },
-    { id: 3, name: "Balanced Maintenance", calories: 2200, assignedTo: 35, meals: 5, type: "Balanced" },
-    { id: 4, name: "Keto Diet Plan", calories: 1900, assignedTo: 12, meals: 4, type: "Ketogenic" },
-    { id: 5, name: "Vegan Athlete Plan", calories: 2500, assignedTo: 8, meals: 5, type: "Vegan" },
-  ];
-
-  const handleAssignClick = (plan: any) => {
-    setSelectedPlan(plan);
-    setAssignDialogOpen(true);
-  };
+  const { toast } = useToast();
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
@@ -37,99 +29,56 @@ export default function AdminDiet() {
           <header className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-4">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <h1 className="text-2xl font-display font-bold tracking-tight">Diet Plans</h1>
+              <h1 className="text-2xl font-display font-bold tracking-tight flex items-center gap-2">
+                <UtensilsCrossed className="h-6 w-6 text-primary" />
+                Diet Plan Management
+              </h1>
             </div>
             <ThemeToggle />
           </header>
 
-          <main className="flex-1 overflow-auto p-8">
-            <div className="max-w-7xl mx-auto space-y-6">
-              <Tabs defaultValue="generator" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="generator">Plan Generators</TabsTrigger>
-                  <TabsTrigger value="diet">Diet Plans</TabsTrigger>
-                  <TabsTrigger value="workout">Workout Plans</TabsTrigger>
+          <main className="flex-1 overflow-auto p-6">
+            <div className="max-w-7xl mx-auto">
+              <Tabs defaultValue="templates" className="w-full">
+                <TabsList className="grid w-full grid-cols-4 mb-6">
+                  <TabsTrigger value="templates" data-testid="tab-diet-templates">
+                    <UtensilsCrossed className="h-4 w-4 mr-2" />
+                    Diet Templates
+                  </TabsTrigger>
+                  <TabsTrigger value="meals" data-testid="tab-meal-database">
+                    <Search className="h-4 w-4 mr-2" />
+                    Meal Database
+                  </TabsTrigger>
+                  <TabsTrigger value="workouts" data-testid="tab-workout-plans">
+                    <Dumbbell className="h-4 w-4 mr-2" />
+                    Workout Plans
+                  </TabsTrigger>
+                  <TabsTrigger value="assignments" data-testid="tab-assignments">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Assignments
+                  </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="generator" className="space-y-6 mt-6">
-                  <div className="grid lg:grid-cols-2 gap-6">
-                    <div>
-                      <DietPlanGenerator />
-                    </div>
-                    <div>
-                      <WorkoutPlanGenerator />
-                    </div>
-                  </div>
+                <TabsContent value="templates" className="space-y-4">
+                  <DietTemplateList />
                 </TabsContent>
 
-                <TabsContent value="diet" className="space-y-6 mt-6">
-                  <div className="flex items-center justify-between">
-                    <p className="text-muted-foreground">Manage and assign custom diet plans to clients</p>
-                    <Button data-testid="button-create-plan">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create New Plan
-                    </Button>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {dietPlans.map((plan) => (
-                      <Card key={plan.id} data-testid={`card-diet-plan-${plan.id}`}>
-                        <CardHeader>
-                          <CardTitle className="font-display text-xl">{plan.name}</CardTitle>
-                          <Badge variant="outline" className="w-fit">{plan.type}</Badge>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Daily Calories</span>
-                              <span className="font-semibold">{plan.calories} cal</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Meals per Day</span>
-                              <span className="font-semibold">{plan.meals}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground flex items-center gap-1">
-                                <Users className="h-3 w-3" />
-                                Assigned to
-                              </span>
-                              <span className="font-semibold">{plan.assignedTo} clients</span>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" className="flex-1" size="sm" data-testid="button-edit-plan">
-                              Edit
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="flex-1" 
-                              size="sm" 
-                              onClick={() => handleAssignClick(plan)}
-                              data-testid="button-assign-plan"
-                            >
-                              Assign
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                <TabsContent value="meals" className="space-y-4">
+                  <MealDatabaseList />
                 </TabsContent>
 
-                <TabsContent value="workout" className="space-y-6 mt-6">
-                  <p className="text-muted-foreground">Workout plans are generated using templates and can be exported for clients</p>
+                <TabsContent value="workouts" className="space-y-4">
+                  <WorkoutPlanTemplates />
+                </TabsContent>
+
+                <TabsContent value="assignments" className="space-y-4">
+                  <PlanAssignments />
                 </TabsContent>
               </Tabs>
             </div>
           </main>
         </div>
       </div>
-      
-      <AssignDietPlanDialog 
-        open={assignDialogOpen}
-        onOpenChange={setAssignDialogOpen}
-        dietPlan={selectedPlan}
-      />
     </SidebarProvider>
   );
 }

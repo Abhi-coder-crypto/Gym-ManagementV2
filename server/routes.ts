@@ -1557,6 +1557,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Workout Plan routes
+  app.get("/api/workout-plan-templates", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
+    try {
+      const templates = await storage.getWorkoutPlanTemplates();
+      res.json(templates);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/workout-plan-templates", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
+    try {
+      const templateData = {
+        ...req.body,
+        isTemplate: true,
+        createdBy: req.user?.role || 'admin',
+      };
+      const template = await storage.createWorkoutPlan(templateData);
+      res.json(template);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/workout-plan-templates/:id", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
+    try {
+      const template = await storage.updateWorkoutPlan(req.params.id, req.body);
+      if (!template) {
+        return res.status(404).json({ message: "Workout plan template not found" });
+      }
+      res.json(template);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/workout-plan-templates/:id", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
+    try {
+      const success = await storage.deleteWorkoutPlan(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Workout plan template not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/workout-plans/:clientId", async (req, res) => {
     try {
       const plans = await storage.getClientWorkoutPlans(req.params.clientId);
@@ -1587,7 +1634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/workout-plans/:id", async (req, res) => {
+  app.patch("/api/workout-plans/:id", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
     try {
       const plan = await storage.updateWorkoutPlan(req.params.id, req.body);
       if (!plan) {
@@ -1599,7 +1646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/workout-plans/:id", async (req, res) => {
+  app.delete("/api/workout-plans/:id", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
     try {
       const success = await storage.deleteWorkoutPlan(req.params.id);
       if (!success) {
@@ -1732,7 +1779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/meals/:id", async (req, res) => {
+  app.patch("/api/meals/:id", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
     try {
       const meal = await storage.updateMeal(req.params.id, req.body);
       if (!meal) {
@@ -1744,7 +1791,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/meals/:id", async (req, res) => {
+  app.delete("/api/meals/:id", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
     try {
       const success = await storage.deleteMeal(req.params.id);
       if (!success) {
