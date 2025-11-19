@@ -59,6 +59,7 @@ import {
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 export default function AdminClientsEnhanced() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -170,6 +171,28 @@ export default function AdminClientsEnhanced() {
       toast({
         title: "Error",
         description: "Failed to update client",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleClientStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const response = await apiRequest(`/api/clients/${id}/status`, 'PATCH', { status });
+      return response.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/clients/search'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      toast({
+        title: "Success",
+        description: `Client status updated to ${variables.status}`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update client status",
         variant: "destructive",
       });
     },
@@ -613,18 +636,22 @@ export default function AdminClientsEnhanced() {
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    if (confirm('Are you sure you want to delete this client?')) {
-                                      deleteClientMutation.mutate(client._id);
-                                    }
-                                  }}
-                                  data-testid={`button-delete-${client._id}`}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-muted-foreground">
+                                    {client.status === 'active' ? 'Active' : 'Inactive'}
+                                  </span>
+                                  <Switch
+                                    checked={client.status === 'active'}
+                                    onCheckedChange={(checked) => {
+                                      toggleClientStatusMutation.mutate({
+                                        id: client._id,
+                                        status: checked ? 'active' : 'inactive'
+                                      });
+                                    }}
+                                    disabled={toggleClientStatusMutation.isPending}
+                                    data-testid={`switch-status-${client._id}`}
+                                  />
+                                </div>
                               </div>
                             </TableCell>
                           </TableRow>
