@@ -112,6 +112,8 @@ export interface IStorage {
   getClientVideos(clientId: string): Promise<IVideo[]>;
   assignVideoToClient(clientId: string, videoId: string): Promise<IClientVideo>;
   removeVideoFromClient(clientId: string, videoId: string): Promise<boolean>;
+  getVideoAssignedClients(videoId: string): Promise<IClient[]>;
+  assignVideoToClients(videoId: string, clientIds: string[]): Promise<any>;
   
   // Video Progress methods
   getVideoProgress(clientId: string, videoId: string): Promise<IVideoProgress | null>;
@@ -175,6 +177,7 @@ export interface IStorage {
   removeClientFromSession(sessionId: string, clientId: string): Promise<boolean>;
   getSessionClients(sessionId: string): Promise<IClient[]>;
   bookSessionSpot(sessionId: string, clientId: string): Promise<{ success: boolean; message: string; booking?: ISessionClient }>;
+  assignSessionToClients(sessionId: string, clientIds: string[]): Promise<any>;
   
   // Session Waitlist methods
   addToWaitlist(sessionId: string, clientId: string): Promise<{ success: boolean; message: string; position?: number }>;
@@ -400,6 +403,38 @@ export class MongoStorage implements IStorage {
   async removeVideoFromClient(clientId: string, videoId: string): Promise<boolean> {
     const result = await ClientVideo.findOneAndDelete({ clientId, videoId });
     return !!result;
+  }
+
+  async getVideoAssignedClients(videoId: string): Promise<IClient[]> {
+    const clientVideos = await ClientVideo.find({ videoId }).populate('clientId');
+    return clientVideos.map(cv => cv.clientId as any).filter(c => c !== null);
+  }
+
+  async assignVideoToClients(videoId: string, clientIds: string[]): Promise<any> {
+    const assigned = [];
+    const errors = [];
+    
+    for (const clientId of clientIds) {
+      try {
+        // Check if already assigned
+        const existing = await ClientVideo.findOne({ clientId, videoId });
+        if (!existing) {
+          const clientVideo = new ClientVideo({ clientId, videoId });
+          await clientVideo.save();
+          assigned.push(clientId);
+        } else {
+          errors.push({ clientId, message: 'Already assigned' });
+        }
+      } catch (error: any) {
+        errors.push({ clientId, message: error.message });
+      }
+    }
+    
+    return {
+      success: assigned.length > 0,
+      assigned: assigned.length,
+      errors: errors.length > 0 ? errors : undefined,
+    };
   }
 
   async searchVideos(filters: {
@@ -926,6 +961,51 @@ export class MongoStorage implements IStorage {
     });
     
     return { success: true, message: 'Booking successful', booking };
+  }
+
+  async assignSessionToClients(sessionId: string, clientIds: string[]): Promise<any> {
+    const assigned = [];
+    const errors = [];
+    
+    const session = await LiveSession.findById(sessionId);
+    if (!session) {
+      return {
+        success: false,
+        message: 'Session not found',
+      };
+    }
+    
+    for (const clientId of clientIds) {
+      try {
+        // Check if already assigned/booked
+        const existing = await SessionClient.findOne({ sessionId, clientId });
+        if (!existing) {
+          // Create booking without checking capacity (admin override)
+          const booking = new SessionClient({ sessionId, clientId });
+          await booking.save();
+          assigned.push(clientId);
+        } else {
+          errors.push({ clientId, message: 'Already assigned' });
+        }
+      } catch (error: any) {
+        errors.push({ clientId, message: error.message });
+      }
+    }
+    
+    // Update capacity count
+    if (assigned.length > 0) {
+      const currentCount = await SessionClient.countDocuments({ sessionId });
+      await LiveSession.findByIdAndUpdate(sessionId, {
+        currentCapacity: currentCount,
+        updatedAt: new Date()
+      });
+    }
+    
+    return {
+      success: assigned.length > 0,
+      assigned: assigned.length,
+      errors: errors.length > 0 ? errors : undefined,
+    };
   }
 
   // Session Waitlist methods

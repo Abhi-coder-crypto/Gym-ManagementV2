@@ -5,7 +5,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UploadVideoModal } from "@/components/upload-video-modal";
-import { Search, Plus, Edit, Trash2, Eye, CheckCircle2, FileText, Filter } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Eye, CheckCircle2, FileText, Filter, UserPlus } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,6 +17,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { EditVideoModal } from "@/components/edit-video-modal";
+import { AssignVideoDialog } from "@/components/assign-video-dialog";
 
 interface Video {
   _id: string;
@@ -47,6 +48,9 @@ export default function AdminVideos() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [assignVideoId, setAssignVideoId] = useState<string>("");
+  const [assignVideoTitle, setAssignVideoTitle] = useState<string>("");
   const { toast } = useToast();
 
   // Fetch all videos
@@ -84,6 +88,12 @@ export default function AdminVideos() {
 
   const handleDelete = (videoId: string) => {
     setDeleteVideoId(videoId);
+  };
+
+  const handleAssign = (video: Video) => {
+    setAssignVideoId(video._id);
+    setAssignVideoTitle(video.title);
+    setShowAssignDialog(true);
   };
 
   const confirmDelete = () => {
@@ -183,6 +193,15 @@ export default function AdminVideos() {
           </CardContent>
 
           <CardFooter className="flex gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleAssign(video)}
+              data-testid={`button-assign-${video._id}`}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Assign
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -384,6 +403,13 @@ export default function AdminVideos() {
           video={selectedVideo}
         />
       )}
+
+      <AssignVideoDialog
+        open={showAssignDialog}
+        onOpenChange={setShowAssignDialog}
+        videoId={assignVideoId}
+        videoTitle={assignVideoTitle}
+      />
 
       <AlertDialog open={!!deleteVideoId} onOpenChange={() => setDeleteVideoId(null)}>
         <AlertDialogContent>

@@ -1572,6 +1572,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Video Assignment routes
+  app.get("/api/videos/:id/clients", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
+    try {
+      const clients = await storage.getVideoAssignedClients(req.params.id);
+      res.json(clients);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/videos/:id/assign", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
+    try {
+      const { clientIds } = req.body;
+      if (!Array.isArray(clientIds) || clientIds.length === 0) {
+        return res.status(400).json({ message: "clientIds must be a non-empty array" });
+      }
+      
+      const result = await storage.assignVideoToClients(req.params.id, clientIds);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Video Progress routes (Continue Watching) - owner or admin only
   app.get("/api/clients/:clientId/video-progress/:videoId", authenticateToken, requireOwnershipOrAdmin, async (req, res) => {
     try {
@@ -2235,6 +2259,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Session not found" });
       }
       res.json(session);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Session Assignment route
+  app.post("/api/sessions/:id/assign", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
+    try {
+      const { clientIds } = req.body;
+      if (!Array.isArray(clientIds) || clientIds.length === 0) {
+        return res.status(400).json({ message: "clientIds must be a non-empty array" });
+      }
+      
+      const result = await storage.assignSessionToClients(req.params.id, clientIds);
+      res.json(result);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

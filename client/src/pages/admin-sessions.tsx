@@ -21,6 +21,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Calendar as CalendarIcon, Users, Clock, Trash2, UserPlus, List, Video } from "lucide-react";
 import { format } from "date-fns";
+import { AssignSessionDialog } from "@/components/assign-session-dialog";
 
 const SESSION_TYPES = ["Power Yoga", "HIIT", "Cardio Bootcamp", "Strength Building", "Flexibility"];
 const SESSION_STATUSES = ["upcoming", "live", "completed", "cancelled"];
@@ -49,6 +50,9 @@ export default function AdminSessions() {
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [isManageDialogOpen, setIsManageDialogOpen] = useState(false);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [assignSessionId, setAssignSessionId] = useState<string>("");
+  const [assignSessionTitle, setAssignSessionTitle] = useState<string>("");
   const { toast } = useToast();
 
   const form = useForm<SessionFormData>({
@@ -263,7 +267,7 @@ export default function AdminSessions() {
                           </div>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           {!session.joinUrl && session.status === "upcoming" && (
                             <Button
                               size="sm"
@@ -285,7 +289,19 @@ export default function AdminSessions() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1"
+                            onClick={() => {
+                              setAssignSessionId(session._id);
+                              setAssignSessionTitle(session.title);
+                              setShowAssignDialog(true);
+                            }}
+                            data-testid={`button-assign-${session._id}`}
+                          >
+                            <UserPlus className="h-4 w-4 mr-1" />
+                            Assign
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => {
                               setSelectedSession(session);
                               setIsManageDialogOpen(true);
@@ -591,6 +607,13 @@ export default function AdminSessions() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AssignSessionDialog
+        open={showAssignDialog}
+        onOpenChange={setShowAssignDialog}
+        sessionId={assignSessionId}
+        sessionTitle={assignSessionTitle}
+      />
     </SidebarProvider>
   );
 }
