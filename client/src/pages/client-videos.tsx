@@ -44,17 +44,24 @@ export default function ClientVideos() {
     }
   }, [setLocation]);
 
-  const { data: allVideos = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/videos'],
+  // Fetch ONLY videos assigned to this client
+  const { data: assignedVideosData = [], isLoading } = useQuery<any[]>({
+    queryKey: [`/api/clients/${clientId}/videos`],
+    enabled: !!clientId,
   });
 
+  // Extract videos from assigned data (handle both formats)
+  const allVideos = useMemo(() => {
+    return assignedVideosData.map((item: any) => item.video || item).filter(Boolean);
+  }, [assignedVideosData]);
+
   const { data: continueWatching = [] } = useQuery<any[]>({
-    queryKey: ['/api/clients', clientId, 'continue-watching'],
+    queryKey: [`/api/clients/${clientId}/continue-watching`],
     enabled: !!clientId,
   });
 
   const { data: bookmarks = [] } = useQuery<any[]>({
-    queryKey: ['/api/clients', clientId, 'bookmarks'],
+    queryKey: [`/api/clients/${clientId}/bookmarks`],
     enabled: !!clientId,
   });
 
@@ -67,7 +74,7 @@ export default function ClientVideos() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/clients', clientId, 'bookmarks'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/bookmarks`] });
     },
   });
 
@@ -204,9 +211,11 @@ export default function ClientVideos() {
             </p>
           </div>
 
-          <Tabs defaultValue="all" className="w-full">
+          <Tabs defaultValue="my-videos" className="w-full">
             <TabsList>
-              <TabsTrigger value="all" data-testid="tab-all-videos">All Videos</TabsTrigger>
+              <TabsTrigger value="my-videos" data-testid="tab-my-videos">
+                My Videos ({filteredVideos.length})
+              </TabsTrigger>
               <TabsTrigger value="continue" data-testid="tab-continue-watching">
                 Continue Watching ({continueWatching.length})
               </TabsTrigger>
@@ -215,7 +224,7 @@ export default function ClientVideos() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="all" className="space-y-6">
+            <TabsContent value="my-videos" className="space-y-6">
               <div className="flex flex-col gap-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

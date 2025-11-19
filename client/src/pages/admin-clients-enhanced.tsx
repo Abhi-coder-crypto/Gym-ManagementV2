@@ -456,7 +456,7 @@ export default function AdminClientsEnhanced() {
     const variants: Record<string, { variant: any; icon: any; label: string }> = {
       active: { variant: "default" as const, icon: UserCheck, label: "Active" },
       inactive: { variant: "secondary" as const, icon: UserX, label: "Inactive" },
-      pending: { variant: "outline" as const, icon: UserPlus, label: "Pending" },
+      enquired: { variant: "outline" as const, icon: UserPlus, label: "Enquired" },
     };
     const config = variants[status] || variants.active;
     const Icon = config.icon;
@@ -473,7 +473,7 @@ export default function AdminClientsEnhanced() {
   const totalClients = clientsArray.length;
   const activeCount = clientsArray.filter((c: any) => c.status === 'active').length;
   const inactiveCount = clientsArray.filter((c: any) => c.status === 'inactive').length;
-  const pendingCount = clientsArray.filter((c: any) => c.status === 'pending').length;
+  const enquiredCount = clientsArray.filter((c: any) => c.status === 'enquired').length;
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
@@ -523,11 +523,11 @@ export default function AdminClientsEnhanced() {
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                    <CardTitle className="text-sm font-medium">Enquired</CardTitle>
                     <UserPlus className="h-4 w-4 text-orange-600" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-orange-600" data-testid="text-pending-clients">{pendingCount}</div>
+                    <div className="text-2xl font-bold text-orange-600" data-testid="text-enquired-clients">{enquiredCount}</div>
                   </CardContent>
                 </Card>
               </div>
@@ -554,7 +554,7 @@ export default function AdminClientsEnhanced() {
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="enquired">Enquired</SelectItem>
                   </SelectContent>
                 </Select>
 

@@ -8,18 +8,34 @@ import strengthImage from "@assets/generated_images/Strength_training_video_thum
 import yogaImage from "@assets/generated_images/Yoga_class_video_thumbnail_a8a89f8b.png";
 import cardioImage from "@assets/generated_images/Cardio_workout_video_thumbnail_2c386154.png";
 import { useLocation } from "wouter";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 export default function ClientWorkouts() {
   const [, setLocation] = useLocation();
+  const [clientId, setClientId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [videoModal, setVideoModal] = useState({ open: false, title: "", category: "", duration: "", thumbnail: "", url: "" });
 
-  // Fetch real videos from backend
-  const { data: videosData, isLoading, isError } = useQuery<any[]>({
-    queryKey: ['/api/videos'],
+  useEffect(() => {
+    const id = localStorage.getItem('clientId');
+    if (!id) {
+      setLocation('/client-access');
+    } else {
+      setClientId(id);
+    }
+  }, [setLocation]);
+
+  // Fetch ONLY videos assigned to this client
+  const { data: assignedVideosData = [], isLoading, isError } = useQuery<any[]>({
+    queryKey: [`/api/clients/${clientId}/videos`],
+    enabled: !!clientId,
   });
+
+  // Extract videos from assigned data
+  const videosData = useMemo(() => {
+    return assignedVideosData.map((item: any) => item.video || item).filter(Boolean);
+  }, [assignedVideosData]);
 
   // Extract unique categories from backend data
   const categories = useMemo(() => {

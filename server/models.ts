@@ -32,7 +32,7 @@ export interface IClient extends Document {
   fitnessLevel?: 'beginner' | 'intermediate' | 'advanced';
   limitations?: string;
   language?: 'en' | 'hi';
-  status?: 'active' | 'inactive' | 'pending';
+  status?: 'active' | 'inactive' | 'enquired';
   adminNotes?: string;
   lastActivityDate?: Date;
   notificationPreferences?: {
@@ -336,7 +336,7 @@ const ClientSchema = new Schema({
   fitnessLevel: { type: String, enum: ['beginner', 'intermediate', 'advanced'] },
   limitations: String,
   language: { type: String, enum: ['en', 'hi'], default: 'en' },
-  status: { type: String, enum: ['active', 'inactive', 'pending'], default: 'active' },
+  status: { type: String, enum: ['active', 'inactive', 'enquired'], default: 'active' },
   adminNotes: String,
   lastActivityDate: Date,
   notificationPreferences: {

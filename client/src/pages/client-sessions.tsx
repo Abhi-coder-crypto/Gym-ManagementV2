@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Filter, X } from "lucide-react";
 
 export default function ClientSessions() {
   const [, setLocation] = useLocation();
+  const [clientId, setClientId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     type: 'all',
     trainer: 'all',
@@ -17,9 +18,20 @@ export default function ClientSessions() {
     sortBy: 'date'
   });
 
-  // Fetch real sessions from backend
-  const { data: sessionsData, isLoading, isError } = useQuery<any[]>({
-    queryKey: ['/api/sessions'],
+  // Get client ID from localStorage
+  useEffect(() => {
+    const id = localStorage.getItem('clientId');
+    if (!id) {
+      setLocation('/client-access');
+    } else {
+      setClientId(id);
+    }
+  }, [setLocation]);
+
+  // Fetch ONLY sessions booked by this client
+  const { data: sessionsData = [], isLoading, isError } = useQuery<any[]>({
+    queryKey: [`/api/sessions/client/${clientId}`],
+    enabled: !!clientId,
   });
 
   // Get unique values for filters

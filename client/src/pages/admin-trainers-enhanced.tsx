@@ -548,15 +548,15 @@ export default function AdminTrainersEnhanced() {
           resetForm();
         }
       }}>
-        <DialogContent>
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle>{editingTrainer ? "Edit Trainer" : "Add New Trainer"}</DialogTitle>
-              <DialogDescription>
-                {editingTrainer ? "Update trainer information" : "Create a new trainer account"}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingTrainer ? "Edit Trainer" : "Add New Trainer"}</DialogTitle>
+            <DialogDescription>
+              {editingTrainer ? "Update trainer information" : "Create a new trainer account"}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name *</Label>
                 <Input
@@ -581,6 +581,9 @@ export default function AdminTrainersEnhanced() {
                   required
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
@@ -591,31 +594,6 @@ export default function AdminTrainersEnhanced() {
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   data-testid="input-trainer-phone"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">
-                  Password {!editingTrainer && "*"} {editingTrainer && "(leave blank to keep current)"}
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder={editingTrainer ? "Leave blank to keep current password" : "At least 6 characters"}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    data-testid="input-trainer-password"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0"
-                    onClick={() => setShowPassword(!showPassword)}
-                    data-testid="button-toggle-password"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
@@ -632,7 +610,35 @@ export default function AdminTrainersEnhanced() {
                   </SelectContent>
                 </Select>
               </div>
-              
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                Password {!editingTrainer && "*"} {editingTrainer && "(leave blank to keep current)"}
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={editingTrainer ? "Leave blank to keep current password" : "At least 6 characters"}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  data-testid="input-trainer-password"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0"
+                  onClick={() => setShowPassword(!showPassword)}
+                  data-testid="button-toggle-password"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="profilePhoto">Profile Photo</Label>
                 <div className="flex items-center gap-2">
@@ -656,7 +662,7 @@ export default function AdminTrainersEnhanced() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="documentOne">Document 1 (ID/Certificate)</Label>
+                <Label htmlFor="documentOne">Document 1</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     id="documentOne"
@@ -678,7 +684,7 @@ export default function AdminTrainersEnhanced() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="documentTwo">Document 2 (Optional)</Label>
+                <Label htmlFor="documentTwo">Document 2</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     id="documentTwo"
