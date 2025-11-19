@@ -57,6 +57,10 @@ import {
   Calendar,
   Package,
   FileText,
+  LayoutGrid,
+  LayoutList,
+  FileCheck,
+  User,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
@@ -72,6 +76,8 @@ export default function AdminClientsEnhanced() {
   const [editingClient, setEditingClient] = useState<any>(null);
   const [viewingClient, setViewingClient] = useState<any>(null);
   const [isBulkActionsOpen, setIsBulkActionsOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "card">("list");
+  const [viewingDocuments, setViewingDocuments] = useState<any>(null);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -676,6 +682,25 @@ export default function AdminClientsEnhanced() {
                   </SelectContent>
                 </Select>
 
+                <div className="flex items-center gap-2 border rounded-md p-1">
+                  <Button
+                    variant={viewMode === "list" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("list")}
+                    data-testid="button-view-list"
+                  >
+                    <LayoutList className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "card" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("card")}
+                    data-testid="button-view-card"
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </Button>
+                </div>
+
                 <div className="flex gap-2 ml-auto">
                   {selectedClients.size > 0 && (
                     <Dialog open={isBulkActionsOpen} onOpenChange={setIsBulkActionsOpen}>
@@ -736,10 +761,11 @@ export default function AdminClientsEnhanced() {
                 </div>
               </div>
 
-              {/* Clients Table */}
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
+              {/* Clients List/Card View */}
+              {viewMode === "list" ? (
+                <Card>
+                  <CardContent className="p-0">
+                    <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[50px]">
@@ -812,6 +838,14 @@ export default function AdminClientsEnhanced() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  onClick={() => setViewingDocuments(client)}
+                                  data-testid={`button-view-docs-${client._id}`}
+                                >
+                                  <FileCheck className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                   onClick={() => handleEdit(client)}
                                   data-testid={`button-edit-${client._id}`}
                                 >
@@ -855,6 +889,120 @@ export default function AdminClientsEnhanced() {
                   </Table>
                 </CardContent>
               </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {clientsLoading ? (
+                    <div className="col-span-full text-center text-muted-foreground py-12">
+                      Loading clients...
+                    </div>
+                  ) : clientsArray.length === 0 ? (
+                    <div className="col-span-full text-center text-muted-foreground py-12">
+                      No clients found
+                    </div>
+                  ) : (
+                    clientsArray.map((client: any) => (
+                      <Card key={client._id} className="overflow-hidden hover-elevate" data-testid={`card-client-${client._id}`}>
+                        <CardContent className="p-6 space-y-4">
+                          <div className="flex flex-col items-center gap-4">
+                            <div className="relative">
+                              {client.profilePhoto ? (
+                                <img 
+                                  src={client.profilePhoto} 
+                                  alt={client.name}
+                                  className="h-24 w-24 rounded-full object-cover border-2 border-border"
+                                  data-testid={`img-profile-${client._id}`}
+                                />
+                              ) : (
+                                <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center border-2 border-border">
+                                  <User className="h-12 w-12 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div className="absolute bottom-0 right-0">
+                                {getStatusBadge(client.status || 'active')}
+                              </div>
+                            </div>
+                            <div className="text-center w-full">
+                              <h3 className="font-semibold text-lg" data-testid="text-client-name">{client.name}</h3>
+                              <p className="text-sm text-muted-foreground" data-testid="text-client-phone">{client.phone}</p>
+                              {client.packageId && (
+                                <Badge variant="outline" className="mt-2" data-testid="badge-package">
+                                  {client.packageId.name}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Joined:</span>
+                              <span className="font-medium" data-testid="text-join-date">
+                                {new Date(client.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {client.age && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Age:</span>
+                                <span className="font-medium">{client.age} years</span>
+                              </div>
+                            )}
+                            {client.weight && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Weight:</span>
+                                <span className="font-medium">{client.weight} kg</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col gap-2 pt-4 border-t">
+                            <div className="grid grid-cols-3 gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setViewingClient(client)}
+                                data-testid={`button-view-${client._id}`}
+                              >
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setViewingDocuments(client)}
+                                data-testid={`button-view-docs-${client._id}`}
+                              >
+                                <FileCheck className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEdit(client)}
+                                data-testid={`button-edit-${client._id}`}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-muted-foreground">
+                                {client.status === 'active' ? 'Active' : 'Inactive'}
+                              </span>
+                              <Switch
+                                checked={client.status === 'active'}
+                                onCheckedChange={(checked) => {
+                                  toggleClientStatusMutation.mutate({
+                                    id: client._id,
+                                    status: checked ? 'active' : 'inactive'
+                                  });
+                                }}
+                                disabled={toggleClientStatusMutation.isPending}
+                                data-testid={`switch-status-${client._id}`}
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </main>
         </div>
@@ -1281,6 +1429,116 @@ export default function AdminClientsEnhanced() {
                 </div>
               </TabsContent>
             </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Documents Dialog */}
+      <Dialog open={!!viewingDocuments} onOpenChange={(open) => {
+        if (!open) setViewingDocuments(null);
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileCheck className="h-5 w-5" />
+              Client Documents - {viewingDocuments?.name}
+            </DialogTitle>
+            <DialogDescription>
+              View uploaded identity and other documents for this client
+            </DialogDescription>
+          </DialogHeader>
+          
+          {viewingDocuments && (
+            <div className="space-y-6 py-4">
+              {/* Profile Photo */}
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">Profile Photo</Label>
+                {viewingDocuments.profilePhoto ? (
+                  <div className="flex items-center gap-4">
+                    <img 
+                      src={viewingDocuments.profilePhoto} 
+                      alt="Profile"
+                      className="h-32 w-32 rounded-full object-cover border-2 border-border"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => window.open(viewingDocuments.profilePhoto, '_blank')}
+                      data-testid="button-view-profile-photo-full"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Full Size
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <div className="h-32 w-32 rounded-full bg-muted flex items-center justify-center border-2 border-border">
+                      <User className="h-16 w-16 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">No profile photo uploaded</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Government ID Document */}
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">Government ID (Aadhar/PAN/Other)</Label>
+                {viewingDocuments.aadharDocument ? (
+                  <Card>
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-8 w-8 text-primary" />
+                        <div>
+                          <p className="font-medium">Government ID Document</p>
+                          <p className="text-sm text-muted-foreground">
+                            {viewingDocuments.aadharDocument.split('/').pop()}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => window.open(viewingDocuments.aadharDocument, '_blank')}
+                        data-testid="button-view-government-id-full"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Document
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground">No government ID document uploaded</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
+              {/* Other Documents */}
+              {viewingDocuments.otherDocument && (
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold">Other Documents</Label>
+                  <Card>
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-8 w-8 text-primary" />
+                        <div>
+                          <p className="font-medium">Additional Document</p>
+                          <p className="text-sm text-muted-foreground">
+                            {viewingDocuments.otherDocument.split('/').pop()}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => window.open(viewingDocuments.otherDocument, '_blank')}
+                        data-testid="button-view-other-document"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Document
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>
