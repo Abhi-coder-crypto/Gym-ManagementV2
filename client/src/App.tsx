@@ -14,7 +14,7 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import AdminClientsEnhanced from "@/pages/admin-clients-enhanced";
 import AdminClientSetup from "@/pages/admin-client-setup";
 import AdminVideos from "@/pages/admin-videos";
-import AdminDiet from "@/pages/admin-diet-plans";
+import AdminDiet from "@/pages/admin-diet";
 import AdminSessions from "@/pages/admin-sessions";
 import AdminAnalyticsEnhanced from "@/pages/admin-analytics-enhanced";
 import AdminRevenueEnhanced from "@/pages/admin-revenue-enhanced";
