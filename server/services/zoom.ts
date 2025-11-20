@@ -48,6 +48,7 @@ export class ZoomService {
     }
 
     try {
+      console.log('🔐 Attempting Zoom OAuth with Account ID:', this.accountId.substring(0, 5) + '...');
       const credentials = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
       
       const response = await axios.post(
@@ -68,10 +69,21 @@ export class ZoomService {
         throw new Error('No access token received from Zoom');
       }
       
+      console.log('✅ Zoom OAuth successful');
       return this.accessToken;
     } catch (error: any) {
-      console.error('Zoom OAuth error:', error.response?.data || error.message);
-      throw new Error('Failed to authenticate with Zoom API');
+      console.error('❌ Zoom OAuth failed');
+      console.error('Account ID:', this.accountId);
+      console.error('Client ID:', this.clientId);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', JSON.stringify(error.response?.data, null, 2));
+      console.error('Full error:', error.message);
+      
+      if (error.response?.data?.error === 'invalid_client') {
+        throw new Error('Invalid Zoom credentials. Please verify your ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, and ZOOM_ACCOUNT_SECRET are correct and your Zoom app is activated.');
+      }
+      
+      throw new Error('Failed to authenticate with Zoom API: ' + (error.response?.data?.error_description || error.message));
     }
   }
 
