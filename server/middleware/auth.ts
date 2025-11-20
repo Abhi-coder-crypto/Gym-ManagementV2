@@ -50,17 +50,22 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 export function requireRole(...allowedRoles: Array<'client' | 'admin' | 'trainer'>) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
+      console.error('Authorization failed: No user in request');
       return res.status(401).json({ 
         message: 'Authentication required.' 
       });
     }
     
+    console.log('Authorization check - User role:', req.user.role, 'Allowed roles:', allowedRoles);
+    
     if (!allowedRoles.includes(req.user.role)) {
+      console.error('Authorization failed: User role', req.user.role, 'not in allowed roles:', allowedRoles);
       return res.status(403).json({ 
         message: 'Insufficient permissions. Admin access required.' 
       });
     }
     
+    console.log('Authorization successful for user:', req.user.email);
     next();
   };
 }

@@ -2169,8 +2169,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create Zoom meeting for a session (admin only)
-  app.post("/api/sessions/:id/create-zoom", authenticateToken, requireAdmin, async (req, res) => {
+  // Create Zoom meeting for a session (admin and trainer)
+  app.post("/api/sessions/:id/create-zoom", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
     try {
       if (!zoomService.isConfigured()) {
         return res.status(503).json({ 
