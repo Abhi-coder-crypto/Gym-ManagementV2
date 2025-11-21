@@ -39,9 +39,6 @@ export function AchievementsWidget() {
             );
           })}
         </div>
-        <Button variant="outline" className="w-full" data-testid="button-view-all-achievements">
-          View All Achievements
-        </Button>
       </CardContent>
     </Card>
   );

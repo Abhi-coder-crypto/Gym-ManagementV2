@@ -3291,6 +3291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           targetWeight,
           weightProgress: Math.max(0, Math.min(100, weightProgress)),
           weeklyWorkoutCompletion: Math.round((stats.weekSessions / 5) * 100),
+          weeklyStats: stats.weeklyStats || [],
         },
         nextSession,
         upcomingSessions,

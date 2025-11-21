@@ -45,16 +45,31 @@ The system uses a fitness-focused Material Design with a blue, orange, and green
 - **Responsive Design**: Fully responsive across devices.
 
 ## Recent Changes
-### November 21, 2025 - Session Assignment Fixes
-Fixed three critical issues in the live session assignment system:
-1. **Trainer Assignment Persistence**: Updated AssignSessionDialog to use `useEffect` to load and display currently assigned trainer when dialog reopens
-2. **Client Assignment 500 Error**: Simplified package validation logic in `/api/sessions/:id/assign` endpoint to prevent ObjectId casting errors
-3. **Trainer Dashboard Data**: Updated `assignSessionToClients` method to properly sync `LiveSession.clients` array with `SessionClient` records, ensuring trainer dashboards display assigned sessions correctly
+### November 21, 2025 - Comprehensive Session Assignment Fixes
+Fixed four critical issues in the live session assignment system to ensure proper UI state management and data synchronization:
+
+1. **Trainer Dialog Persistence**: Dialog now correctly shows currently assigned trainer when reopened
+   - Created new `/api/sessions/:sessionId/assignments` endpoint that returns trainer and client assignments
+   - Updated useEffect to properly initialize selectedTrainer state when dialog opens and reset on close
+   - Added "Currently Assigned" badge to show which trainer is assigned
+
+2. **Batch Count Display**: Fixed batch count to show correct total (e.g., 1/10 instead of 0/10)
+   - Changed calculation from `selectedClients.length` to `sessionClients.length + selectedClients.length`
+   - Now accurately reflects both already assigned and newly selected clients
+
+3. **Prevent Duplicate Trainer Assignment**: Disabled re-selection of already assigned trainer
+   - Added logic to disable checkbox for currently assigned trainer
+   - Trainer can only be changed to a different trainer, not re-assigned the same one
+
+4. **Trainer Dashboard Data**: Verified proper session and client data display in trainer dashboards
+   - Confirmed getTrainerSessions correctly populates clients array
+   - Validated data synchronization between SessionClient records and LiveSession.clients array
 
 ### Implementation Details
-- **Dialog State Management**: Added `currentAssignments` query and `useEffect` hook to pre-populate trainer selection based on existing session assignments
-- **Validation Simplification**: Removed complex package name matching logic that was causing errors; now validates only client existence and duplicate assignments
-- **Data Synchronization**: `assignSessionToClients` now updates both `SessionClient` records AND `LiveSession.clients` array to maintain consistency across the system
+- **New API Endpoint**: GET `/api/sessions/:sessionId/assignments` returns current trainer ID, trainer name, client IDs, and client count
+- **Dialog State Management**: useEffect properly handles open/close lifecycle, initializing from API and resetting cleanly
+- **UI Enhancements**: Added visual indicators (badges, disabled states) to improve user experience and prevent errors
+- **Data Consistency**: All assignment operations maintain synchronization between SessionClient collection and LiveSession.clients array
 
 ## External Dependencies
 - **MongoDB Atlas**: Cloud-hosted NoSQL database.

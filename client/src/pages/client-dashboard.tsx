@@ -237,50 +237,6 @@ export default function ClientDashboard() {
             <div className="lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Flame className="h-5 w-5 text-orange-500" />
-                    Workout Streak Calendar
-                  </CardTitle>
-                  <CardDescription>
-                    Your workout consistency over the last 4 weeks
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-7 gap-2">
-                    {calendarData.map((day, i) => {
-                      return (
-                        <div
-                          key={day.date}
-                          className={`aspect-square rounded-md flex items-center justify-center text-xs ${
-                            day.isToday
-                              ? 'border-2 border-primary'
-                              : day.hasWorkout
-                              ? 'bg-chart-2 text-chart-2-foreground'
-                              : 'bg-muted'
-                          }`}
-                          data-testid={`calendar-day-${i}`}
-                          title={day.date}
-                        >
-                          {day.isToday ? 'T' : day.hasWorkout ? '✓' : ''}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex items-center justify-center gap-4 mt-4 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-sm bg-chart-2"></div>
-                      <span>Workout completed</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-sm bg-muted"></div>
-                      <span>Rest day</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle>Upcoming Live Sessions</CardTitle>
                     <Button

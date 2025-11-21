@@ -3,21 +3,30 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingDown, TrendingUp, Target } from "lucide-react";
 
-export function ProgressTracker() {
-  const weeklyStats = [
-    { day: "Mon", completed: true },
-    { day: "Tue", completed: true },
-    { day: "Wed", completed: true },
+interface ProgressTrackerProps {
+  weeklyStats?: Array<{ day: string; completed: boolean }>;
+  goals?: Array<{ name: string; current: number; target: number; unit: string; icon: any }>;
+}
+
+export function ProgressTracker({ weeklyStats = [], goals = [] }: ProgressTrackerProps) {
+  // Default weekly stats if not provided
+  const defaultWeeklyStats = [
+    { day: "Mon", completed: false },
+    { day: "Tue", completed: false },
+    { day: "Wed", completed: false },
     { day: "Thu", completed: false },
     { day: "Fri", completed: false },
     { day: "Sat", completed: false },
     { day: "Sun", completed: false },
   ];
 
-  const goals = [
-    { name: "Weight Goal", current: 179, target: 170, unit: "lbs", icon: TrendingDown },
-    { name: "Weekly Workouts", current: 3, target: 5, unit: "sessions", icon: Target },
+  const defaultGoals = [
+    { name: "Weight Goal", current: 0, target: 0, unit: "lbs", icon: TrendingDown },
+    { name: "Weekly Workouts", current: 0, target: 5, unit: "sessions", icon: Target },
   ];
+
+  const displayStats = weeklyStats.length > 0 ? weeklyStats : defaultWeeklyStats;
+  const displayGoals = goals.length > 0 ? goals : defaultGoals;
 
   return (
     <Card>
@@ -28,7 +37,7 @@ export function ProgressTracker() {
         <div>
           <p className="text-sm font-medium mb-3">This Week's Workouts</p>
           <div className="flex gap-2">
-            {weeklyStats.map((day, index) => (
+            {displayStats.map((day, index) => (
               <div key={index} className="flex-1 text-center">
                 <div
                   className={`h-12 rounded-md flex items-center justify-center font-semibold text-sm ${
@@ -45,7 +54,7 @@ export function ProgressTracker() {
         </div>
 
         <div className="space-y-4">
-          {goals.map((goal, index) => {
+          {displayGoals.map((goal, index) => {
             const Icon = goal.icon;
             const progress = (goal.current / goal.target) * 100;
             return (

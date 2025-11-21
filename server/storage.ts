@@ -1181,6 +1181,33 @@ export class MongoStorage implements IStorage {
       currentStreak = daysSinceLastWorkout <= 1 ? tempStreak : 0;
     }
     
+    // Calculate weekly breakdown for current week
+    const weeklyStats = [];
+    const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    // Calculate Monday of current week
+    const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + mondayOffset);
+    
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + i);
+      const dayKey = day.toISOString().split('T')[0];
+      
+      const hasWorkout = sessions.some(s => {
+        const sDate = new Date(s.completedAt);
+        const sDateKey = new Date(sDate.getFullYear(), sDate.getMonth(), sDate.getDate()).toISOString().split('T')[0];
+        return sDateKey === dayKey;
+      });
+      
+      weeklyStats.push({
+        day: daysOfWeek[i],
+        completed: hasWorkout,
+      });
+    }
+    
     return {
       totalSessions,
       weekSessions,
@@ -1191,6 +1218,7 @@ export class MongoStorage implements IStorage {
       maxStreak,
       recentSessions: sessions.slice(0, 10),
       allSessions: sessions,
+      weeklyStats,
     };
   }
 
