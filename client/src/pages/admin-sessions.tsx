@@ -29,7 +29,8 @@ const SESSION_STATUSES = ["upcoming", "live", "completed", "cancelled"];
 
 const sessionSchema = z.object({
   title: z.string().min(1, "Title is required"),
-  packageId: z.string().min(1, "Package is required"),
+  sessionType: z.string().min(1, "Session type is required"),
+  packagePlan: z.enum(["fitplus", "pro", "elite"], { required_error: "Package plan is required" }),
   scheduledAt: z.string().min(1, "Date and time are required"),
   duration: z.coerce.number().min(1, "Duration must be at least 1 minute"),
   maxCapacity: z.coerce.number().min(1, "Capacity must be at least 1"),
@@ -55,7 +56,8 @@ export default function AdminSessions() {
     resolver: zodResolver(sessionSchema),
     defaultValues: {
       title: "",
-      packageId: "",
+      sessionType: "Power Yoga",
+      packagePlan: "fitplus",
       scheduledAt: "",
       duration: 60,
       maxCapacity: 10,
@@ -78,18 +80,18 @@ export default function AdminSessions() {
     mutationFn: async (data: SessionFormData) => {
       return await apiRequest("POST", "/api/sessions", {
         title: data.title,
-        packageId: data.packageId,
+        sessionType: data.sessionType,
+        packagePlan: data.packagePlan,
         scheduledAt: new Date(data.scheduledAt),
         duration: data.duration,
         maxCapacity: data.maxCapacity,
         currentCapacity: 0,
         status: "upcoming",
-        sessionType: "live",
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
-      toast({ title: "Success", description: "Session created successfully" });
+      toast({ title: "Success", description: "Session created successfully. You can now assign a trainer." });
       setIsCreateDialogOpen(false);
       form.reset();
     },
@@ -403,6 +405,56 @@ export default function AdminSessions() {
                   </FormItem>
                 )}
               />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="sessionType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Session Type</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-session-type">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {SESSION_TYPES.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="packagePlan"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Package Plan</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-package-plan">
+                            <SelectValue placeholder="Select plan" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="fitplus">FitPlus</SelectItem>
+                          <SelectItem value="pro">Pro</SelectItem>
+                          <SelectItem value="elite">Elite</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField

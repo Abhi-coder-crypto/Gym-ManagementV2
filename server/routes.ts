@@ -2683,13 +2683,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: originalSession.title,
         description: originalSession.description,
         sessionType: originalSession.sessionType,
+        packagePlan: originalSession.packagePlan,
         scheduledAt: new Date(scheduledAt),
         duration: originalSession.duration,
         maxCapacity: originalSession.maxCapacity,
         currentCapacity: 0,
         status: 'upcoming',
         trainerId: originalSession.trainerId,
-        packageId: originalSession.packageId,
       });
 
       res.json({
@@ -2776,10 +2776,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "clientIds must be a non-empty array" });
       }
       
-      // Get session to find trainer
+      // Get session to check package plan
       const session = await storage.getSession(req.params.id);
       if (!session) {
         return res.status(404).json({ message: "Session not found" });
+      }
+      
+      // Validate clients match package plan and aren't already assigned to another session
+      const validationErrors: string[] = [];
+      for (const clientId of clientIds) {
+        const client = await storage.getClient(clientId);
+        if (!client) {
+          validationErrors.push(`Client ${clientId} not found`);
+          continue;
+        }
+        
+        // Get client's package to check plan
+        const clientPackage = client.packageId ? await storage.getPackage(String(client.packageId)) : null;
+        const clientPlan = clientPackage?.name?.toLowerCase();
+        
+        // Check if client's package plan matches session's package plan
+        if (!clientPlan || !clientPlan.includes(session.packagePlan)) {
+          validationErrors.push(`Client ${client.name} has ${clientPlan || 'no'} package, but session requires ${session.packagePlan}`);
+          continue;
+        }
+        
+        // Check if client is already assigned to any other session
+        const existingSessions = await storage.getClientSessions(clientId);
+        if (existingSessions.some((s: any) => s._id.toString() !== session._id.toString())) {
+          validationErrors.push(`Client ${client.name} is already assigned to another session`);
+          continue;
+        }
+      }
+      
+      if (validationErrors.length > 0) {
+        return res.status(400).json({ 
+          message: "Some clients cannot be assigned",
+          errors: validationErrors 
+        });
       }
       
       // Assign clients to session (this now handles trainerId persistence internally)

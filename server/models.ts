@@ -176,6 +176,7 @@ export interface ILiveSession extends Document {
   title: string;
   description?: string;
   sessionType: string;
+  packagePlan: 'fitplus' | 'pro' | 'elite';
   scheduledAt: Date;
   duration: number;
   meetingLink?: string;
@@ -490,6 +491,7 @@ const LiveSessionSchema = new Schema({
   title: { type: String, required: true },
   description: String,
   sessionType: { type: String, required: true },
+  packagePlan: { type: String, enum: ['fitplus', 'pro', 'elite'], required: true },
   scheduledAt: { type: Date, required: true },
   duration: { type: Number, required: true },
   meetingLink: String,

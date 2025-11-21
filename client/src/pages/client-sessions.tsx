@@ -215,7 +215,13 @@ export default function ClientSessions() {
                       <LiveSessionCard
                         key={session.id}
                         {...session}
-                        onJoin={() => setLocation(`/session/${session.id}`)}
+                        onJoin={() => {
+                          if (session.joinUrl) {
+                            window.open(session.joinUrl, '_blank');
+                          } else {
+                            alert('Zoom link not available for this session yet');
+                          }
+                        }}
                       />
                     ))}
                   </div>
@@ -230,7 +236,13 @@ export default function ClientSessions() {
                       <LiveSessionCard
                         key={session.id}
                         {...session}
-                        onJoin={() => setLocation(`/session/${session.id}`)}
+                        onJoin={() => {
+                          if (session.joinUrl) {
+                            window.open(session.joinUrl, '_blank');
+                          } else {
+                            alert('Zoom link not available for this session yet');
+                          }
+                        }}
                       />
                     ))}
                   </div>

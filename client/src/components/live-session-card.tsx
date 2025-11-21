@@ -67,13 +67,12 @@ export function LiveSessionCard({
         <CardFooter>
           <Button
             className="w-full"
-            variant={status === "live" ? "default" : "outline"}
+            variant="default"
             onClick={onJoin}
-            disabled={status === "upcoming" && participants >= maxParticipants}
             data-testid="button-join-session"
           >
             <Video className="h-4 w-4 mr-2" />
-            {status === "live" ? "Join Now" : "Reserve Spot"}
+            Join Now
           </Button>
         </CardFooter>
       )}
