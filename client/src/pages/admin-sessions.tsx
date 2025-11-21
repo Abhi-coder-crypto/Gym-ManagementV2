@@ -168,6 +168,13 @@ export default function AdminSessions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+      queryClient.invalidateQueries({ predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === 'string' && (
+          key.startsWith('/api/sessions') ||
+          key.includes('sessions')
+        );
+      }});
       toast({ title: "Success", description: "Session deleted successfully" });
     },
     onError: (error: any) => {

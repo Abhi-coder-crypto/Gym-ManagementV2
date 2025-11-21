@@ -13,7 +13,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { DietTemplateList } from "@/components/diet-template-list";
-import { MealDatabaseList } from "@/components/meal-database-list";
 import { WorkoutPlanTemplates } from "@/components/workout-plan-templates";
 import { PlanAssignments } from "@/components/plan-assignments";
 
@@ -31,7 +30,7 @@ export default function AdminDiet() {
               <SidebarTrigger data-testid="button-sidebar-toggle" />
               <h1 className="text-2xl font-display font-bold tracking-tight flex items-center gap-2">
                 <UtensilsCrossed className="h-6 w-6 text-primary" />
-                Diet Plan Management
+                Diet & Workout Management
               </h1>
             </div>
             <ThemeToggle />
@@ -40,14 +39,10 @@ export default function AdminDiet() {
           <main className="flex-1 overflow-auto p-6">
             <div className="max-w-7xl mx-auto">
               <Tabs defaultValue="templates" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 mb-6">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
                   <TabsTrigger value="templates" data-testid="tab-diet-templates">
                     <UtensilsCrossed className="h-4 w-4 mr-2" />
                     Diet Templates
-                  </TabsTrigger>
-                  <TabsTrigger value="meals" data-testid="tab-meal-database">
-                    <Search className="h-4 w-4 mr-2" />
-                    Meal Database
                   </TabsTrigger>
                   <TabsTrigger value="workouts" data-testid="tab-workout-plans">
                     <Dumbbell className="h-4 w-4 mr-2" />
@@ -55,16 +50,12 @@ export default function AdminDiet() {
                   </TabsTrigger>
                   <TabsTrigger value="assignments" data-testid="tab-assignments">
                     <UserPlus className="h-4 w-4 mr-2" />
-                    Assignments
+                    Diet & Workout Assignments
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="templates" className="space-y-4">
                   <DietTemplateList />
-                </TabsContent>
-
-                <TabsContent value="meals" className="space-y-4">
-                  <MealDatabaseList />
                 </TabsContent>
 
                 <TabsContent value="workouts" className="space-y-4">
