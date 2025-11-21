@@ -2148,9 +2148,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/sessions", authenticateToken, requireAdmin, async (req, res) => {
+  app.post("/api/sessions", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
     try {
-      const session = await storage.createSession(req.body);
+      const sessionData = { ...req.body };
+      // If trainer is creating, set trainerId automatically
+      if (req.user?.role === 'trainer') {
+        sessionData.trainerId = req.user.userId;
+      }
+      const session = await storage.createSession(sessionData);
       res.json(session);
     } catch (error: any) {
       res.status(500).json({ message: error.message });

@@ -1,14 +1,24 @@
+import { useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { TrainerSidebar } from "@/components/trainer-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Users, Video as VideoIcon } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Clock, Users, Video as VideoIcon, Plus } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
-// MongoDB LiveSession interface (matches actual backend data)
 interface LiveSession {
   _id: string;
   title: string;
@@ -25,10 +35,42 @@ interface LiveSession {
   startUrl?: string;
 }
 
+const SESSION_TYPES = ["Power Yoga", "HIIT", "Cardio Bootcamp", "Strength Building", "Flexibility"];
+
+const sessionSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  sessionType: z.string().min(1, "Session type is required"),
+  scheduledAt: z.string().min(1, "Date and time are required"),
+  duration: z.coerce.number().min(1, "Duration must be at least 1 minute"),
+  maxCapacity: z.coerce.number().min(1, "Capacity must be at least 1"),
+  meetingLink: z.string().optional(),
+  status: z.string().default("upcoming"),
+});
+
+type SessionFormData = z.infer<typeof sessionSchema>;
+
 export default function TrainerSessions() {
   const style = {
     "--sidebar-width": "16rem",
   };
+
+  const { toast } = useToast();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  const form = useForm<SessionFormData>({
+    resolver: zodResolver(sessionSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      sessionType: "",
+      scheduledAt: "",
+      duration: 60,
+      maxCapacity: 15,
+      meetingLink: "",
+      status: "upcoming",
+    },
+  });
 
   const { data: user } = useQuery<any>({
     queryKey: ['/api/me']
@@ -41,6 +83,39 @@ export default function TrainerSessions() {
     enabled: !!trainerId
   });
 
+  const createSessionMutation = useMutation({
+    mutationFn: async (data: SessionFormData) => {
+      return await apiRequest("POST", "/api/sessions", {
+        ...data,
+        scheduledAt: new Date(data.scheduledAt),
+        currentCapacity: 0,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/trainers', trainerId, 'sessions'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+      toast({ title: "Success", description: "Session created successfully" });
+      setIsCreateDialogOpen(false);
+      form.reset();
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create session", variant: "destructive" });
+    },
+  });
+
+  const createZoomMeetingMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      return await apiRequest("POST", `/api/sessions/${sessionId}/create-zoom`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/trainers', trainerId, 'sessions'] });
+      toast({ title: "Success", description: "Zoom meeting created successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create Zoom meeting", variant: "destructive" });
+    },
+  });
+
   const upcomingSessions = sessions.filter((s: LiveSession) => 
     s.status === 'upcoming' && new Date(s.scheduledAt) > new Date()
   ).sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
@@ -48,6 +123,10 @@ export default function TrainerSessions() {
   const pastSessions = sessions.filter((s: LiveSession) => 
     s.status === 'completed' || new Date(s.scheduledAt) <= new Date()
   ).sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime());
+
+  const onSubmit = (data: SessionFormData) => {
+    createSessionMutation.mutate(data);
+  };
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
@@ -61,7 +140,16 @@ export default function TrainerSessions() {
                 Live Sessions
               </h1>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                data-testid="button-create-session"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Session
+              </Button>
+              <ThemeToggle />
+            </div>
           </header>
 
           <main className="flex-1 overflow-auto p-6">
@@ -134,10 +222,31 @@ export default function TrainerSessions() {
                                 </div>
                               </div>
                               
-                              <Button data-testid={`button-join-${session._id}`}>
-                                <VideoIcon className="h-4 w-4 mr-2" />
-                                Start Session
-                              </Button>
+                              <div className="flex flex-col gap-2">
+                                {!session.joinUrl && session.status === "upcoming" && (
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => createZoomMeetingMutation.mutate(session._id)}
+                                    data-testid={`button-create-zoom-${session._id}`}
+                                    disabled={createZoomMeetingMutation.isPending}
+                                  >
+                                    <VideoIcon className="h-4 w-4 mr-1" />
+                                    Create Zoom
+                                  </Button>
+                                )}
+                                {session.joinUrl && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => window.open(session.joinUrl, '_blank')}
+                                    data-testid={`button-join-${session._id}`}
+                                  >
+                                    <VideoIcon className="h-4 w-4 mr-2" />
+                                    Start Session
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
@@ -175,6 +284,135 @@ export default function TrainerSessions() {
           </main>
         </div>
       </div>
+
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-create-session">
+          <DialogHeader>
+            <DialogTitle>Create New Session</DialogTitle>
+            <DialogDescription>Schedule a new live training session for your clients</DialogDescription>
+          </DialogHeader>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Session Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Power Yoga Session" {...field} data-testid="input-title" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="sessionType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Session Type</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-session-type">
+                          <SelectValue placeholder="Select session type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {SESSION_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="scheduledAt"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date & Time</FormLabel>
+                      <FormControl>
+                        <Input type="datetime-local" {...field} data-testid="input-scheduled-at" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="duration"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Duration (minutes)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          data-testid="input-duration"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="maxCapacity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Max Capacity</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        data-testid="input-max-capacity"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Session description..." {...field} data-testid="input-description" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createSessionMutation.isPending} data-testid="button-submit-session">
+                  {createSessionMutation.isPending ? "Creating..." : "Create Session"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 }
