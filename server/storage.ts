@@ -1010,10 +1010,14 @@ export class MongoStorage implements IStorage {
           await booking.save();
           
           // CRITICAL: Update client with trainerId from the session for seamless data flow
+          // Convert trainerId to ObjectId since Client schema expects ObjectId
           if (session.trainerId) {
+            const trainerObjId = typeof session.trainerId === 'string' 
+              ? new mongoose.Types.ObjectId(session.trainerId)
+              : session.trainerId;
             await Client.findByIdAndUpdate(
               clientId,
-              { trainerId: session.trainerId },
+              { trainerId: trainerObjId },
               { new: true }
             );
           }
