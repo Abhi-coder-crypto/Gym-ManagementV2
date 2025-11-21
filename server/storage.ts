@@ -798,15 +798,12 @@ export class MongoStorage implements IStorage {
   }
 
   async getTrainerSessions(trainerId: string): Promise<ILiveSession[]> {
-    // Query sessions where trainerId matches (String in LiveSession schema, but still try both)
-    return await LiveSession.find({ 
-      $or: [
-        { trainerId: trainerId },
-        { trainerId: new mongoose.Types.ObjectId(trainerId) }
-      ]
-    })
+    // Query sessions where trainerId matches (ObjectId in LiveSession schema)
+    const trainerObjId = new mongoose.Types.ObjectId(trainerId);
+    return await LiveSession.find({ trainerId: trainerObjId })
       .populate('trainerId')
       .populate('packageId')
+      .populate('clients')
       .sort({ scheduledAt: -1 });
   }
 
@@ -853,11 +850,18 @@ export class MongoStorage implements IStorage {
 
   // Live Session methods
   async getAllSessions(): Promise<ILiveSession[]> {
-    return await LiveSession.find().sort({ scheduledAt: 1 });
+    return await LiveSession.find()
+      .populate('trainerId')
+      .populate('packageId')
+      .populate('clients')
+      .sort({ scheduledAt: 1 });
   }
 
   async getSession(id: string): Promise<ILiveSession | null> {
-    return await LiveSession.findById(id);
+    return await LiveSession.findById(id)
+      .populate('trainerId')
+      .populate('packageId')
+      .populate('clients');
   }
 
   async createSession(data: Partial<ILiveSession>): Promise<ILiveSession> {

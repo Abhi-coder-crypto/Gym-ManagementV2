@@ -177,12 +177,14 @@ export interface ILiveSession extends Document {
   description?: string;
   sessionType: string;
   packagePlan: 'fitplus' | 'pro' | 'elite';
+  packageId?: string | mongoose.Types.ObjectId;
   scheduledAt: Date;
   duration: number;
   meetingLink?: string;
   meetingPassword?: string;
   trainerName?: string;
-  trainerId?: string;
+  trainerId?: string | mongoose.Types.ObjectId;
+  clients?: (string | mongoose.Types.ObjectId)[];
   maxCapacity: number;
   currentCapacity: number;
   status: string;
@@ -492,12 +494,14 @@ const LiveSessionSchema = new Schema({
   description: String,
   sessionType: { type: String, required: true },
   packagePlan: { type: String, enum: ['fitplus', 'pro', 'elite'], required: true },
+  packageId: { type: Schema.Types.ObjectId, ref: 'Package' },
   scheduledAt: { type: Date, required: true },
   duration: { type: Number, required: true },
   meetingLink: String,
   meetingPassword: String,
   trainerName: String,
-  trainerId: String,
+  trainerId: { type: Schema.Types.ObjectId, ref: 'User' },
+  clients: [{ type: Schema.Types.ObjectId, ref: 'Client' }],
   maxCapacity: { type: Number, default: 15, required: true },
   currentCapacity: { type: Number, default: 0, required: true },
   status: { type: String, default: 'upcoming', required: true },

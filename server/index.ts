@@ -14,6 +14,7 @@ import { User } from "./models/user";
 import { Trainer } from "./models";
 import { startSessionReminderScheduler } from "./utils/session-reminder-scheduler";
 import { emailService } from "./utils/email";
+import { migrateLiveSessionReferences } from "./migrate-sessions";
 
 const app = express();
 
@@ -66,6 +67,9 @@ app.use((req, res, next) => {
     // Connect to MongoDB using .env MONGODB_URI
     await storage.connect();
     log("✅ Database connected successfully");
+
+    // Run LiveSession schema migration
+    await migrateLiveSessionReferences();
 
     // Check for existing packages
     const existingPackages = await storage.getAllPackages();
