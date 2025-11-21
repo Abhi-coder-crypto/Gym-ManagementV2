@@ -28,18 +28,10 @@ const SESSION_STATUSES = ["upcoming", "live", "completed", "cancelled"];
 
 const sessionSchema = z.object({
   title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
   sessionType: z.string().min(1, "Session type is required"),
   scheduledAt: z.string().min(1, "Date and time are required"),
   duration: z.coerce.number().min(1, "Duration must be at least 1 minute"),
-  trainerName: z.string().optional(),
   maxCapacity: z.coerce.number().min(1, "Capacity must be at least 1"),
-  meetingLink: z.string().optional(),
-  status: z.string().default("upcoming"),
-  isRecurring: z.boolean().default(false),
-  recurringPattern: z.string().optional(),
-  recurringDays: z.array(z.string()).optional(),
-  recurringEndDate: z.string().optional(),
 });
 
 type SessionFormData = z.infer<typeof sessionSchema>;
@@ -59,15 +51,10 @@ export default function AdminSessions() {
     resolver: zodResolver(sessionSchema),
     defaultValues: {
       title: "",
-      description: "",
       sessionType: "",
       scheduledAt: "",
       duration: 60,
-      trainerName: "",
       maxCapacity: 15,
-      meetingLink: "",
-      status: "upcoming",
-      isRecurring: false,
     },
   });
 
@@ -81,24 +68,11 @@ export default function AdminSessions() {
 
   const createSessionMutation = useMutation({
     mutationFn: async (data: SessionFormData) => {
-      if (data.isRecurring && data.recurringPattern && data.recurringDays && data.recurringEndDate) {
-        return await apiRequest("POST", "/api/sessions/recurring", {
-          baseData: {
-            ...data,
-            scheduledAt: new Date(data.scheduledAt),
-            currentCapacity: 0,
-          },
-          pattern: data.recurringPattern,
-          days: data.recurringDays,
-          endDate: data.recurringEndDate,
-        });
-      } else {
-        return await apiRequest("POST", "/api/sessions", {
-          ...data,
-          scheduledAt: new Date(data.scheduledAt),
-          currentCapacity: 0,
-        });
-      }
+      return await apiRequest("POST", "/api/sessions", {
+        ...data,
+        scheduledAt: new Date(data.scheduledAt),
+        currentCapacity: 0,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
@@ -450,123 +424,24 @@ export default function AdminSessions() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="trainerName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Trainer Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Sarah Johnson" {...field} data-testid="input-trainer-name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="maxCapacity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Max Capacity</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                          data-testid="input-max-capacity"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
               <FormField
                 control={form.control}
-                name="description"
+                name="maxCapacity"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormLabel>Max Capacity</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Session description..." {...field} data-testid="input-description" />
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        data-testid="input-max-capacity"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              <FormField
-                control={form.control}
-                name="meetingLink"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Meeting Link (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://meet.example.com/session" {...field} data-testid="input-meeting-link" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="isRecurring"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-md border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">Recurring Session</FormLabel>
-                      <CardDescription>Create a series of recurring sessions</CardDescription>
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} data-testid="switch-recurring" />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              {form.watch("isRecurring") && (
-                <div className="space-y-4 rounded-md border p-4">
-                  <FormField
-                    control={form.control}
-                    name="recurringPattern"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Recurrence Pattern</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-recurring-pattern">
-                              <SelectValue placeholder="Select pattern" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="weekly">Weekly</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="recurringEndDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>End Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} data-testid="input-recurring-end-date" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>

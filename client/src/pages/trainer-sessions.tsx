@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Clock, Users, Video as VideoIcon, Plus } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -39,13 +38,10 @@ const SESSION_TYPES = ["Power Yoga", "HIIT", "Cardio Bootcamp", "Strength Buildi
 
 const sessionSchema = z.object({
   title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
   sessionType: z.string().min(1, "Session type is required"),
   scheduledAt: z.string().min(1, "Date and time are required"),
   duration: z.coerce.number().min(1, "Duration must be at least 1 minute"),
   maxCapacity: z.coerce.number().min(1, "Capacity must be at least 1"),
-  meetingLink: z.string().optional(),
-  status: z.string().default("upcoming"),
 });
 
 type SessionFormData = z.infer<typeof sessionSchema>;
@@ -62,13 +58,10 @@ export default function TrainerSessions() {
     resolver: zodResolver(sessionSchema),
     defaultValues: {
       title: "",
-      description: "",
       sessionType: "",
       scheduledAt: "",
       duration: 60,
       maxCapacity: 15,
-      meetingLink: "",
-      status: "upcoming",
     },
   });
 
@@ -381,20 +374,6 @@ export default function TrainerSessions() {
                         onChange={(e) => field.onChange(parseInt(e.target.value))}
                         data-testid="input-max-capacity"
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Session description..." {...field} data-testid="input-description" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
