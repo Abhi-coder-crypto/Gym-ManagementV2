@@ -750,24 +750,9 @@ export class MongoStorage implements IStorage {
   }
 
   async getTrainerClients(trainerId: string): Promise<IClient[]> {
-    // Get the user to find their trainer profile
-    const user = await User.findById(trainerId);
-    if (!user || !user.trainerId) {
-      return [];
-    }
-    
-    // Get the trainer profile which has the assignedClients
-    const trainerProfile = await Trainer.findById(user.trainerId);
-    if (!trainerProfile || !trainerProfile.assignedClients) {
-      return [];
-    }
-    
-    const assignedClientIds = trainerProfile.assignedClients.map((c: any) => 
-      typeof c === 'object' ? c._id : c
-    );
-    
+    // Query clients directly where trainerId matches
     return await Client.find({ 
-      _id: { $in: assignedClientIds },
+      trainerId: trainerId,
       status: { $ne: 'inactive' }
     })
       .populate('packageId')
@@ -784,7 +769,7 @@ export class MongoStorage implements IStorage {
   async getTrainerSessions(trainerId: string): Promise<ILiveSession[]> {
     return await LiveSession.find({ trainerId: trainerId })
       .populate('trainerId')
-      .sort({ date: -1 });
+      .sort({ scheduledAt: -1 });
   }
 
   // Meal methods
