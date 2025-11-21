@@ -131,16 +131,9 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     assignMutation.mutate(selectedClients);
   };
 
-  const handleSkipClients = () => {
-    // Close dialog without assigning clients - trainer will assign later
-    setSelectedClients([]);
-    setSelectedTrainer(null);
-    setStep('trainer');
-    onOpenChange(false);
-    toast({
-      title: "Success",
-      description: "Trainer assigned. Trainer can assign clients from their dashboard.",
-    });
+  const handleSkipTrainer = () => {
+    // Skip trainer selection and go straight to clients
+    setStep('clients');
   };
 
   // sessionClients is already an array of full client objects returned by getSessionClients
@@ -303,13 +296,13 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
           >
             {step === 'clients' ? 'Back' : 'Cancel'}
           </Button>
-          {step === 'clients' && (
+          {step === 'trainer' && (
             <Button
               variant="outline"
-              onClick={handleSkipClients}
-              data-testid="button-skip-clients"
+              onClick={handleSkipTrainer}
+              data-testid="button-skip-trainer"
             >
-              Skip & Close
+              Skip Trainer
             </Button>
           )}
           <Button
