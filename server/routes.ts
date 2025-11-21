@@ -2294,6 +2294,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Assign Trainer to Session
+  app.post("/api/sessions/:id/assign-trainer", authenticateToken, requireRole('admin'), async (req, res) => {
+    try {
+      const { trainerId } = req.body;
+      if (!trainerId) {
+        return res.status(400).json({ message: "trainerId is required" });
+      }
+      
+      const session = await storage.updateSession(req.params.id, { trainerId });
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      res.json(session);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/sessions/recurring", async (req, res) => {
     try {
       const { baseData, pattern, days, endDate } = req.body;
@@ -3949,6 +3968,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Trainer-specific API endpoints with authorization
+  // Get all trainers (for assignment dropdowns)
+  app.get("/api/trainers", authenticateToken, async (req, res) => {
+    try {
+      const trainers = await storage.getAllTrainers();
+      res.json(trainers);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/trainers/:id", authenticateToken, async (req, res) => {
     try {
       if (!req.user) {
