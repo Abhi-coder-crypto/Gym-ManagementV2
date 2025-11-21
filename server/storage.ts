@@ -140,6 +140,7 @@ export interface IStorage {
   deleteWorkoutPlan(id: string): Promise<boolean>;
   getWorkoutPlanTemplates(category?: string): Promise<IWorkoutPlan[]>;
   cloneWorkoutPlan(planId: string, clientId?: string): Promise<IWorkoutPlan>;
+  assignWorkoutPlanToClient(workoutPlanId: string, clientId: string): Promise<IWorkoutPlan | null>;
   
   // Diet Plan methods
   getClientDietPlans(clientId: string): Promise<IDietPlan[]>;
@@ -150,6 +151,7 @@ export interface IStorage {
   getDietPlanTemplates(category?: string): Promise<IDietPlan[]>;
   cloneDietPlan(planId: string, clientId?: string): Promise<IDietPlan>;
   getAllDietPlansWithAssignments(): Promise<any[]>;
+  assignDietPlanToClient(dietPlanId: string, clientId: string): Promise<IDietPlan | null>;
   getTrainerClients(trainerId: string): Promise<IClient[]>;
   getTrainerDietPlans(trainerId: string): Promise<IDietPlan[]>;
   getTrainerSessions(trainerId: string): Promise<ILiveSession[]>;
@@ -160,6 +162,11 @@ export interface IStorage {
   createMeal(data: Partial<IMeal>): Promise<IMeal>;
   updateMeal(id: string, data: Partial<IMeal>): Promise<IMeal | null>;
   deleteMeal(id: string): Promise<boolean>;
+  assignMealToDietPlan(mealId: string, dietPlanId: string): Promise<IDietPlan | null>;
+  
+  // Client Package Access methods
+  checkClientPackageAccess(clientId: string, feature: string): Promise<boolean>;
+  getClientPackageDetails(clientId: string): Promise<any>;
   
   // Live Session methods
   getAllSessions(): Promise<ILiveSession[]>;
@@ -679,6 +686,10 @@ export class MongoStorage implements IStorage {
     return await clonedPlan.save();
   }
 
+  async assignWorkoutPlanToClient(workoutPlanId: string, clientId: string): Promise<IWorkoutPlan | null> {
+    return await WorkoutPlan.findByIdAndUpdate(workoutPlanId, { clientId }, { new: true });
+  }
+
   // Diet Plan methods
   async getClientDietPlans(clientId: string): Promise<IDietPlan[]> {
     return await DietPlan.find({ clientId }).sort({ createdAt: -1 });
@@ -709,6 +720,23 @@ export class MongoStorage implements IStorage {
       query.category = category;
     }
     return await DietPlan.find(query).sort({ createdAt: -1 });
+  }
+
+  async assignDietPlanToClient(dietPlanId: string, clientId: string): Promise<IDietPlan | null> {
+    return await DietPlan.findByIdAndUpdate(dietPlanId, { clientId }, { new: true });
+  }
+
+  async assignMealToDietPlan(mealId: string, dietPlanId: string): Promise<IDietPlan | null> {
+    const dietPlan = await DietPlan.findById(dietPlanId);
+    if (!dietPlan) return null;
+    if (!dietPlan.meals) {
+      dietPlan.meals = [];
+    }
+    if (!dietPlan.meals.includes(mealId)) {
+      dietPlan.meals.push(mealId);
+      await dietPlan.save();
+    }
+    return dietPlan;
   }
 
   async cloneDietPlan(planId: string, clientId?: string): Promise<IDietPlan> {
