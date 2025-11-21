@@ -1,11 +1,14 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { TrainerSidebar } from "@/components/trainer-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Calendar, Video as VideoIcon, Users, TrendingUp, Activity, Clock } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { User, Calendar, Video as VideoIcon, Users, TrendingUp, Activity, Clock, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Client, LiveSession, Video as VideoType } from "@shared/schema";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { format } from 'date-fns';
 
 export default function TrainerDashboard() {
   const style = {
@@ -189,21 +192,82 @@ export default function TrainerDashboard() {
                 </Card>
               </div>
 
-              {/* Recent Activity */}
+              {/* Upcoming Sessions Section */}
+              {upcomingSessions.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-green-500" />
+                      <CardTitle>Your Upcoming Sessions</CardTitle>
+                    </div>
+                    <CardDescription>Sessions you're assigned to train</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {upcomingSessions.map((session: any) => (
+                        <Card key={session._id} className="border-l-4 border-l-green-500" data-testid={`card-trainer-session-${session._id}`}>
+                          <CardContent className="pt-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold line-clamp-1">{session.title}</h4>
+                                <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4" />
+                                    {format(new Date(session.scheduledAt), "MMM dd, yyyy 'at' h:mm a")}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-4 w-4" />
+                                    {session.duration} minutes
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Users className="h-4 w-4" />
+                                    {session.currentCapacity || 0} clients assigned
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-2 items-end">
+                                {session.packageId?.name && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {session.packageId.name}
+                                  </Badge>
+                                )}
+                                {session.joinUrl && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => window.open(session.joinUrl, '_blank')}
+                                    data-testid={`button-join-zoom-${session._id}`}
+                                  >
+                                    <VideoIcon className="h-4 w-4 mr-1" />
+                                    Join Zoom
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Assigned Clients Section */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-purple-500" />
-                    <CardTitle>Recent Clients</CardTitle>
+                    <Users className="h-5 w-5 text-blue-500" />
+                    <CardTitle>Your Assigned Clients ({activeClients.length})</CardTitle>
                   </div>
+                  <CardDescription>Clients you are currently training</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {activeClients.slice(0, 5).map((client: Client) => (
-                      <div key={client.id} className="flex items-center justify-between p-3 rounded-md bg-muted/50">
+                    {activeClients.slice(0, 10).map((client: any) => (
+                      <div key={client._id} className="flex items-center justify-between p-3 rounded-md bg-muted/50 hover-elevate" data-testid={`client-item-${client._id}`}>
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-                            {client.name.charAt(0)}
+                            {client.name?.charAt(0) || 'C'}
                           </div>
                           <div>
                             <p className="font-medium">{client.name}</p>
@@ -211,13 +275,20 @@ export default function TrainerDashboard() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium capitalize">{client.goal || 'Weight Loss'}</p>
-                          <p className="text-xs text-muted-foreground">Client</p>
+                          {client.packageId?.name && (
+                            <Badge variant="outline" className="text-xs mb-1">
+                              {client.packageId.name}
+                            </Badge>
+                          )}
+                          <p className="text-sm font-medium capitalize">{client.goal || 'Fitness'}</p>
                         </div>
                       </div>
                     ))}
                     {activeClients.length === 0 && (
                       <p className="text-center text-muted-foreground py-6">No clients assigned yet</p>
+                    )}
+                    {activeClients.length > 10 && (
+                      <p className="text-center text-sm text-muted-foreground py-2">+{activeClients.length - 10} more clients</p>
                     )}
                   </div>
                 </CardContent>
