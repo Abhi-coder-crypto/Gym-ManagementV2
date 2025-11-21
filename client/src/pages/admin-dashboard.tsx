@@ -16,6 +16,10 @@ export default function AdminDashboard() {
     "--sidebar-width": "16rem",
   };
 
+  const { data: user } = useQuery<any>({
+    queryKey: ['/api/me']
+  });
+
   const { data: clients = [] } = useQuery<any[]>({
     queryKey: ['/api/clients'],
   });
@@ -72,6 +76,17 @@ export default function AdminDashboard() {
               </h1>
             </div>
             <div className="flex items-center gap-2">
+              {user && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-semibold text-sm">
+                    {user.name?.charAt(0).toUpperCase() || 'A'}
+                  </div>
+                  <div className="text-sm hidden sm:block">
+                    <p className="font-medium">{user.name || 'Admin'}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                  </div>
+                </div>
+              )}
               <NotificationBell />
               <ThemeToggle />
             </div>

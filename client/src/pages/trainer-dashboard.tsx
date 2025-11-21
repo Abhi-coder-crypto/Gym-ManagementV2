@@ -79,7 +79,20 @@ export default function TrainerDashboard() {
                 Trainer Dashboard
               </h1>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-4">
+              {user && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                    {user.name?.charAt(0).toUpperCase() || 'T'}
+                  </div>
+                  <div className="text-sm">
+                    <p className="font-medium">{user.name || 'Trainer'}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                  </div>
+                </div>
+              )}
+              <ThemeToggle />
+            </div>
           </header>
 
           <main className="flex-1 overflow-auto p-6">

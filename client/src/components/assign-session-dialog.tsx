@@ -70,6 +70,9 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sessions', sessionId, 'assignments'] });
+      // Invalidate trainer-specific queries to refresh their dashboards
+      queryClient.invalidateQueries({ queryKey: ['/api/trainers'] });
       toast({
         title: "Success",
         description: "Trainer assigned successfully",
@@ -92,6 +95,8 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/sessions', sessionId, 'clients'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/trainers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
       
       const message = data.errors && data.errors.length > 0
         ? `Batch assigned to ${data.assigned} client(s). ${data.errors.length} already assigned.`
