@@ -203,11 +203,12 @@ app.use((req, res, next) => {
         });
         log(`🔐 Created default admin user (email: ${adminEmail})`);
       } else {
-        // Ensure password is correct
+        // Ensure password and role are correct
         const hashedAdminPassword = await hashPassword(adminPassword);
-        adminUser.password = hashedAdminPassword;
-        adminUser.role = 'admin';
-        await adminUser.save();
+        await User.updateOne(
+          { email: adminEmail },
+          { $set: { password: hashedAdminPassword, role: 'admin', name: 'FitPro Admin' } }
+        );
         log(`🔐 Verified admin user (email: ${adminEmail})`);
       }
       
