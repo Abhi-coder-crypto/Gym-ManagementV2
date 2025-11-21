@@ -564,97 +564,210 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Initialize default packages if none exist
+  // Reset packages (delete all and recreate with new ones)
+  app.post("/api/admin/reset-packages", authenticateToken, requireAdmin, async (_req, res) => {
+    try {
+      // Delete all existing packages
+      const existingPackages = await storage.getAllPackages();
+      for (const pkg of existingPackages) {
+        await storage.updatePackage(pkg._id?.toString(), { deleted: true });
+      }
+      
+      const newPackages = [
+        {
+          name: "Fit Basics",
+          description: "Diet + Workout + Recorded Sessions Access",
+          price: 2500,
+          features: ["Diet plans", "Workout plans", "Recorded sessions access"],
+          dietPlanAccess: true,
+          workoutPlanAccess: true,
+          recordedSessionsAccess: true,
+          videoAccess: true,
+          liveSessionsPerMonth: 0,
+          personalizedDietAccess: false,
+          weeklyCheckInAccess: false,
+          liveGroupTrainingAccess: false,
+          oneOnOneCallAccess: false,
+          habitCoachingAccess: false,
+          performanceTrackingAccess: false,
+          prioritySupportAccess: false,
+        },
+        {
+          name: "Fit Plus (Main Group Program)",
+          description: "Live Group Training + Personalized Diet + Weekly Check-in",
+          price: 5000,
+          features: ["Live group training", "Personalized diet", "Weekly check-ins", "Workout plans"],
+          dietPlanAccess: true,
+          workoutPlanAccess: true,
+          recordedSessionsAccess: true,
+          videoAccess: true,
+          liveSessionsPerMonth: 4,
+          personalizedDietAccess: true,
+          weeklyCheckInAccess: true,
+          liveGroupTrainingAccess: true,
+          oneOnOneCallAccess: false,
+          habitCoachingAccess: false,
+          performanceTrackingAccess: false,
+          prioritySupportAccess: false,
+        },
+        {
+          name: "Pro Transformation",
+          description: "Fit Plus + Weekly 1:1 Call + Habit Coaching",
+          price: 7500,
+          features: ["Live group training", "Personalized diet", "Weekly check-ins", "Weekly 1:1 calls", "Habit coaching", "Workout plans"],
+          dietPlanAccess: true,
+          workoutPlanAccess: true,
+          recordedSessionsAccess: true,
+          videoAccess: true,
+          liveSessionsPerMonth: 4,
+          personalizedDietAccess: true,
+          weeklyCheckInAccess: true,
+          liveGroupTrainingAccess: true,
+          oneOnOneCallAccess: true,
+          habitCoachingAccess: true,
+          performanceTrackingAccess: false,
+          prioritySupportAccess: false,
+        },
+        {
+          name: "Elite Athlete / Fast Result",
+          description: "Pro Transformation + Performance Tracking + Priority Support",
+          price: 10000,
+          features: ["Live group training", "Personalized diet", "Weekly check-ins", "Weekly 1:1 calls", "Habit coaching", "Performance tracking", "Priority support", "Workout plans"],
+          dietPlanAccess: true,
+          workoutPlanAccess: true,
+          recordedSessionsAccess: true,
+          videoAccess: true,
+          liveSessionsPerMonth: 8,
+          personalizedDietAccess: true,
+          weeklyCheckInAccess: true,
+          liveGroupTrainingAccess: true,
+          oneOnOneCallAccess: true,
+          habitCoachingAccess: true,
+          performanceTrackingAccess: true,
+          prioritySupportAccess: true,
+        },
+      ];
+      
+      let createdCount = 0;
+      for (const pkg of newPackages) {
+        await storage.createPackage(pkg);
+        createdCount++;
+      }
+      
+      res.json({ 
+        message: "Packages reset successfully", 
+        deletedCount: existingPackages.length,
+        createdCount 
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Initialize default packages - ALWAYS update to new packages
   app.post("/api/init", async (_req, res) => {
     try {
       const existingPackages = await storage.getAllPackages();
-      if (existingPackages.length === 0) {
-        const defaultPackages = [
-          {
-            name: "Fit Basics",
-            description: "Diet + Workout + Recorded Sessions Access",
-            price: 2500,
-            features: ["Diet plans", "Workout plans", "Recorded sessions access"],
-            dietPlanAccess: true,
-            workoutPlanAccess: true,
-            recordedSessionsAccess: true,
-            videoAccess: true,
-            liveSessionsPerMonth: 0,
-            personalizedDietAccess: false,
-            weeklyCheckInAccess: false,
-            liveGroupTrainingAccess: false,
-            oneOnOneCallAccess: false,
-            habitCoachingAccess: false,
-            performanceTrackingAccess: false,
-            prioritySupportAccess: false,
-          },
-          {
-            name: "Fit Plus (Main Group Program)",
-            description: "Live Group Training + Personalized Diet + Weekly Check-in",
-            price: 5000,
-            features: ["Live group training", "Personalized diet", "Weekly check-ins", "Workout plans"],
-            dietPlanAccess: true,
-            workoutPlanAccess: true,
-            recordedSessionsAccess: true,
-            videoAccess: true,
-            liveSessionsPerMonth: 4,
-            personalizedDietAccess: true,
-            weeklyCheckInAccess: true,
-            liveGroupTrainingAccess: true,
-            oneOnOneCallAccess: false,
-            habitCoachingAccess: false,
-            performanceTrackingAccess: false,
-            prioritySupportAccess: false,
-          },
-          {
-            name: "Pro Transformation",
-            description: "Fit Plus + Weekly 1:1 Call + Habit Coaching",
-            price: 7500,
-            features: ["Live group training", "Personalized diet", "Weekly check-ins", "Weekly 1:1 calls", "Habit coaching", "Workout plans"],
-            dietPlanAccess: true,
-            workoutPlanAccess: true,
-            recordedSessionsAccess: true,
-            videoAccess: true,
-            liveSessionsPerMonth: 4,
-            personalizedDietAccess: true,
-            weeklyCheckInAccess: true,
-            liveGroupTrainingAccess: true,
-            oneOnOneCallAccess: true,
-            habitCoachingAccess: true,
-            performanceTrackingAccess: false,
-            prioritySupportAccess: false,
-          },
-          {
-            name: "Elite Athlete / Fast Result",
-            description: "Pro Transformation + Performance Tracking + Priority Support",
-            price: 10000,
-            features: ["Live group training", "Personalized diet", "Weekly check-ins", "Weekly 1:1 calls", "Habit coaching", "Performance tracking", "Priority support", "Workout plans"],
-            dietPlanAccess: true,
-            workoutPlanAccess: true,
-            recordedSessionsAccess: true,
-            videoAccess: true,
-            liveSessionsPerMonth: 8,
-            personalizedDietAccess: true,
-            weeklyCheckInAccess: true,
-            liveGroupTrainingAccess: true,
-            oneOnOneCallAccess: true,
-            habitCoachingAccess: true,
-            performanceTrackingAccess: true,
-            prioritySupportAccess: true,
-          },
-        ];
-        
-        for (const pkg of defaultPackages) {
-          await storage.createPackage(pkg);
+      
+      // Always create new packages (delete old ones first)
+      for (const pkg of existingPackages) {
+        // Mark as deleted instead of hard delete to preserve relationships
+        try {
+          await storage.updatePackage(pkg._id?.toString(), { name: `${pkg.name}_ARCHIVED` });
+        } catch (e) {
+          // Continue if update fails
         }
-        
-        // Initialize default users (admin and client)
-        await storage.initializeDefaultUsers();
-        
-        res.json({ message: "Default packages and users created successfully", count: defaultPackages.length });
-      } else {
-        res.json({ message: "Packages already exist", count: existingPackages.length });
       }
+
+      const defaultPackages = [
+        {
+          name: "Fit Basics",
+          description: "Diet + Workout + Recorded Sessions Access",
+          price: 2500,
+          features: ["Diet plans", "Workout plans", "Recorded sessions access"],
+          dietPlanAccess: true,
+          workoutPlanAccess: true,
+          recordedSessionsAccess: true,
+          videoAccess: true,
+          liveSessionsPerMonth: 0,
+          personalizedDietAccess: false,
+          weeklyCheckInAccess: false,
+          liveGroupTrainingAccess: false,
+          oneOnOneCallAccess: false,
+          habitCoachingAccess: false,
+          performanceTrackingAccess: false,
+          prioritySupportAccess: false,
+        },
+        {
+          name: "Fit Plus (Main Group Program)",
+          description: "Live Group Training + Personalized Diet + Weekly Check-in",
+          price: 5000,
+          features: ["Live group training", "Personalized diet", "Weekly check-ins", "Workout plans"],
+          dietPlanAccess: true,
+          workoutPlanAccess: true,
+          recordedSessionsAccess: true,
+          videoAccess: true,
+          liveSessionsPerMonth: 4,
+          personalizedDietAccess: true,
+          weeklyCheckInAccess: true,
+          liveGroupTrainingAccess: true,
+          oneOnOneCallAccess: false,
+          habitCoachingAccess: false,
+          performanceTrackingAccess: false,
+          prioritySupportAccess: false,
+        },
+        {
+          name: "Pro Transformation",
+          description: "Fit Plus + Weekly 1:1 Call + Habit Coaching",
+          price: 7500,
+          features: ["Live group training", "Personalized diet", "Weekly check-ins", "Weekly 1:1 calls", "Habit coaching", "Workout plans"],
+          dietPlanAccess: true,
+          workoutPlanAccess: true,
+          recordedSessionsAccess: true,
+          videoAccess: true,
+          liveSessionsPerMonth: 4,
+          personalizedDietAccess: true,
+          weeklyCheckInAccess: true,
+          liveGroupTrainingAccess: true,
+          oneOnOneCallAccess: true,
+          habitCoachingAccess: true,
+          performanceTrackingAccess: false,
+          prioritySupportAccess: false,
+        },
+        {
+          name: "Elite Athlete / Fast Result",
+          description: "Pro Transformation + Performance Tracking + Priority Support",
+          price: 10000,
+          features: ["Live group training", "Personalized diet", "Weekly check-ins", "Weekly 1:1 calls", "Habit coaching", "Performance tracking", "Priority support", "Workout plans"],
+          dietPlanAccess: true,
+          workoutPlanAccess: true,
+          recordedSessionsAccess: true,
+          videoAccess: true,
+          liveSessionsPerMonth: 8,
+          personalizedDietAccess: true,
+          weeklyCheckInAccess: true,
+          liveGroupTrainingAccess: true,
+          oneOnOneCallAccess: true,
+          habitCoachingAccess: true,
+          performanceTrackingAccess: true,
+          prioritySupportAccess: true,
+        },
+      ];
+      
+      let createdCount = 0;
+      for (const pkg of defaultPackages) {
+        await storage.createPackage(pkg);
+        createdCount++;
+      }
+      
+      // Initialize default users (admin and client)
+      await storage.initializeDefaultUsers();
+      
+      res.json({ 
+        message: "Packages initialized successfully", 
+        archived: existingPackages.length,
+        created: createdCount 
+      });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
