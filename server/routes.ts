@@ -1951,6 +1951,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Package-Based Access & Assignment Endpoints
+  app.get("/api/client-access/:clientId", authenticateToken, async (req, res) => {
+    try {
+      const clientId = req.params.clientId;
+      const packageDetails = await storage.getClientPackageDetails(clientId);
+      
+      if (!packageDetails) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      res.json(packageDetails);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/assign-workout", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
+    try {
+      const { workoutPlanId, clientId } = req.body;
+      
+      if (!workoutPlanId || !clientId) {
+        return res.status(400).json({ message: "Workout plan ID and client ID are required" });
+      }
+      
+      // Check if client's package allows workout access
+      const hasAccess = await storage.checkClientPackageAccess(clientId, 'workout');
+      if (!hasAccess) {
+        return res.status(403).json({ 
+          message: "Client's package does not include workout plan access. Upgrade required." 
+        });
+      }
+      
+      const plan = await storage.assignWorkoutPlanToClient(workoutPlanId, clientId);
+      if (!plan) {
+        return res.status(404).json({ message: "Workout plan not found" });
+      }
+      
+      res.json({ message: "Workout plan assigned successfully", plan });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/assign-diet", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
+    try {
+      const { dietPlanId, clientId } = req.body;
+      
+      if (!dietPlanId || !clientId) {
+        return res.status(400).json({ message: "Diet plan ID and client ID are required" });
+      }
+      
+      // Check if client's package allows diet access
+      const hasAccess = await storage.checkClientPackageAccess(clientId, 'diet');
+      if (!hasAccess) {
+        return res.status(403).json({ 
+          message: "Client's package does not include diet plan access. Upgrade required." 
+        });
+      }
+      
+      const plan = await storage.assignDietPlanToClient(dietPlanId, clientId);
+      if (!plan) {
+        return res.status(404).json({ message: "Diet plan not found" });
+      }
+      
+      res.json({ message: "Diet plan assigned successfully", plan });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Database Cleanup Endpoints (Admin Only)
+  app.delete("/api/admin/cleanup/clients", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const clients = await storage.getAllClients(true);
+      let deletedCount = 0;
+      
+      for (const client of clients) {
+        const success = await storage.permanentlyDeleteClient(client._id.toString());
+        if (success) deletedCount++;
+      }
+      
+      res.json({ 
+        message: `Deleted ${deletedCount} test clients`, 
+        deletedCount,
+        totalBefore: clients.length 
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/cleanup/trainers", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const trainers = await storage.getAllTrainers();
+      let deletedCount = 0;
+      
+      for (const trainer of trainers) {
+        const success = await storage.deleteUser(trainer._id.toString());
+        if (success) deletedCount++;
+      }
+      
+      res.json({ 
+        message: `Deleted ${deletedCount} test trainers`, 
+        deletedCount,
+        totalBefore: trainers.length 
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Diet Plan Template routes
   app.get("/api/diet-plan-templates", async (req, res) => {
     try {

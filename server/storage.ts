@@ -1696,7 +1696,6 @@ export class MongoStorage implements IStorage {
     return await Notification.countDocuments({ userId, isRead: false });
   }
 
-  // Client Package Access methods
   async checkClientPackageAccess(clientId: string, feature: string): Promise<boolean> {
     const client = await Client.findById(clientId).populate('packageId');
     if (!client || !client.packageId) {

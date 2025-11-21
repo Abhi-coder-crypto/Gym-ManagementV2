@@ -64,6 +64,12 @@ export default function ClientDashboard() {
     }
   }, [setLocation]);
 
+  // Fetch client's package access details
+  const { data: packageAccess } = useQuery<any>({
+    queryKey: ['/api/client-access', clientId],
+    enabled: !!clientId,
+  });
+
   const { data: dashboardData, isLoading } = useQuery<DashboardData>({
     queryKey: ['/api/dashboard', clientId],
     enabled: !!clientId,
@@ -103,11 +109,19 @@ export default function ClientDashboard() {
               <h1 className="text-3xl font-display font-bold tracking-tight" data-testid="text-welcome">
                 Welcome back, {client.name.split(' ')[0]}!
               </h1>
-              <div className="text-muted-foreground mt-1 flex items-center gap-2">
+              <div className="text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                 <span>You're on the</span>
                 <Badge className="bg-chart-2" data-testid="badge-package">{client.packageName} Plan</Badge>
                 <span>•</span>
                 <span className="text-sm">Goal: {client.goal}</span>
+                {packageAccess?.subscriptionEnd && (
+                  <>
+                    <span>•</span>
+                    <span className="text-sm">
+                      Expires: {new Date(packageAccess.subscriptionEnd).toLocaleDateString()}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
             <Button data-testid="button-start-workout" onClick={() => setLocation('/client/workouts')}>
@@ -117,39 +131,63 @@ export default function ClientDashboard() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Workout Streak</CardTitle>
-                <Flame className="h-4 w-4 text-orange-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-streak">{stats.currentStreak} days</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {stats.currentStreak > 0 ? '🔥 Keep it up!' : 'Start your streak today!'}
-                </p>
-                <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Trophy className="h-3 w-3" />
-                  <span>Best: {stats.maxStreak} days</span>
-                </div>
-              </CardContent>
-            </Card>
+            {packageAccess?.features?.workoutPlanAccess ? (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Workout Streak</CardTitle>
+                  <Flame className="h-4 w-4 text-orange-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-streak">{stats.currentStreak} days</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {stats.currentStreak > 0 ? 'Keep it up!' : 'Start your streak today!'}
+                  </p>
+                  <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Trophy className="h-3 w-3" />
+                    <span>Best: {stats.maxStreak} days</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="opacity-60">
+                <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Workout Streak</CardTitle>
+                  <Flame className="h-4 w-4 text-orange-500" />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">Available in Fit Plus+</p>
+                </CardContent>
+              </Card>
+            )}
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Sessions Completed</CardTitle>
-                <Trophy className="h-4 w-4 text-chart-2" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-total-sessions">{stats.totalSessions}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  +{stats.weekSessions} this week
-                </p>
-                <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  <span>{stats.monthSessions} this month</span>
-                </div>
-              </CardContent>
-            </Card>
+            {packageAccess?.features?.recordedSessionsAccess || packageAccess?.features?.liveGroupTrainingAccess ? (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Sessions Completed</CardTitle>
+                  <Trophy className="h-4 w-4 text-chart-2" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-total-sessions">{stats.totalSessions}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    +{stats.weekSessions} this week
+                  </p>
+                  <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Calendar className="h-3 w-3" />
+                    <span>{stats.monthSessions} this month</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="opacity-60">
+                <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Sessions Completed</CardTitle>
+                  <Trophy className="h-4 w-4 text-chart-2" />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">Available in Pro Transformation+</p>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
