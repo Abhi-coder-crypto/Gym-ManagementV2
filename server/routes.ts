@@ -2292,7 +2292,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "clientIds must be a non-empty array" });
       }
       
+      // Get session to find trainer
+      const session = await storage.getSession(req.params.id);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      // Assign clients to session
       const result = await storage.assignSessionToClients(req.params.id, clientIds);
+      
+      // Also set trainerId on each client so they appear in trainer's client list
+      if (session.trainerId) {
+        for (const clientId of clientIds) {
+          await storage.updateClient(clientId, { trainerId: session.trainerId });
+        }
+      }
+      
       res.json(result);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -2313,6 +2328,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(session);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get current session assignments
+  app.get("/api/sessions/:id/assignments", authenticateToken, async (req, res) => {
+    try {
+      const session = await storage.getSession(req.params.id);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      const assignedClients = await storage.getSessionClients(req.params.id);
+      res.json({
+        trainerId: session.trainerId,
+        clients: assignedClients.map((c: any) => c._id)
+      });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

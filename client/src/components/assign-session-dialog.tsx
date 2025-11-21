@@ -31,6 +31,11 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     queryKey: ['/api/clients'],
   });
 
+  const { data: currentAssignments = {} } = useQuery<any>({
+    queryKey: ['/api/sessions', sessionId, 'assignments'],
+    enabled: open && !!sessionId,
+  });
+
   const { data: sessionClients = [], isLoading: isLoadingAssigned } = useQuery<any[]>({
     queryKey: ['/api/sessions', sessionId, 'clients'],
     enabled: open && !!sessionId,
@@ -119,6 +124,18 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     assignMutation.mutate(selectedClients);
   };
 
+  const handleSkipClients = () => {
+    // Close dialog without assigning clients - trainer will assign later
+    setSelectedClients([]);
+    setSelectedTrainer(null);
+    setStep('trainer');
+    onOpenChange(false);
+    toast({
+      title: "Success",
+      description: "Trainer assigned. Trainer can assign clients from their dashboard.",
+    });
+  };
+
   // sessionClients is already an array of full client objects returned by getSessionClients
   const assignedClientIds = new Set(sessionClients.map((client: any) => client._id));
 
@@ -161,6 +178,13 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {step === 'trainer' && currentAssignments?.trainerId && (
+            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <p className="text-sm text-blue-700 dark:text-blue-400">
+                <strong>Currently assigned to:</strong> {trainers.find((t: any) => t._id === currentAssignments.trainerId)?.name || 'Trainer'}
+              </p>
+            </div>
+          )}
           {step === 'trainer' ? (
             // TRAINER SELECTION STEP
             isLoadingTrainers ? (
@@ -204,18 +228,26 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
             )
           ) : (
             // CLIENTS SELECTION STEP
-            isLoadingClients || isLoadingAssigned ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <ScrollArea className="h-[400px] pr-4">
-                <div className="space-y-2">
-                  {clients.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No clients found
-                    </div>
-                  ) : (
+            <>
+              {sessionClients.length > 0 && (
+                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <p className="text-sm text-green-700 dark:text-green-400">
+                    <strong>Already assigned:</strong> {sessionClients.map((c: any) => c.name).join(', ')}
+                  </p>
+                </div>
+              )}
+              {isLoadingClients || isLoadingAssigned ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <ScrollArea className="h-[400px] pr-4">
+                  <div className="space-y-2">
+                    {clients.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No clients found
+                      </div>
+                    ) : (
                     clients.map((client) => (
                       <div
                         key={client._id}
