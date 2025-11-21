@@ -866,7 +866,9 @@ export class MongoStorage implements IStorage {
 
   async getClientSessions(clientId: string): Promise<ILiveSession[]> {
     const sessionClients = await SessionClient.find({ clientId }).populate('sessionId');
-    return sessionClients.map(sc => sc.sessionId as any);
+    return sessionClients
+      .map(sc => sc.sessionId as any)
+      .filter(session => session && session._id); // Filter out null/undefined sessions
   }
 
   // Session Client methods
