@@ -9,6 +9,15 @@ export interface IPackage extends Document {
   liveSessionsPerMonth: number;
   dietPlanAccess: boolean;
   workoutPlanAccess: boolean;
+  recordedSessionsAccess?: boolean;
+  personalizedDietAccess?: boolean;
+  weeklyCheckInAccess?: boolean;
+  liveGroupTrainingAccess?: boolean;
+  oneOnOneCallAccess?: boolean;
+  habitCoachingAccess?: boolean;
+  performanceTrackingAccess?: boolean;
+  prioritySupportAccess?: boolean;
+  durationOptions?: number[]; // [4, 8, 12] weeks
 }
 
 export interface IClient extends Document {
@@ -17,6 +26,7 @@ export interface IClient extends Document {
   email: string;
   packageId?: string;
   trainerId?: string;
+  packageDuration?: number; // Duration in weeks (4, 8, or 12)
   age?: number;
   gender?: string;
   height?: number;
@@ -313,6 +323,15 @@ const PackageSchema = new Schema({
   liveSessionsPerMonth: { type: Number, default: 0 },
   dietPlanAccess: { type: Boolean, default: false },
   workoutPlanAccess: { type: Boolean, default: false },
+  recordedSessionsAccess: { type: Boolean, default: false },
+  personalizedDietAccess: { type: Boolean, default: false },
+  weeklyCheckInAccess: { type: Boolean, default: false },
+  liveGroupTrainingAccess: { type: Boolean, default: false },
+  oneOnOneCallAccess: { type: Boolean, default: false },
+  habitCoachingAccess: { type: Boolean, default: false },
+  performanceTrackingAccess: { type: Boolean, default: false },
+  prioritySupportAccess: { type: Boolean, default: false },
+  durationOptions: { type: [Number], default: [4, 8, 12] },
 });
 
 const ClientSchema = new Schema({
@@ -321,6 +340,7 @@ const ClientSchema = new Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   packageId: { type: Schema.Types.ObjectId, ref: 'Package' },
   trainerId: { type: Schema.Types.ObjectId, ref: 'User' },
+  packageDuration: { type: Number, default: 4 }, // Duration in weeks
   age: Number,
   gender: String,
   height: Number,
@@ -350,7 +370,7 @@ const ClientSchema = new Schema({
     showProgress: { type: Boolean, default: true },
   },
   subscription: {
-    startDate: Date,
+    startDate: { type: Date, default: Date.now },
     endDate: Date,
     renewalType: { type: String, enum: ['monthly', 'yearly'] },
     autoRenewal: { type: Boolean, default: false },

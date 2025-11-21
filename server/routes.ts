@@ -697,8 +697,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       const clientData: any = { ...req.body };
       
-      // Extract password before file handling
-      const { password } = req.body;
+      // Extract password, packageId, and packageDuration before file handling
+      const { password, packageId, packageDuration } = req.body;
       
       // Validate required fields
       if (!clientData.email) {
@@ -707,6 +707,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!password) {
         return res.status(400).json({ message: "Password is required" });
+      }
+      
+      if (!packageId) {
+        return res.status(400).json({ message: "Package is required" });
+      }
+      
+      if (!packageDuration || ![4, 8, 12].includes(parseInt(packageDuration))) {
+        return res.status(400).json({ message: "Valid package duration is required (4, 8, or 12 weeks)" });
+      }
+      
+      // Verify package exists
+      const pkg = await storage.getPackage(packageId);
+      if (!pkg) {
+        return res.status(404).json({ message: "Package not found" });
       }
       
       // Check if user with this email already exists
@@ -743,7 +757,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         clientData.otherDocument = `/uploads/documents/${filename}`;
       }
       
-      // Create the client first
+      // Calculate subscription end date based on package duration
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + (parseInt(packageDuration) * 7)); // Convert weeks to days
+      
+      // Create the client with package and subscription details
+      clientData.packageId = packageId;
+      clientData.packageDuration = parseInt(packageDuration);
+      clientData.subscription = {
+        startDate,
+        endDate,
+        renewalType: 'manual',
+        autoRenewal: false,
+      };
+      
       const client = await storage.createClient(clientData);
       
       // Create user account for the client with hashed password
@@ -758,9 +786,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'active',
       });
       
-      console.log(`✅ Created client and user account for: ${clientData.email}`);
+      console.log(`✅ Created client "${clientData.name}" with package "${pkg.name}" (${packageDuration} weeks)`);
       
-      res.json(client);
+      res.json({
+        message: 'Client created successfully with package access',
+        client,
+        packageDetails: {
+          name: pkg.name,
+          duration: packageDuration,
+          endDate,
+        }
+      });
     } catch (error: any) {
       console.error('Error creating client:', error);
       res.status(500).json({ message: error.message });
