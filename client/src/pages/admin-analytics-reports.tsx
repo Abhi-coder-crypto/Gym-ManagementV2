@@ -119,14 +119,12 @@ export default function AdminAnalyticsReports() {
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="clients" data-testid="tab-clients">Clients</TabsTrigger>
           <TabsTrigger value="videos" data-testid="tab-videos">Videos</TabsTrigger>
           <TabsTrigger value="sessions" data-testid="tab-sessions">Sessions</TabsTrigger>
           <TabsTrigger value="revenue" data-testid="tab-revenue">Revenue</TabsTrigger>
-          <TabsTrigger value="retention" data-testid="tab-retention">Retention</TabsTrigger>
-          <TabsTrigger value="usage" data-testid="tab-usage">Usage</TabsTrigger>
           <TabsTrigger value="trainers" data-testid="tab-trainers">Trainers</TabsTrigger>
         </TabsList>
 

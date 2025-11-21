@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,15 +17,9 @@ import {
   TrendingUp, 
   TrendingDown, 
   Users, 
-  CreditCard, 
   Download, 
   Plus, 
-  FileText, 
-  RefreshCw,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Clock
+  FileText
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -79,17 +72,6 @@ interface Invoice {
   total: number;
 }
 
-interface Refund {
-  _id: string;
-  paymentId: any;
-  clientId: { name: string; phone: string };
-  amount: number;
-  reason: string;
-  status: string;
-  requestedBy: string;
-  requestedAt: string;
-  processedAt?: string;
-}
 
 export default function AdminRevenueEnhanced() {
   const style = { "--sidebar-width": "16rem" };
@@ -97,24 +79,12 @@ export default function AdminRevenueEnhanced() {
   
   const [activeTab, setActiveTab] = useState("overview");
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
-  const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  const [paymentFilter, setPaymentFilter] = useState("all");
   
   const [invoiceData, setInvoiceData] = useState({
     clientId: "",
     packageId: "",
     amount: "",
     dueDate: "",
-    notes: "",
-  });
-
-  const [refundData, setRefundData] = useState({
-    paymentId: "",
-    amount: "",
-    reason: "",
-    refundMethod: "original",
-    notes: "",
   });
 
   const { data: stats, isLoading: statsLoading } = useQuery<PaymentStats>({
@@ -125,8 +95,8 @@ export default function AdminRevenueEnhanced() {
     queryKey: ['/api/payments/monthly-trends'],
   });
 
-  const { data: payments = [], isLoading: paymentsLoading } = useQuery<Payment[]>({
-    queryKey: paymentFilter !== 'all' ? ['/api/payments', { status: paymentFilter }] : ['/api/payments'],
+  const { data: payments = [] } = useQuery<Payment[]>({
+    queryKey: ['/api/payments'],
   });
 
   const { data: clients = [] } = useQuery<any[]>({
@@ -139,10 +109,6 @@ export default function AdminRevenueEnhanced() {
 
   const { data: invoices = [] } = useQuery<Invoice[]>({
     queryKey: ['/api/invoices'],
-  });
-
-  const { data: refunds = [] } = useQuery<Refund[]>({
-    queryKey: ['/api/refunds'],
   });
 
   const createInvoiceMutation = useMutation({
@@ -168,7 +134,6 @@ export default function AdminRevenueEnhanced() {
           }],
           subtotal: parseFloat(data.amount),
           total: parseFloat(data.amount),
-          notes: data.notes,
         }),
       });
       
@@ -178,44 +143,10 @@ export default function AdminRevenueEnhanced() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
       setIsInvoiceDialogOpen(false);
-      setInvoiceData({ clientId: "", packageId: "", amount: "", dueDate: "", notes: "" });
+      setInvoiceData({ clientId: "", packageId: "", amount: "", dueDate: "" });
       toast({
         title: "Invoice created",
         description: "The invoice has been created successfully.",
-      });
-    },
-  });
-
-  const createRefundMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch('/api/refunds', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          paymentId: data.paymentId,
-          clientId: selectedPayment?.clientId,
-          amount: parseFloat(data.amount),
-          currency: 'USD',
-          reason: data.reason,
-          requestedBy: 'Admin',
-          refundMethod: data.refundMethod,
-          notes: data.notes,
-          status: 'pending',
-        }),
-      });
-      
-      if (!response.ok) throw new Error('Failed to create refund');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/refunds'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/payments'] });
-      setIsRefundDialogOpen(false);
-      setSelectedPayment(null);
-      setRefundData({ paymentId: "", amount: "", reason: "", refundMethod: "original", notes: "" });
-      toast({
-        title: "Refund initiated",
-        description: "The refund request has been created successfully.",
       });
     },
   });
@@ -271,26 +202,6 @@ export default function AdminRevenueEnhanced() {
       title: "Report exported",
       description: "The revenue report has been downloaded successfully.",
     });
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      completed: { variant: "default" as const, icon: CheckCircle, className: "bg-green-500" },
-      pending: { variant: "secondary" as const, icon: Clock, className: "bg-yellow-500" },
-      overdue: { variant: "destructive" as const, icon: AlertCircle, className: "bg-red-500" },
-      failed: { variant: "destructive" as const, icon: XCircle, className: "bg-red-600" },
-      refunded: { variant: "outline" as const, icon: RefreshCw, className: "bg-blue-500" },
-    };
-
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
-    const Icon = config.icon;
-
-    return (
-      <Badge variant={config.variant} className={status === 'completed' ? 'bg-green-500 hover:bg-green-600' : status === 'overdue' ? 'bg-red-500 hover:bg-red-600' : status === 'pending' ? 'bg-yellow-500 hover:bg-yellow-600' : ''}>
-        <Icon className="h-3 w-3 mr-1" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
   };
 
   const avgPerClient = clients.length > 0 && stats ? Math.round(stats.totalRevenue / clients.length) : 0;
@@ -350,11 +261,9 @@ export default function AdminRevenueEnhanced() {
               </div>
 
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="payments">Payments</TabsTrigger>
                   <TabsTrigger value="invoices">Invoices</TabsTrigger>
-                  <TabsTrigger value="refunds">Refunds</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-6">
@@ -455,96 +364,6 @@ export default function AdminRevenueEnhanced() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="payments" className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
-                      <Button 
-                        variant={paymentFilter === 'all' ? 'default' : 'outline'}
-                        onClick={() => setPaymentFilter('all')}
-                        data-testid="filter-all"
-                      >
-                        All
-                      </Button>
-                      <Button 
-                        variant={paymentFilter === 'pending' ? 'default' : 'outline'}
-                        onClick={() => setPaymentFilter('pending')}
-                        data-testid="filter-pending"
-                      >
-                        Pending
-                      </Button>
-                      <Button 
-                        variant={paymentFilter === 'completed' ? 'default' : 'outline'}
-                        onClick={() => setPaymentFilter('completed')}
-                        data-testid="filter-completed"
-                      >
-                        Completed
-                      </Button>
-                      <Button 
-                        variant={paymentFilter === 'overdue' ? 'default' : 'outline'}
-                        onClick={() => setPaymentFilter('overdue')}
-                        data-testid="filter-overdue"
-                      >
-                        Overdue
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="font-display">Payment History</CardTitle>
-                      <CardDescription>{payments.length} total payments</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {payments.map((payment) => (
-                          <div
-                            key={payment._id}
-                            className="flex items-center justify-between p-4 rounded-md border"
-                            data-testid={`payment-${payment.invoiceNumber}`}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="font-semibold">{payment.clientId.name}</p>
-                                <span className="text-sm text-muted-foreground">#{payment.invoiceNumber}</span>
-                              </div>
-                              <div className="flex items-center gap-3 mt-1">
-                                <p className="text-sm text-muted-foreground">
-                                  {new Date(payment.billingDate).toLocaleDateString()}
-                                </p>
-                                <Badge variant="outline" className="text-xs">
-                                  {payment.packageName || payment.packageId?.name || payment.paymentMethod}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <span className="font-bold text-lg">${payment.amount.toLocaleString()}</span>
-                              {getStatusBadge(payment.status)}
-                              {payment.status === 'completed' && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedPayment(payment);
-                                    setRefundData({
-                                      ...refundData,
-                                      paymentId: payment._id,
-                                      amount: payment.amount.toString(),
-                                    });
-                                    setIsRefundDialogOpen(true);
-                                  }}
-                                  data-testid={`button-refund-${payment.invoiceNumber}`}
-                                >
-                                  <RefreshCw className="h-4 w-4 mr-1" />
-                                  Refund
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
 
                 <TabsContent value="invoices" className="space-y-4">
                   <div className="flex justify-between items-center">
@@ -598,41 +417,6 @@ export default function AdminRevenueEnhanced() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="refunds" className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">Refund Requests</h3>
-                  </div>
-
-                  <div className="grid gap-4">
-                    {refunds.map((refund) => (
-                      <Card key={refund._id}>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-semibold">{refund.clientId.name}</p>
-                              <p className="text-sm text-muted-foreground">{refund.reason}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Requested: {new Date(refund.requestedAt).toLocaleDateString()}
-                                {refund.processedAt && ` | Processed: ${new Date(refund.processedAt).toLocaleDateString()}`}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="text-right">
-                                <p className="font-bold text-lg">${refund.amount.toLocaleString()}</p>
-                                <Badge 
-                                  variant={refund.status === 'processed' ? 'default' : refund.status === 'rejected' ? 'destructive' : 'secondary'}
-                                  className={refund.status === 'processed' ? 'bg-green-500' : ''}
-                                >
-                                  {refund.status}
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </TabsContent>
               </Tabs>
             </div>
           </main>
@@ -643,41 +427,28 @@ export default function AdminRevenueEnhanced() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Invoice</DialogTitle>
-            <DialogDescription>Generate an invoice for a client</DialogDescription>
+            <DialogDescription>Generate and send invoice to client</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label htmlFor="client">Client</Label>
-              <Select value={invoiceData.clientId} onValueChange={(value) => setInvoiceData({ ...invoiceData, clientId: value })}>
+              <Select value={invoiceData.clientId} onValueChange={(value) => {
+                const client = clients.find(c => c._id === value);
+                const pkg = client?.packageId ? packages.find(p => p._id === client.packageId._id || p._id === client.packageId) : null;
+                setInvoiceData({ 
+                  ...invoiceData, 
+                  clientId: value,
+                  packageId: pkg?._id || "",
+                  amount: pkg?.price?.toString() || ""
+                });
+              }}>
                 <SelectTrigger data-testid="select-client">
                   <SelectValue placeholder="Select client" />
                 </SelectTrigger>
                 <SelectContent>
                   {clients.map((client) => (
                     <SelectItem key={client._id} value={client._id}>
-                      {client.name} ({client.phone})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="package">Package</Label>
-              <Select value={invoiceData.packageId} onValueChange={(value) => {
-                const pkg = packages.find(p => p._id === value);
-                setInvoiceData({ 
-                  ...invoiceData, 
-                  packageId: value,
-                  amount: pkg?.price?.toString() || ""
-                });
-              }}>
-                <SelectTrigger data-testid="select-package">
-                  <SelectValue placeholder="Select package" />
-                </SelectTrigger>
-                <SelectContent>
-                  {packages.map((pkg) => (
-                    <SelectItem key={pkg._id} value={pkg._id}>
-                      {pkg.name} - ${pkg.price}
+                      {client.name} - {packages.find(p => p._id === client.packageId?._id || p._id === client.packageId)?.name || 'No Package'} (₹{packages.find(p => p._id === client.packageId?._id || p._id === client.packageId)?.price || '0'})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -689,8 +460,8 @@ export default function AdminRevenueEnhanced() {
                 id="amount"
                 type="number"
                 value={invoiceData.amount}
-                onChange={(e) => setInvoiceData({ ...invoiceData, amount: e.target.value })}
-                placeholder="Enter amount"
+                disabled
+                placeholder="Auto-filled from client's package"
                 data-testid="input-amount"
               />
             </div>
@@ -704,16 +475,6 @@ export default function AdminRevenueEnhanced() {
                 data-testid="input-due-date"
               />
             </div>
-            <div>
-              <Label htmlFor="notes">Notes (Optional)</Label>
-              <Textarea
-                id="notes"
-                value={invoiceData.notes}
-                onChange={(e) => setInvoiceData({ ...invoiceData, notes: e.target.value })}
-                placeholder="Add any notes..."
-                data-testid="textarea-notes"
-              />
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsInvoiceDialogOpen(false)}>
@@ -724,80 +485,7 @@ export default function AdminRevenueEnhanced() {
               disabled={!invoiceData.clientId || !invoiceData.amount || !invoiceData.dueDate || createInvoiceMutation.isPending}
               data-testid="button-create-invoice-submit"
             >
-              {createInvoiceMutation.isPending ? "Creating..." : "Create Invoice"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isRefundDialogOpen} onOpenChange={setIsRefundDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Process Refund</DialogTitle>
-            <DialogDescription>
-              Refund for {selectedPayment?.clientId.name} - ${selectedPayment?.amount}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="refundAmount">Refund Amount</Label>
-              <Input
-                id="refundAmount"
-                type="number"
-                value={refundData.amount}
-                onChange={(e) => setRefundData({ ...refundData, amount: e.target.value })}
-                placeholder="Enter refund amount"
-                data-testid="input-refund-amount"
-              />
-            </div>
-            <div>
-              <Label htmlFor="reason">Reason</Label>
-              <Select value={refundData.reason} onValueChange={(value) => setRefundData({ ...refundData, reason: value })}>
-                <SelectTrigger data-testid="select-refund-reason">
-                  <SelectValue placeholder="Select reason" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="customer_request">Customer Request</SelectItem>
-                  <SelectItem value="service_issue">Service Issue</SelectItem>
-                  <SelectItem value="duplicate_payment">Duplicate Payment</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="refundMethod">Refund Method</Label>
-              <Select value={refundData.refundMethod} onValueChange={(value) => setRefundData({ ...refundData, refundMethod: value })}>
-                <SelectTrigger data-testid="select-refund-method">
-                  <SelectValue placeholder="Select method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="original">Original Payment Method</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="refundNotes">Notes (Optional)</Label>
-              <Textarea
-                id="refundNotes"
-                value={refundData.notes}
-                onChange={(e) => setRefundData({ ...refundData, notes: e.target.value })}
-                placeholder="Add any notes..."
-                data-testid="textarea-refund-notes"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRefundDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => createRefundMutation.mutate(refundData)}
-              disabled={!refundData.amount || !refundData.reason || createRefundMutation.isPending}
-              data-testid="button-process-refund"
-            >
-              {createRefundMutation.isPending ? "Processing..." : "Process Refund"}
+              {createInvoiceMutation.isPending ? "Creating..." : "Create & Send Invoice"}
             </Button>
           </DialogFooter>
         </DialogContent>
