@@ -135,6 +135,7 @@ export const liveSessions = pgTable("live_sessions", {
   recurringDays: text("recurring_days").array(), // ['monday', 'wednesday', 'friday']
   recurringEndDate: timestamp("recurring_end_date"),
   parentSessionId: varchar("parent_session_id"), // Reference to parent if part of recurring series
+  packageId: varchar("package_id").references(() => packages.id), // Package batch this session is for
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
