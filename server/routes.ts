@@ -2374,6 +2374,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete plan assignment (removes both diet and workout plans from client)
+  app.delete("/api/diet-plan-assignments/:id", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
+    try {
+      const clientId = req.params.id;
+      
+      // Verify client exists
+      const client = await storage.getClient(clientId);
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      // Get all diet and workout plans for this client
+      const dietPlans = await storage.getClientDietPlans(clientId);
+      const workoutPlans = await storage.getClientWorkoutPlans(clientId);
+      
+      // Delete all diet plans
+      for (const plan of dietPlans) {
+        await storage.deleteDietPlan(plan._id.toString());
+      }
+      
+      // Delete all workout plans
+      for (const plan of workoutPlans) {
+        await storage.deleteWorkoutPlan(plan._id.toString());
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Assignment removed successfully",
+        deletedDietPlans: dietPlans.length,
+        deletedWorkoutPlans: workoutPlans.length
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Meal routes
   app.get("/api/meals", async (req, res) => {
     try {
