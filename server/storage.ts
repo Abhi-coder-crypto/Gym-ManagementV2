@@ -1035,10 +1035,17 @@ export class MongoStorage implements IStorage {
       }
     }
     
-    // Update capacity count
+    // Update session with assigned clients and capacity count
     if (assigned.length > 0) {
       const currentCount = await SessionClient.countDocuments({ sessionId });
+      
+      // Get all client IDs assigned to this session
+      const allSessionClients = await SessionClient.find({ sessionId });
+      const allClientIds = allSessionClients.map((sc: any) => sc.clientId);
+      
+      // Update LiveSession with clients array and capacity
       await LiveSession.findByIdAndUpdate(sessionId, {
+        clients: allClientIds,
         currentCapacity: currentCount,
         updatedAt: new Date()
       });

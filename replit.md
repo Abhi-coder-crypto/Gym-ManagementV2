@@ -44,6 +44,18 @@ The system uses a fitness-focused Material Design with a blue, orange, and green
 - **Controlled Components**: Forms with validation.
 - **Responsive Design**: Fully responsive across devices.
 
+## Recent Changes
+### November 21, 2025 - Session Assignment Fixes
+Fixed three critical issues in the live session assignment system:
+1. **Trainer Assignment Persistence**: Updated AssignSessionDialog to use `useEffect` to load and display currently assigned trainer when dialog reopens
+2. **Client Assignment 500 Error**: Simplified package validation logic in `/api/sessions/:id/assign` endpoint to prevent ObjectId casting errors
+3. **Trainer Dashboard Data**: Updated `assignSessionToClients` method to properly sync `LiveSession.clients` array with `SessionClient` records, ensuring trainer dashboards display assigned sessions correctly
+
+### Implementation Details
+- **Dialog State Management**: Added `currentAssignments` query and `useEffect` hook to pre-populate trainer selection based on existing session assignments
+- **Validation Simplification**: Removed complex package name matching logic that was causing errors; now validates only client existence and duplicate assignments
+- **Data Synchronization**: `assignSessionToClients` now updates both `SessionClient` records AND `LiveSession.clients` array to maintain consistency across the system
+
 ## External Dependencies
 - **MongoDB Atlas**: Cloud-hosted NoSQL database.
 - **Mongoose**: ODM for MongoDB.

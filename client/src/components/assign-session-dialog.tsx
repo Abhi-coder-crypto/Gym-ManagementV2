@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,6 +42,13 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     queryKey: ['/api/sessions', sessionId, 'assignments'],
     enabled: open && !!sessionId,
   });
+
+  // Initialize selectedTrainer when currentAssignments loads
+  useEffect(() => {
+    if (currentAssignments?.trainerId && open) {
+      setSelectedTrainer(currentAssignments.trainerId);
+    }
+  }, [currentAssignments, open]);
 
   const { data: sessionClients = [], isLoading: isLoadingAssigned } = useQuery<any[]>({
     queryKey: ['/api/sessions', sessionId, 'clients'],

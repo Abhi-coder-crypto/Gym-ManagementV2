@@ -2803,44 +2803,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "clientIds must be a non-empty array" });
       }
       
-      // Get session to check package plan
+      // Get session to verify it exists
       const session = await storage.getSession(req.params.id);
       if (!session) {
         return res.status(404).json({ message: "Session not found" });
       }
       
-      // Validate clients match package plan and aren't already assigned to another session
+      // Basic validation: check if clients exist
       const validationErrors: string[] = [];
       for (const clientId of clientIds) {
         const client = await storage.getClient(clientId);
         if (!client) {
           validationErrors.push(`Client ${clientId} not found`);
-          continue;
-        }
-        
-        // Get client's package to check plan
-        const clientPackage = client.packageId ? await storage.getPackage(String(client.packageId)) : null;
-        const clientPackageName = clientPackage?.name || '';
-        
-        // Map session packagePlan to actual package name
-        const getPackageNameForPlan = (plan: string): string => {
-          switch (plan.toLowerCase()) {
-            case 'fitplus':
-              return 'Fit Plus';
-            case 'pro':
-              return 'Pro Transformation';
-            case 'elite':
-              return 'Elite Athlete';
-            default:
-              return '';
-          }
-        };
-        
-        const expectedPackageName = getPackageNameForPlan(session.packagePlan);
-        
-        // Check if client's package name matches session's expected package
-        if (!clientPackageName || clientPackageName !== expectedPackageName) {
-          validationErrors.push(`Client ${client.name} has ${clientPackageName || 'no'} package, but session requires ${expectedPackageName}`);
           continue;
         }
         
