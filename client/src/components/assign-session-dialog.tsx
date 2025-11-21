@@ -51,13 +51,13 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
   // Filter clients by selected package and eligibility
   const filteredClients = selectedPackage
     ? allClients.filter(client => {
-        // Only show Fit Plus, Pro Transformation, Elite Athlete (not Fit Basics)
         if (!client.packageId) return false;
         const pkg = typeof client.packageId === 'object' ? client.packageId : null;
+        const pkgId = typeof client.packageId === 'object' ? client.packageId?._id : client.packageId;
         const packageName = pkg?.name || '';
         
-        if (packageName === 'Fit Basics') return false; // Exclude Fit Basics
-        return client.packageId._id === selectedPackage || client.packageId === selectedPackage;
+        // Match by package ID
+        return pkgId === selectedPackage;
       })
     : [];
 

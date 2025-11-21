@@ -324,17 +324,6 @@ export default function AdminSessions() {
                             <UserPlus className="h-4 w-4 mr-1" />
                             Assign
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedSession(session);
-                              setIsManageDialogOpen(true);
-                            }}
-                            data-testid={`button-manage-${session._id}`}
-                          >
-                            Manage
-                          </Button>
                           {session.status !== "cancelled" && (
                             <Button
                               size="sm"

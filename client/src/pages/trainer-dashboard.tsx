@@ -89,7 +89,7 @@ export default function TrainerDashboard() {
                     <Users className="h-5 w-5 text-blue-500" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{activeClients.length}</div>
+                    <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{clients?.length || 0}</div>
                     <p className="text-xs text-muted-foreground mt-1">Active clients under your supervision</p>
                   </CardContent>
                 </Card>
@@ -100,7 +100,7 @@ export default function TrainerDashboard() {
                     <Calendar className="h-5 w-5 text-green-500" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-green-600 dark:text-green-400">{upcomingSessions.length}</div>
+                    <div className="text-3xl font-bold text-green-600 dark:text-green-400">{sessions?.filter((s: any) => s.status === 'upcoming')?.length || 0}</div>
                     <p className="text-xs text-muted-foreground mt-1">{thisWeekSessions.length} sessions this week</p>
                   </CardContent>
                 </Card>
