@@ -20,6 +20,12 @@ interface AssignSessionDialogProps {
 export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitle }: AssignSessionDialogProps) {
   const { toast } = useToast();
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
+  const [selectedTrainer, setSelectedTrainer] = useState<string | null>(null);
+  const [step, setStep] = useState<'trainer' | 'clients'>('trainer');
+
+  const { data: trainers = [], isLoading: isLoadingTrainers } = useQuery<any[]>({
+    queryKey: ['/api/trainers'],
+  });
 
   const { data: clients = [], isLoading: isLoadingClients } = useQuery<any[]>({
     queryKey: ['/api/clients'],
@@ -28,6 +34,27 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
   const { data: sessionClients = [], isLoading: isLoadingAssigned } = useQuery<any[]>({
     queryKey: ['/api/sessions', sessionId, 'clients'],
     enabled: open && !!sessionId,
+  });
+
+  const assignTrainerMutation = useMutation({
+    mutationFn: async (trainerId: string) => {
+      return await apiRequest('POST', `/api/sessions/${sessionId}/assign-trainer`, { trainerId });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
+      toast({
+        title: "Success",
+        description: `Session assigned to trainer`,
+      });
+      setStep('clients');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to assign session to trainer",
+        variant: "destructive",
+      });
+    },
   });
 
   const assignMutation = useMutation({
@@ -47,6 +74,8 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
         description: message,
       });
       setSelectedClients([]);
+      setSelectedTrainer(null);
+      setStep('trainer');
       onOpenChange(false);
     },
     onError: (error: any) => {
@@ -66,7 +95,19 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     );
   };
 
-  const handleSubmit = () => {
+  const handleSubmitTrainer = () => {
+    if (!selectedTrainer) {
+      toast({
+        title: "Error",
+        description: "Please select a trainer",
+        variant: "destructive",
+      });
+      return;
+    }
+    assignTrainerMutation.mutate(selectedTrainer);
+  };
+
+  const handleSubmitClients = () => {
     if (selectedClients.length === 0) {
       toast({
         title: "Error",
@@ -98,6 +139,8 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       setSelectedClients([]);
+      setSelectedTrainer(null);
+      setStep('trainer');
     }
     onOpenChange(newOpen);
   };
@@ -108,79 +151,126 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Assign Session to Clients
+            {step === 'trainer' ? 'Assign Trainer to Session' : 'Assign Clients to Session'}
           </DialogTitle>
           <DialogDescription>
-            Assign "{sessionTitle}" to one or more clients
+            {step === 'trainer' 
+              ? `Select a trainer to manage "${sessionTitle}"`
+              : `Assign "${sessionTitle}" to one or more clients`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {isLoadingClients || isLoadingAssigned ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <ScrollArea className="h-[400px] pr-4">
-              <div className="space-y-2">
-                {clients.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No clients found
-                  </div>
-                ) : (
-                  clients.map((client) => (
-                    <div
-                      key={client._id}
-                      className="flex items-center space-x-3 p-3 rounded-lg border hover-elevate"
-                      data-testid={`client-item-${client._id}`}
-                    >
-                      <Checkbox
-                        id={`client-${client._id}`}
-                        checked={selectedClients.includes(client._id)}
-                        onCheckedChange={() => handleToggleClient(client._id)}
-                        disabled={assignedClientIds.has(client._id)}
-                        data-testid={`checkbox-client-${client._id}`}
-                      />
-                      <Label
-                        htmlFor={`client-${client._id}`}
-                        className="flex-1 cursor-pointer"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium">{client.name}</div>
-                            <div className="text-sm text-muted-foreground">{client.email}</div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {getPackageBadge(client.package)}
-                            {assignedClientIds.has(client._id) && (
-                              <Badge variant="secondary">Already Assigned</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </Label>
-                    </div>
-                  ))
-                )}
+          {step === 'trainer' ? (
+            // TRAINER SELECTION STEP
+            isLoadingTrainers ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            </ScrollArea>
+            ) : (
+              <ScrollArea className="h-[300px] pr-4">
+                <div className="space-y-2">
+                  {trainers.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No trainers found
+                    </div>
+                  ) : (
+                    trainers.map((trainer: any) => (
+                      <div
+                        key={trainer._id}
+                        className="flex items-center space-x-3 p-3 rounded-lg border hover-elevate"
+                        data-testid={`trainer-item-${trainer._id}`}
+                      >
+                        <Checkbox
+                          id={`trainer-${trainer._id}`}
+                          checked={selectedTrainer === trainer._id}
+                          onCheckedChange={() => setSelectedTrainer(selectedTrainer === trainer._id ? null : trainer._id)}
+                          data-testid={`checkbox-trainer-${trainer._id}`}
+                        />
+                        <Label
+                          htmlFor={`trainer-${trainer._id}`}
+                          className="flex-1 cursor-pointer"
+                        >
+                          <div>
+                            <div className="font-medium">{trainer.name || trainer.email}</div>
+                            <div className="text-sm text-muted-foreground">{trainer.email}</div>
+                          </div>
+                        </Label>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            )
+          ) : (
+            // CLIENTS SELECTION STEP
+            isLoadingClients || isLoadingAssigned ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <ScrollArea className="h-[400px] pr-4">
+                <div className="space-y-2">
+                  {clients.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No clients found
+                    </div>
+                  ) : (
+                    clients.map((client) => (
+                      <div
+                        key={client._id}
+                        className="flex items-center space-x-3 p-3 rounded-lg border hover-elevate"
+                        data-testid={`client-item-${client._id}`}
+                      >
+                        <Checkbox
+                          id={`client-${client._id}`}
+                          checked={selectedClients.includes(client._id)}
+                          onCheckedChange={() => handleToggleClient(client._id)}
+                          disabled={assignedClientIds.has(client._id)}
+                          data-testid={`checkbox-client-${client._id}`}
+                        />
+                        <Label
+                          htmlFor={`client-${client._id}`}
+                          className="flex-1 cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">{client.name}</div>
+                              <div className="text-sm text-muted-foreground">{client.email}</div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {getPackageBadge(client.package)}
+                              {assignedClientIds.has(client._id) && (
+                                <Badge variant="secondary">Already Assigned</Badge>
+                              )}
+                            </div>
+                          </div>
+                        </Label>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            )
           )}
         </div>
 
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => step === 'clients' ? setStep('trainer') : onOpenChange(false)}
             data-testid="button-cancel-assign"
           >
-            Cancel
+            {step === 'clients' ? 'Back' : 'Cancel'}
           </Button>
           <Button
-            onClick={handleSubmit}
-            disabled={assignMutation.isPending || selectedClients.length === 0}
-            data-testid="button-confirm-assign"
+            onClick={step === 'trainer' ? handleSubmitTrainer : handleSubmitClients}
+            disabled={step === 'trainer' ? assignTrainerMutation.isPending : assignMutation.isPending}
+            data-testid="button-submit-assign"
           >
-            {assignMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Assign to {selectedClients.length} Client{selectedClients.length !== 1 ? 's' : ''}
+            {step === 'trainer'
+              ? assignTrainerMutation.isPending ? "Assigning..." : "Next: Select Clients"
+              : assignMutation.isPending ? "Assigning..." : "Assign Clients"}
           </Button>
         </DialogFooter>
       </DialogContent>

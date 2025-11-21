@@ -281,10 +281,21 @@ export default function AdminSessions() {
                             </Button>
                           )}
                           {session.joinUrl && (
-                            <Badge variant="outline" className="flex items-center gap-1">
-                              <Video className="h-3 w-3" />
-                              Zoom Ready
-                            </Badge>
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => window.open(session.joinUrl, '_blank')}
+                                data-testid={`button-join-zoom-${session._id}`}
+                              >
+                                <Video className="h-4 w-4 mr-1" />
+                                Join Now
+                              </Button>
+                              <Badge variant="outline" className="flex items-center gap-1">
+                                <Video className="h-3 w-3" />
+                                Zoom Ready
+                              </Badge>
+                            </>
                           )}
                           <Button
                             size="sm"
