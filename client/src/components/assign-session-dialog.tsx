@@ -17,10 +17,10 @@ interface AssignSessionDialogProps {
   onOpenChange: (open: boolean) => void;
   sessionId: string;
   sessionTitle: string;
-  packageId?: string;
+  packagePlan?: string;
 }
 
-export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitle, packageId = "" }: AssignSessionDialogProps) {
+export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitle, packagePlan = "" }: AssignSessionDialogProps) {
   const { toast } = useToast();
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [selectedTrainer, setSelectedTrainer] = useState<string | null>(null);
@@ -48,17 +48,34 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     enabled: open && !!sessionId,
   });
 
-  // Filter clients by session's package
+  // Map package plan to package name patterns
+  const getPackageNamePattern = (plan: string): string => {
+    switch (plan.toLowerCase()) {
+      case 'fitplus':
+        return 'Fit Plus';
+      case 'pro':
+        return 'Pro Transformation';
+      case 'elite':
+        return 'Elite Athlete';
+      default:
+        return '';
+    }
+  };
+
+  // Filter clients by session's package plan
   const filteredClients = allClients.filter(client => {
     if (!client.packageId) return false;
-    const pkgId = typeof client.packageId === 'object' ? client.packageId?._id : client.packageId;
-    // If packageId is provided, filter by it; otherwise show all clients from non-Fit Basics packages
-    if (packageId) {
-      return pkgId === packageId;
-    }
-    // Fallback: show clients from Fit Plus and higher packages
+    
     const pkg = typeof client.packageId === 'object' ? client.packageId : null;
     const packageName = pkg?.name || '';
+    
+    // If packagePlan is provided, filter by exact package name match
+    if (packagePlan) {
+      const expectedPackageName = getPackageNamePattern(packagePlan);
+      return packageName === expectedPackageName;
+    }
+    
+    // Fallback: show clients from Fit Plus and higher packages (excluding Fit Basics)
     return packageName !== 'Fit Basics' && packageName !== '';
   });
 
@@ -90,7 +107,7 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
 
   const assignMutation = useMutation({
     mutationFn: async (clientIds: string[]) => {
-      return await apiRequest('POST', `/api/sessions/${sessionId}/assign`, { clientIds, packageId });
+      return await apiRequest('POST', `/api/sessions/${sessionId}/assign`, { clientIds, packagePlan });
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
@@ -259,7 +276,7 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
 
           {step === 'clients' && (
             <>
-              {packageId && (
+              {packagePlan && (
                 <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                   <p className="text-sm font-medium">
                     Batch - {selectedClients.length}/10 selected

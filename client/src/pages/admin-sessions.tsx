@@ -591,11 +591,7 @@ export default function AdminSessions() {
         onOpenChange={setShowAssignDialog}
         sessionId={assignSessionId}
         sessionTitle={assignSessionTitle}
-        packageId={
-          typeof sessions.find((s: any) => s._id === assignSessionId)?.packageId === 'object'
-            ? sessions.find((s: any) => s._id === assignSessionId)?.packageId?._id
-            : sessions.find((s: any) => s._id === assignSessionId)?.packageId
-        }
+        packagePlan={sessions.find((s: any) => s._id === assignSessionId)?.packagePlan || ""}
       />
 
       <Dialog open={isCloneDialogOpen} onOpenChange={setIsCloneDialogOpen}>

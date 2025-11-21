@@ -2793,11 +2793,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Get client's package to check plan
         const clientPackage = client.packageId ? await storage.getPackage(String(client.packageId)) : null;
-        const clientPlan = clientPackage?.name?.toLowerCase();
+        const clientPackageName = clientPackage?.name || '';
         
-        // Check if client's package plan matches session's package plan
-        if (!clientPlan || !clientPlan.includes(session.packagePlan)) {
-          validationErrors.push(`Client ${client.name} has ${clientPlan || 'no'} package, but session requires ${session.packagePlan}`);
+        // Map session packagePlan to actual package name
+        const getPackageNameForPlan = (plan: string): string => {
+          switch (plan.toLowerCase()) {
+            case 'fitplus':
+              return 'Fit Plus';
+            case 'pro':
+              return 'Pro Transformation';
+            case 'elite':
+              return 'Elite Athlete';
+            default:
+              return '';
+          }
+        };
+        
+        const expectedPackageName = getPackageNameForPlan(session.packagePlan);
+        
+        // Check if client's package name matches session's expected package
+        if (!clientPackageName || clientPackageName !== expectedPackageName) {
+          validationErrors.push(`Client ${client.name} has ${clientPackageName || 'no'} package, but session requires ${expectedPackageName}`);
           continue;
         }
         
