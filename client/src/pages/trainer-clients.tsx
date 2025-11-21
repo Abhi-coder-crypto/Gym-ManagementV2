@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Mail, Phone, Target, TrendingUp } from "lucide-react";
+import { Search, Mail, Phone, Target, TrendingUp, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Client } from "@shared/schema";
 import { useState } from "react";
+import { hasFeature, getRemainingDays, FEATURE_LABELS } from "@/lib/featureAccess";
 
 export default function TrainerClients() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -177,3 +178,52 @@ export default function TrainerClients() {
     </SidebarProvider>
   );
 }
+
+                    {/* Package & Subscription Info */}
+                    <div className="grid grid-cols-2 gap-2 py-2 border-t pt-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Package</p>
+                        <p className="font-semibold text-sm">{(client as any).packageName || 'None'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Expires In</p>
+                        <p className={`font-semibold text-sm ${getRemainingDays((client as any).subscriptionEndDate) <= 7 ? 'text-yellow-600' : ''}`}>
+                          {getRemainingDays((client as any).subscriptionEndDate)} days
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Subscription Alert */}
+                    {getRemainingDays((client as any).subscriptionEndDate) <= 7 && getRemainingDays((client as any).subscriptionEndDate) > 0 && (
+                      <div className="flex items-center gap-2 p-2 bg-yellow-50 dark:bg-yellow-950/30 rounded border border-yellow-200 dark:border-yellow-800 mt-2">
+                        <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+                        <p className="text-xs text-yellow-800 dark:text-yellow-200">Expiring soon</p>
+                      </div>
+                    )}
+
+                    {getRemainingDays((client as any).subscriptionEndDate) <= 0 && (
+                      <div className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-950/30 rounded border border-red-200 dark:border-red-800 mt-2">
+                        <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
+                        <p className="text-xs text-red-800 dark:text-red-200">Subscription expired</p>
+                      </div>
+                    )}
+
+                    {/* Available Features */}
+                    <div className="py-2 border-t pt-3">
+                      <p className="text-xs font-semibold text-muted-foreground mb-2">Available Features</p>
+                      <div className="space-y-1">
+                        {['workouts', 'diet', 'recorded_videos', 'personalized_diet', 'weekly_checkins', 'one_on_one_calls', 'habit_coaching', 'performance_tracking'].map((feature) => {
+                          const available = hasFeature((client as any).packageName, feature);
+                          return (
+                            <div key={feature} className="flex items-center gap-1 text-xs">
+                              {available ? (
+                                <span className="text-green-600">✓</span>
+                              ) : (
+                                <span className="text-muted-foreground">✗</span>
+                              )}
+                              <span className={available ? '' : 'text-muted-foreground'}>{FEATURE_LABELS[feature] || feature}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>

@@ -1026,6 +1026,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update client subscription (admin only)
+  app.patch("/api/admin/clients/:id/subscription", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { packageId, accessDurationWeeks } = req.body;
+      
+      if (!packageId) {
+        return res.status(400).json({ message: "Package ID is required" });
+      }
+      
+      if (!accessDurationWeeks || ![4, 8, 12].includes(parseInt(accessDurationWeeks))) {
+        return res.status(400).json({ message: "Valid duration required (4, 8, or 12 weeks)" });
+      }
+      
+      // Verify package exists
+      const pkg = await storage.getPackage(packageId);
+      if (!pkg) {
+        return res.status(404).json({ message: "Package not found" });
+      }
+      
+      // Calculate subscription dates
+      const subscriptionStartDate = new Date();
+      const subscriptionEndDate = new Date();
+      subscriptionEndDate.setDate(subscriptionEndDate.getDate() + (parseInt(accessDurationWeeks) * 7));
+      
+      // Update client with new subscription
+      const client = await storage.updateClient(req.params.id, {
+        packageId,
+        accessDurationWeeks: parseInt(accessDurationWeeks),
+        subscriptionStartDate,
+        subscriptionEndDate,
+      });
+      
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      console.log(`✅ Updated subscription for client "${client.name}" to ${pkg.name} for ${accessDurationWeeks} weeks. Expires: ${subscriptionEndDate.toLocaleDateString()}`);
+      
+      res.json({
+        message: `Subscription updated to ${pkg.name} for ${accessDurationWeeks} weeks`,
+        client,
+        subscriptionDetails: {
+          packageName: pkg.name,
+          startDate: subscriptionStartDate,
+          endDate: subscriptionEndDate,
+          durationWeeks: accessDurationWeeks,
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Delete client permanently (admin only for safety)
   app.delete("/api/clients/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
@@ -4537,6 +4590,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const sessions = await storage.getTrainerSessions(req.params.trainerId);
       res.json(sessions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get client subscriptions (admin dashboard)
+  app.get("/api/admin/clients/packages", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { q } = req.query;
+      const clients = await storage.getAllClients(true);
+      
+      let filtered = clients;
+      if (q) {
+        const searchQuery = q.toString().toLowerCase();
+        filtered = filtered.filter((client: any) =>
+          client.name.toLowerCase().includes(searchQuery) ||
+          client.email?.toLowerCase().includes(searchQuery) ||
+          client.phone?.includes(searchQuery)
+        );
+      }
+
+      // Map packages to clients
+      const clientsWithPackages = await Promise.all(
+        filtered.map(async (client: any) => {
+          const pkg = client.packageId ? await storage.getPackage(String(client.packageId)) : null;
+          return {
+            ...client,
+            packageName: pkg?.name || 'None',
+            packageId: client.packageId,
+            subscriptionStartDate: client.subscriptionStartDate,
+            subscriptionEndDate: client.subscriptionEndDate,
+            accessDurationWeeks: client.accessDurationWeeks || 4,
+          };
+        })
+      );
+
+      res.json(clientsWithPackages);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get subscription status for all clients (for admin notifications)
+  app.get("/api/admin/subscription-alerts", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const clients = await storage.getAllClients(true);
+      const now = new Date();
+
+      const alerts = {
+        expiring_soon: [] as any[],
+        expired: [] as any[],
+      };
+
+      for (const client of clients) {
+        if (!client.subscriptionEndDate) continue;
+
+        const endDate = new Date(client.subscriptionEndDate);
+        const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (daysLeft <= 0) {
+          alerts.expired.push({
+            clientId: client._id,
+            clientName: client.name,
+            packageName: (client as any).packageName,
+            expiredSince: Math.abs(daysLeft),
+          });
+        } else if (daysLeft <= 7) {
+          alerts.expiring_soon.push({
+            clientId: client._id,
+            clientName: client.name,
+            packageName: (client as any).packageName,
+            daysLeft,
+          });
+        }
+      }
+
+      res.json(alerts);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
