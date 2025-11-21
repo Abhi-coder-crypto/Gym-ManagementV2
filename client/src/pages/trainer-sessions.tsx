@@ -38,7 +38,6 @@ const SESSION_TYPES = ["Power Yoga", "HIIT", "Cardio Bootcamp", "Strength Buildi
 
 const sessionSchema = z.object({
   title: z.string().min(1, "Title is required"),
-  sessionType: z.string().min(1, "Session type is required"),
   scheduledAt: z.string().min(1, "Date and time are required"),
   duration: z.coerce.number().min(1, "Duration must be at least 1 minute"),
   maxCapacity: z.coerce.number().min(1, "Capacity must be at least 1"),
@@ -58,7 +57,6 @@ export default function TrainerSessions() {
     resolver: zodResolver(sessionSchema),
     defaultValues: {
       title: "",
-      sessionType: "",
       scheduledAt: "",
       duration: 60,
       maxCapacity: 15,
@@ -296,31 +294,6 @@ export default function TrainerSessions() {
                     <FormControl>
                       <Input placeholder="e.g., Power Yoga Session" {...field} data-testid="input-title" />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="sessionType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Session Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-session-type">
-                          <SelectValue placeholder="Select session type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {SESSION_TYPES.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
