@@ -2782,16 +2782,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Session not found" });
       }
       
-      // Assign clients to session
+      // Assign clients to session (this now handles trainerId persistence internally)
       const result = await storage.assignSessionToClients(req.params.id, clientIds);
-      
-      // Also set trainerId on each client so they appear in trainer's client list
-      if (session.trainerId) {
-        for (const clientId of clientIds) {
-          await storage.updateClient(clientId, { trainerId: session.trainerId });
-        }
-      }
-      
       res.json(result);
     } catch (error: any) {
       res.status(500).json({ message: error.message });

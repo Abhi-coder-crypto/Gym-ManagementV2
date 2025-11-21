@@ -998,6 +998,16 @@ export class MongoStorage implements IStorage {
           // Create booking without checking capacity (admin override)
           const booking = new SessionClient({ sessionId, clientId });
           await booking.save();
+          
+          // CRITICAL: Update client with trainerId from the session for seamless data flow
+          if (session.trainerId) {
+            await Client.findByIdAndUpdate(
+              clientId,
+              { trainerId: session.trainerId },
+              { new: true }
+            );
+          }
+          
           assigned.push(clientId);
         } else {
           errors.push({ clientId, message: 'Already assigned' });
