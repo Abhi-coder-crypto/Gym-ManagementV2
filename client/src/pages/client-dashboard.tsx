@@ -324,13 +324,19 @@ export default function ClientDashboard() {
                                     </div>
                                   </div>
                                 </div>
-                                <Button
-                                  size="sm"
-                                  onClick={() => window.open(session.meetingLink, '_blank')}
-                                  data-testid={`button-join-${session._id}`}
-                                >
-                                  Join
-                                </Button>
+                                {session.joinUrl ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => window.open(session.joinUrl, '_blank')}
+                                    data-testid={`button-join-${session._id}`}
+                                  >
+                                    Join Now
+                                  </Button>
+                                ) : (
+                                  <div className="text-xs text-muted-foreground">
+                                    Zoom link coming soon
+                                  </div>
+                                )}
                               </div>
                             </CardContent>
                           </Card>
