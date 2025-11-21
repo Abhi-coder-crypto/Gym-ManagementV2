@@ -49,13 +49,18 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
   });
 
   // Filter clients by session's package
-  const filteredClients = packageId
-    ? allClients.filter(client => {
-        if (!client.packageId) return false;
-        const pkgId = typeof client.packageId === 'object' ? client.packageId?._id : client.packageId;
-        return pkgId === packageId;
-      })
-    : [];
+  const filteredClients = allClients.filter(client => {
+    if (!client.packageId) return false;
+    const pkgId = typeof client.packageId === 'object' ? client.packageId?._id : client.packageId;
+    // If packageId is provided, filter by it; otherwise show all clients from non-Fit Basics packages
+    if (packageId) {
+      return pkgId === packageId;
+    }
+    // Fallback: show clients from Fit Plus and higher packages
+    const pkg = typeof client.packageId === 'object' ? client.packageId : null;
+    const packageName = pkg?.name || '';
+    return packageName !== 'Fit Basics' && packageName !== '';
+  });
 
   const assignedClientIds = new Set(sessionClients.map((client: any) => client._id));
 
@@ -249,14 +254,13 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
 
           {step === 'clients' && (
             <>
-              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                <p className="text-sm font-medium">
-                  <Badge className={getPackageBadgeColor(getPackageName(selectedPackage))}>
-                    {getPackageName(selectedPackage)}
-                  </Badge>
-                  <span className="ml-2">Batch - {selectedClients.length}/10 selected</span>
-                </p>
-              </div>
+              {packageId && (
+                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <p className="text-sm font-medium">
+                    Batch - {selectedClients.length}/10 selected
+                  </p>
+                </div>
+              )}
 
               {sessionClients.length > 0 && (
                 <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
