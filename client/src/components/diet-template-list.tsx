@@ -54,6 +54,20 @@ export function DietTemplateList() {
     },
   });
 
+  const createMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/diet-plans", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/diet-plan-templates'] });
+      toast({ title: "Success", description: "Diet template created successfully" });
+      setEditDialogOpen(false);
+      setEditingTemplate(null);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       apiRequest("PATCH", `/api/diet-plans/${id}`, data),
@@ -123,14 +137,18 @@ export function DietTemplateList() {
       return;
     }
 
+    const submitData = {
+      ...formData,
+      targetCalories,
+    };
+
     if (editingTemplate) {
       updateMutation.mutate({ 
         id: editingTemplate._id, 
-        data: {
-          ...formData,
-          targetCalories,
-        }
+        data: submitData
       });
+    } else {
+      createMutation.mutate(submitData);
     }
   };
 
@@ -168,9 +186,16 @@ export function DietTemplateList() {
           </Select>
         </div>
 
-        <Button data-testid="button-create-diet-template">
+        <Button 
+          onClick={() => {
+            setEditingTemplate(null);
+            resetForm();
+            setEditDialogOpen(true);
+          }}
+          data-testid="button-create-diet-template"
+        >
           <Plus className="h-4 w-4 mr-2" />
-          Create Template
+          Create Diet
         </Button>
       </div>
 
@@ -271,7 +296,7 @@ export function DietTemplateList() {
       }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Diet Template</DialogTitle>
+            <DialogTitle>{editingTemplate ? "Edit Diet Template" : "Create Diet Template"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -337,10 +362,12 @@ export function DietTemplateList() {
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={updateMutation.isPending}
+                disabled={updateMutation.isPending || createMutation.isPending}
                 data-testid="button-save-template"
               >
-                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                {(updateMutation.isPending || createMutation.isPending) 
+                  ? "Saving..." 
+                  : editingTemplate ? "Save Changes" : "Create Diet"}
               </Button>
             </div>
           </div>
