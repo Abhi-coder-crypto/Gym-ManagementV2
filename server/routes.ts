@@ -4564,6 +4564,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/trainers/:trainerId/meals", authenticateToken, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only trainers and admins can access trainer endpoints
+      if (req.user.role !== 'trainer' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied. Trainer or admin role required." });
+      }
+      
+      // Trainers can only access their own meals; admins can access any trainer's meals
+      if (req.user.role === 'trainer' && String(req.user.userId) !== req.params.trainerId) {
+        return res.status(403).json({ message: "Access denied. You can only access your own meals." });
+      }
+      
+      const meals = await storage.getAllMeals({ search: '' });
+      // Filter meals created by this trainer
+      const trainerMeals = meals.filter((meal: any) => 
+        meal.createdBy?.toString() === req.params.trainerId || 
+        meal.createdBy === req.params.trainerId
+      );
+      res.json(trainerMeals);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/trainers/:trainerId/sessions", authenticateToken, async (req, res) => {
     try {
       if (!req.user) {

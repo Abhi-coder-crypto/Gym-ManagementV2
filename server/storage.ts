@@ -778,9 +778,10 @@ export class MongoStorage implements IStorage {
   }
 
   async getTrainerClients(trainerId: string): Promise<IClient[]> {
-    // Query clients directly where trainerId matches
+    // Query clients directly where trainerId matches (convert string to ObjectId for Client schema)
+    const trainerObjId = new mongoose.Types.ObjectId(trainerId);
     return await Client.find({ 
-      trainerId: trainerId,
+      trainerId: trainerObjId,
       status: { $ne: 'inactive' }
     })
       .populate('packageId')
@@ -788,15 +789,24 @@ export class MongoStorage implements IStorage {
   }
 
   async getTrainerDietPlans(trainerId: string): Promise<IDietPlan[]> {
-    return await DietPlan.find({ assignedTrainerId: trainerId })
+    // Query diet plans where trainerId matches (trainerId is ObjectId in schema)
+    const trainerObjId = new mongoose.Types.ObjectId(trainerId);
+    return await DietPlan.find({ trainerId: trainerObjId })
       .populate('clientId')
-      .populate('assignedTrainerId')
+      .populate('trainerId')
       .sort({ createdAt: -1 });
   }
 
   async getTrainerSessions(trainerId: string): Promise<ILiveSession[]> {
-    return await LiveSession.find({ trainerId: trainerId })
+    // Query sessions where trainerId matches (String in LiveSession schema, but still try both)
+    return await LiveSession.find({ 
+      $or: [
+        { trainerId: trainerId },
+        { trainerId: new mongoose.Types.ObjectId(trainerId) }
+      ]
+    })
       .populate('trainerId')
+      .populate('packageId')
       .sort({ scheduledAt: -1 });
   }
 
