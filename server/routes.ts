@@ -2174,8 +2174,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create Zoom meeting for a session (admin and trainer)
-  app.post("/api/sessions/:id/create-zoom", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
+  // Get or create universal Zoom link
+  app.post("/api/zoom/universal-link", authenticateToken, requireRole('admin'), async (req, res) => {
     try {
       if (!zoomService.isConfigured()) {
         return res.status(503).json({ 
@@ -2183,12 +2183,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      let settings = await storage.getSystemSettings();
+      
+      // If universal link already exists, return it
+      if (settings.universalZoomLink?.joinUrl) {
+        return res.json({
+          message: "Universal Zoom link retrieved",
+          zoomLink: settings.universalZoomLink,
+        });
+      }
+
+      // Create new universal Zoom meeting (will stay active forever)
+      const zoomMeeting = await zoomService.createMeeting({
+        topic: 'FitPro Universal Training Session',
+        start_time: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
+        duration: 480, // 8 hours - effectively permanent
+        agenda: 'Universal training session link - active forever',
+        password: req.body.password || '',
+      });
+
+      // Save universal link to system settings
+      const updatedSettings = await storage.updateSystemSettings({
+        universalZoomLink: {
+          joinUrl: zoomMeeting.join_url,
+          startUrl: zoomMeeting.start_url,
+          meetingId: String(zoomMeeting.id),
+          password: zoomMeeting.password,
+          createdAt: new Date(),
+        }
+      });
+
+      res.json({
+        message: "Universal Zoom link created successfully",
+        zoomLink: updatedSettings.universalZoomLink,
+      });
+    } catch (error: any) {
+      console.error('Error creating universal Zoom link:', error);
+      res.status(500).json({ message: error.message || "Failed to create universal Zoom link" });
+    }
+  });
+
+  // Create Zoom meeting for a session (admin and trainer)
+  app.post("/api/sessions/:id/create-zoom", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
+    try {
       const session = await storage.getSession(req.params.id);
       if (!session) {
         return res.status(404).json({ message: "Session not found" });
       }
 
-      // Create Zoom meeting
+      // Get universal Zoom link from system settings
+      const settings = await storage.getSystemSettings();
+      const universalLink = settings.universalZoomLink;
+
+      if (universalLink?.joinUrl) {
+        // Use universal link instead of creating a new one
+        const updatedSession = await storage.updateSession(req.params.id, {
+          joinUrl: universalLink.joinUrl,
+          startUrl: universalLink.startUrl,
+          zoomMeetingId: universalLink.meetingId,
+          meetingPassword: universalLink.password,
+        });
+
+        return res.json({ 
+          message: "Zoom link assigned successfully (using universal link)",
+          session: updatedSession,
+        });
+      }
+
+      // Fallback: create individual Zoom meeting if no universal link exists
+      if (!zoomService.isConfigured()) {
+        return res.status(503).json({ 
+          message: "Zoom integration is not configured. Please add ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, and ZOOM_ACCOUNT_SECRET environment variables." 
+        });
+      }
+
       const zoomMeeting = await zoomService.createMeeting({
         topic: session.title,
         start_time: new Date(session.scheduledAt).toISOString(),

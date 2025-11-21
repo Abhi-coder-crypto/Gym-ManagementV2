@@ -281,9 +281,10 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
                       </div>
                     ))
                   )}
-                </div>
-              </ScrollArea>
-            )
+                  </div>
+                </ScrollArea>
+              )}
+            </>
           )}
         </div>
 
@@ -295,6 +296,15 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
           >
             {step === 'clients' ? 'Back' : 'Cancel'}
           </Button>
+          {step === 'clients' && (
+            <Button
+              variant="outline"
+              onClick={handleSkipClients}
+              data-testid="button-skip-clients"
+            >
+              Skip & Close
+            </Button>
+          )}
           <Button
             onClick={step === 'trainer' ? handleSubmitTrainer : handleSubmitClients}
             disabled={step === 'trainer' ? assignTrainerMutation.isPending : assignMutation.isPending}

@@ -784,6 +784,13 @@ ClientActivitySchema.index({ clientId: 1, timestamp: -1 });
 ClientActivitySchema.index({ timestamp: -1 });
 
 export interface ISystemSettings extends Document {
+  universalZoomLink?: {
+    joinUrl?: string;
+    startUrl?: string;
+    meetingId?: string;
+    password?: string;
+    createdAt?: Date;
+  };
   branding?: {
     gymName: string;
     logo?: string;
@@ -917,6 +924,13 @@ export interface ISystemSettings extends Document {
 }
 
 const SystemSettingsSchema = new Schema({
+  universalZoomLink: {
+    joinUrl: String,
+    startUrl: String,
+    meetingId: String,
+    password: String,
+    createdAt: { type: Date, default: Date.now },
+  },
   branding: {
     gymName: { type: String, default: 'FitPro' },
     logo: String,
