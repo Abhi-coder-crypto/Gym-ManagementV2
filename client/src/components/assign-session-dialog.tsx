@@ -213,6 +213,20 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
   };
 
   const handleSubmitClients = () => {
+    // If no clients are available to select (all already assigned), just close the dialog
+    const availableClients = filteredClients.filter(client => !assignedClientIds.has(client._id));
+    if (availableClients.length === 0) {
+      toast({
+        title: "Success",
+        description: "Trainer assigned successfully. All eligible clients are already assigned to this session.",
+      });
+      setSelectedClients([]);
+      setSelectedTrainer(null);
+      setStep('trainer');
+      onOpenChange(false);
+      return;
+    }
+    
     if (selectedClients.length === 0) {
       toast({
         title: "Error",
@@ -344,7 +358,13 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
                   <div className="space-y-2">
                     {filteredClients.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        No eligible clients in this package
+                        <p className="font-medium">No eligible clients in this package</p>
+                        <p className="text-sm mt-2">All clients are already assigned to sessions or no clients exist for this package plan.</p>
+                      </div>
+                    ) : filteredClients.filter(client => !assignedClientIds.has(client._id)).length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p className="font-medium">All eligible clients are already assigned</p>
+                        <p className="text-sm mt-2">Click "Done" to finish.</p>
                       </div>
                     ) : (
                       filteredClients.map((client) => (
@@ -414,7 +434,10 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
           >
             {step === 'trainer'
               ? assignTrainerMutation.isPending ? 'Assigning...' : 'Next: Select Clients'
-              : assignMutation.isPending ? 'Assigning...' : `Assign Batch (${selectedClients.length})`}
+              : assignMutation.isPending ? 'Assigning...' : 
+                filteredClients.filter(client => !assignedClientIds.has(client._id)).length === 0
+                  ? 'Done'
+                  : `Assign Batch (${selectedClients.length})`}
           </Button>
         </DialogFooter>
       </DialogContent>
