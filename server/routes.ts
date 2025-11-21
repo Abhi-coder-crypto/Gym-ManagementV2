@@ -2611,6 +2611,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clone Session endpoint
+  app.post("/api/sessions/:id/clone", authenticateToken, requireRole('admin'), async (req, res) => {
+    try {
+      const { scheduledAt } = req.body;
+      if (!scheduledAt) {
+        return res.status(400).json({ message: "scheduledAt is required" });
+      }
+
+      // Get original session
+      const originalSession = await storage.getSession(req.params.id);
+      if (!originalSession) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+
+      // Create cloned session with new scheduled time
+      const clonedSession = await storage.createSession({
+        title: originalSession.title,
+        description: originalSession.description,
+        sessionType: originalSession.sessionType,
+        scheduledAt: new Date(scheduledAt),
+        duration: originalSession.duration,
+        maxCapacity: originalSession.maxCapacity,
+        currentCapacity: 0,
+        status: 'upcoming',
+        trainerId: originalSession.trainerId,
+        packageId: originalSession.packageId,
+      });
+
+      res.json({
+        message: "Session cloned successfully",
+        session: clonedSession,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.delete("/api/sessions/:id", async (req, res) => {
     try {
       const success = await storage.deleteSession(req.params.id);
