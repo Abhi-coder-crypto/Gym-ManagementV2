@@ -2,7 +2,9 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import bcrypt from 'bcrypt';
 import { Package, Trainer, Client, LiveSession, SessionClient } from './models.js';
+import { User } from './models/user.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -22,6 +24,8 @@ async function seedDemoData() {
     await Trainer.deleteMany({});
     await LiveSession.deleteMany({});
     await SessionClient.deleteMany({});
+    // Clear trainer users from User collection
+    await User.deleteMany({ role: 'trainer', email: { $in: ['rajesh.trainer@fitpro.com', 'priya.trainer@fitpro.com', 'arjun.trainer@fitpro.com'] } });
     console.log('✅ Cleared all existing clients, trainers, and sessions');
 
     // Get all packages
@@ -161,6 +165,18 @@ async function seedDemoData() {
 
     const createdTrainers: any = [];
     for (const trainerData of trainersData) {
+      // Create as User document with role='trainer'
+      const hashedPassword = await bcrypt.hash('Demo@123', 10);
+      const trainerUser = await User.create({
+        email: trainerData.email,
+        password: hashedPassword,
+        role: 'trainer',
+        name: trainerData.name,
+        phone: trainerData.phone,
+        status: 'active',
+      });
+
+      // Also create in Trainer collection for trainer-specific data
       const trainer = await Trainer.create({
         name: trainerData.name,
         email: trainerData.email,
@@ -185,7 +201,8 @@ async function seedDemoData() {
         email: trainerData.email,
         password: 'Demo@123', // Default password
         specialty: trainerData.specialty,
-        id: trainer._id,
+        userId: trainerUser._id,
+        trainerId: trainer._id,
       });
 
       console.log(`✅ Created trainer: ${trainerData.name}`);
@@ -234,7 +251,7 @@ async function seedDemoData() {
         duration: 60, // 1 hour
         meetingLink: zoomLink,
         meetingPassword: 'FitPro123',
-        trainerId: trainer.id.toString(),
+        trainerId: trainer.trainerId.toString(),
         trainerName: trainer.name,
         maxCapacity: 10,
         currentCapacity: sessionData.clientIndices.length,
