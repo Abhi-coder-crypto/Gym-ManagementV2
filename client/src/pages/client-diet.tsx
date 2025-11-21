@@ -43,64 +43,42 @@ export default function ClientDiet() {
     }
   }, [setLocation]);
 
-  const { data: dietPlans } = useQuery<any[]>({
-    queryKey: ['/api/diet-plans', clientId],
+  const { data: dietPlans, isLoading: isLoadingDiet } = useQuery<any[]>({
+    queryKey: [`/api/diet-plans/${clientId}`],
     enabled: !!clientId,
   });
 
-  const currentPlan = dietPlans?.[0];
+  const currentPlan = dietPlans?.find(plan => plan.clientId === clientId);
 
-  // Meal schedule with better structure
-  const mealSchedule = [
-    {
+  // Meal schedule from assigned diet plan
+  const hasDietPlan = currentPlan && Object.keys(currentPlan.meals || {}).length > 0;
+  
+  const mealSchedule = hasDietPlan ? [
+    currentPlan.meals?.breakfast && {
       time: "7:00 AM",
       type: "Breakfast",
       icon: "🥞",
-      meal: currentPlan?.meals?.breakfast || {
-        name: "Whole wheat pancakes with maple syrup",
-        calories: 502,
-        protein: 15,
-        carbs: 65,
-        fats: 12,
-      }
+      meal: currentPlan.meals.breakfast
     },
-    {
+    currentPlan.meals?.lunch && {
       time: "12:30 PM",
       type: "Lunch",
       icon: "🥗",
-      meal: currentPlan?.meals?.lunch || {
-        name: "Grilled Chicken Caesar Salad",
-        calories: 879,
-        protein: 45,
-        carbs: 40,
-        fats: 18,
-      }
+      meal: currentPlan.meals.lunch
     },
-    {
+    currentPlan.meals?.dinner && {
       time: "7:00 PM",
       type: "Dinner",
       icon: "🍲",
-      meal: currentPlan?.meals?.dinner || {
-        name: "Baked salmon with quinoa and steamed broccoli",
-        calories: 628,
-        protein: 50,
-        carbs: 55,
-        fats: 20,
-      }
+      meal: currentPlan.meals.dinner
     },
-    {
+    currentPlan.meals?.snacks && {
       time: "4:00 PM",
       type: "Snacks",
       icon: "🌽",
-      meal: {
-        name: "Corn chips with salsa",
-        calories: 502,
-        protein: 8,
-        carbs: 65,
-        fats: 12,
-      }
+      meal: currentPlan.meals.snacks
     }
-  ];
+  ].filter(Boolean) : [];
 
   // Macro calculations
   const totalCalories = mealSchedule.reduce((sum, item) => sum + item.meal.calories, 0);
@@ -148,13 +126,37 @@ export default function ClientDiet() {
 
           {/* Diet Tab */}
           <TabsContent value="diet" className="space-y-6">
-            {/* Header Card */}
-            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 dark:from-green-950 dark:to-emerald-950 dark:border-green-800">
-              <CardContent className="pt-6">
-                <div className="text-center space-y-2 mb-6">
-                  <div className="w-full h-2 bg-green-400 rounded-full"></div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Your personalized meal plan is ready</h2>
-                </div>
+            {isLoadingDiet ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p className="text-muted-foreground">Loading your diet plan...</p>
+                </CardContent>
+              </Card>
+            ) : !hasDietPlan ? (
+              <Card className="bg-gradient-to-br from-orange-50 to-yellow-50 border-orange-200 dark:from-orange-950 dark:to-yellow-950 dark:border-orange-800">
+                <CardContent className="p-8 text-center space-y-4">
+                  <UtensilsCrossed className="h-16 w-16 mx-auto text-orange-500" />
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">No Diet Plan Assigned</h2>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Your trainer hasn't assigned a diet plan yet. Please contact your trainer to get a personalized meal plan tailored to your fitness goals.
+                  </p>
+                  <Button variant="outline" className="mt-4" data-testid="button-contact-trainer">
+                    Contact Trainer
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* Header Card */}
+                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 dark:from-green-950 dark:to-emerald-950 dark:border-green-800">
+                  <CardContent className="pt-6">
+                    <div className="text-center space-y-2 mb-6">
+                      <div className="w-full h-2 bg-green-400 rounded-full"></div>
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Your personalized meal plan is ready</h2>
+                      {currentPlan?.name && (
+                        <p className="text-sm text-muted-foreground">Plan: {currentPlan.name}</p>
+                      )}
+                    </div>
 
                 {/* Total Calories Card */}
                 <div className="bg-orange-100 dark:bg-orange-900/30 rounded-lg p-4 mb-6 flex items-center justify-between">
@@ -187,10 +189,12 @@ export default function ClientDiet() {
               </CardContent>
             </Card>
 
-            {/* Next Button */}
-            <Button className="w-full bg-green-500 hover:bg-green-600 h-12 text-lg font-semibold">
-              Next
-            </Button>
+                {/* Next Button */}
+                <Button className="w-full bg-green-500 hover:bg-green-600 h-12 text-lg font-semibold">
+                  Next
+                </Button>
+              </>
+            )}
           </TabsContent>
 
           {/* Macros Tab */}

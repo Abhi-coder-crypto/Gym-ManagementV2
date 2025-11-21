@@ -55,13 +55,13 @@ export default function ClientProfile() {
     }
   }, [setLocation]);
 
-  const { data: client } = useQuery<any>({
-    queryKey: ['/api/clients', clientId],
+  const { data: client, isLoading: isLoadingClient } = useQuery<any>({
+    queryKey: [`/api/clients/${clientId}`],
     enabled: !!clientId,
   });
 
-  const { data: payments = [] } = useQuery<any[]>({
-    queryKey: ['/api/payment-history', clientId],
+  const { data: payments = [], isLoading: isLoadingPayments } = useQuery<any[]>({
+    queryKey: [`/api/payment-history/${clientId}`],
     enabled: !!clientId,
   });
 
@@ -101,7 +101,7 @@ export default function ClientProfile() {
       return await apiRequest('PATCH', `/api/clients/${clientId}`, data);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/clients', clientId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}`] });
       // Sync language with provider if language was updated
       if (variables.language) {
         setLanguage(variables.language);
@@ -129,8 +129,13 @@ export default function ClientProfile() {
       .slice(0, 2);
   };
 
-  if (!client) {
-    return <div className="flex items-center justify-center min-h-screen">{t('common.loading')}</div>;
+  if (isLoadingClient || !client) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <ClientHeader currentPage="profile" />
+        <div className="flex items-center justify-center flex-1">{t('common.loading')}</div>
+      </div>
+    );
   }
 
   return (
