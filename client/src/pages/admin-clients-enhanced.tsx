@@ -88,6 +88,7 @@ export default function AdminClientsEnhanced() {
     email: "",
     password: "",
     packageId: "",
+    packageDuration: "4",
     age: "",
     gender: "",
     height: "",
@@ -367,6 +368,7 @@ export default function AdminClientsEnhanced() {
       email: "",
       password: "",
       packageId: "",
+      packageDuration: "4",
       age: "",
       gender: "",
       height: "",
@@ -442,7 +444,10 @@ export default function AdminClientsEnhanced() {
       formDataObj.append('password', formData.password);
     }
     
-    if (formData.packageId) formDataObj.append('packageId', formData.packageId);
+    if (formData.packageId) {
+      formDataObj.append('packageId', formData.packageId);
+      formDataObj.append('packageDuration', formData.packageDuration || "4");
+    }
     if (formData.age) formDataObj.append('age', formData.age);
     if (formData.gender) formDataObj.append('gender', formData.gender);
     if (formData.height) formDataObj.append('height', formData.height);
@@ -501,6 +506,7 @@ export default function AdminClientsEnhanced() {
       email: client.email || "",
       password: "",
       packageId: packageId,
+      packageDuration: client.packageDuration?.toString() || "4",
       age: client.age?.toString() || "",
       gender: client.gender || "",
       height: client.height?.toString() || "",
@@ -1107,23 +1113,41 @@ export default function AdminClientsEnhanced() {
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="package">Package</Label>
-              <Select
-                value={formData.packageId}
-                onValueChange={(value) => setFormData({ ...formData, packageId: value })}
-              >
-                <SelectTrigger data-testid="select-package">
-                  <SelectValue placeholder="Select package" />
-                </SelectTrigger>
-                <SelectContent>
-                  {packages.map((pkg: any) => (
-                    <SelectItem key={pkg._id} value={pkg._id}>
-                      {pkg.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="package">Package</Label>
+                <Select
+                  value={formData.packageId}
+                  onValueChange={(value) => setFormData({ ...formData, packageId: value })}
+                >
+                  <SelectTrigger data-testid="select-package">
+                    <SelectValue placeholder="Select package" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {packages.map((pkg: any) => (
+                      <SelectItem key={pkg._id} value={pkg._id}>
+                        {pkg.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="packageDuration">Package Duration</Label>
+                <Select
+                  value={formData.packageDuration}
+                  onValueChange={(value) => setFormData({ ...formData, packageDuration: value })}
+                >
+                  <SelectTrigger data-testid="select-package-duration">
+                    <SelectValue placeholder="Select duration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="4">4 weeks</SelectItem>
+                    <SelectItem value="8">8 weeks</SelectItem>
+                    <SelectItem value="12">12 weeks</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
