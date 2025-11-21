@@ -1,31 +1,31 @@
-/**
- * Package Feature Access Control System
- * Defines which features are available for each package tier
- */
-
-const PACKAGE_FEATURES: Record<string, string[]> = {
-  'Fit Basics': ['workouts', 'diet', 'recorded_videos'],
-  'Fit Plus': ['recorded_videos', 'personalized_diet', 'weekly_checkins'],
-  'Pro Transformation': ['recorded_videos', 'personalized_diet', 'weekly_checkins', 'one_on_one_calls', 'habit_coaching'],
-  'Elite Athlete': ['recorded_videos', 'personalized_diet', 'weekly_checkins', 'one_on_one_calls', 'habit_coaching', 'performance_tracking', 'priority_support'],
-};
-
 export function hasFeature(packageName: string | null | undefined, feature: string): boolean {
+  const PACKAGE_FEATURES: Record<string, string[]> = {
+    'Fit Basics': ['workouts', 'diet', 'recorded_videos'],
+    'Fit Plus': ['recorded_videos', 'personalized_diet', 'weekly_checkins'],
+    'Pro Transformation': ['recorded_videos', 'personalized_diet', 'weekly_checkins', 'one_on_one_calls', 'habit_coaching'],
+    'Elite Athlete': ['recorded_videos', 'personalized_diet', 'weekly_checkins', 'one_on_one_calls', 'habit_coaching', 'performance_tracking', 'priority_support'],
+  };
   if (!packageName) return false;
   return PACKAGE_FEATURES[packageName]?.includes(feature) ?? false;
 }
 
 export function getFeatures(packageName: string | null | undefined): string[] {
+  const PACKAGE_FEATURES: Record<string, string[]> = {
+    'Fit Basics': ['workouts', 'diet', 'recorded_videos'],
+    'Fit Plus': ['recorded_videos', 'personalized_diet', 'weekly_checkins'],
+    'Pro Transformation': ['recorded_videos', 'personalized_diet', 'weekly_checkins', 'one_on_one_calls', 'habit_coaching'],
+    'Elite Athlete': ['recorded_videos', 'personalized_diet', 'weekly_checkins', 'one_on_one_calls', 'habit_coaching', 'performance_tracking', 'priority_support'],
+  };
   if (!packageName) return [];
   return PACKAGE_FEATURES[packageName] ?? [];
 }
 
-export function isSubscriptionActive(subscriptionEndDate: Date | string | null): boolean {
+export function isSubscriptionActive(subscriptionEndDate: any): boolean {
   if (!subscriptionEndDate) return false;
   return new Date() < new Date(subscriptionEndDate);
 }
 
-export function getRemainingDays(subscriptionEndDate: Date | string | null): number {
+export function getRemainingDays(subscriptionEndDate: any): number {
   if (!subscriptionEndDate) return 0;
   const endDate = new Date(subscriptionEndDate);
   const now = new Date();
@@ -56,15 +56,3 @@ export const FEATURE_DESCRIPTIONS: Record<string, string> = {
   'workouts': 'Pre-designed workout programs',
   'diet': 'Basic diet templates and guidelines'
 };
-
-export const ALL_FEATURES = [
-  'recorded_videos',
-  'personalized_diet', 
-  'weekly_checkins',
-  'one_on_one_calls',
-  'habit_coaching',
-  'performance_tracking',
-  'priority_support',
-  'workouts',
-  'diet'
-];

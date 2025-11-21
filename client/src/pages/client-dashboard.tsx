@@ -452,3 +452,70 @@ export default function ClientDashboard() {
     </div>
   );
 }
+
+// Feature Access Display Section - Add this near the end before export
+function FeatureAccessSection({ client, packageName }: { client: any, packageName: string | null }) {
+  const { hasFeature } = require('@/lib/featureAccess');
+  const isSubscriptionActive = client?.subscriptionEndDate && new Date() < new Date(client.subscriptionEndDate);
+  
+  const allFeatures = [
+    { id: 'workouts', label: 'Workout Plans', packages: ['Fit Basics', 'Fit Plus', 'Pro Transformation', 'Elite Athlete'] },
+    { id: 'diet', label: 'Basic Diet', packages: ['Fit Basics', 'Fit Plus', 'Pro Transformation', 'Elite Athlete'] },
+    { id: 'recorded_videos', label: 'Recorded Videos', packages: ['Fit Basics', 'Fit Plus', 'Pro Transformation', 'Elite Athlete'] },
+    { id: 'personalized_diet', label: 'Personalized Diet', packages: ['Fit Plus', 'Pro Transformation', 'Elite Athlete'] },
+    { id: 'weekly_checkins', label: 'Weekly Check-ins', packages: ['Fit Plus', 'Pro Transformation', 'Elite Athlete'] },
+    { id: 'one_on_one_calls', label: '1-on-1 Calls', packages: ['Pro Transformation', 'Elite Athlete'] },
+    { id: 'habit_coaching', label: 'Habit Coaching', packages: ['Pro Transformation', 'Elite Athlete'] },
+    { id: 'performance_tracking', label: 'Performance Tracking', packages: ['Elite Athlete'] },
+    { id: 'priority_support', label: 'Priority Support', packages: ['Elite Athlete'] },
+  ];
+
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle className="text-lg">Your Features</CardTitle>
+        <CardDescription>
+          {!isSubscriptionActive ? (
+            <span className="text-red-600">Subscription expired - renew to access features</span>
+          ) : (
+            <span>Current package: <Badge>{packageName}</Badge></span>
+          )}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {allFeatures.map((feature) => {
+            const hasAccess = isSubscriptionActive && hasFeature(packageName, feature.id);
+            const requiredPackages = feature.packages;
+            const minPackage = requiredPackages[0];
+            
+            return (
+              <div
+                key={feature.id}
+                className={`p-3 rounded-md border flex items-center justify-between ${
+                  hasAccess
+                    ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
+                    : 'bg-muted border-muted-foreground/20 opacity-60'
+                }`}
+              >
+                <div>
+                  <p className="font-semibold text-sm">{feature.label}</p>
+                  {!hasAccess && (
+                    <p className="text-xs text-muted-foreground">
+                      Available in {minPackage}+
+                    </p>
+                  )}
+                </div>
+                {hasAccess ? (
+                  <span className="text-green-600">✓</span>
+                ) : (
+                  <span className="text-muted-foreground">🔒</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
