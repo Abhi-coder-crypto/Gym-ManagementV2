@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Edit, Trash2, Copy, UserPlus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Search, Edit, Trash2, Copy, UserPlus, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AssignPlanDialog } from "@/components/assign-plan-dialog";
 
@@ -22,12 +24,35 @@ const DIET_CATEGORIES = [
   { value: 'vegetarian', label: 'Vegetarian' },
 ];
 
+interface Dish {
+  name: string;
+  description: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+}
+
+interface Meal {
+  type: string;
+  dishes: Dish[];
+}
+
 interface DietTemplateFormData {
   name: string;
   description: string;
   category: string;
   targetCalories: string;
+  meals: Meal[];
 }
+
+const MEAL_TYPES = [
+  { value: 'breakfast', label: 'Breakfast' },
+  { value: 'lunch', label: 'Lunch' },
+  { value: 'preworkout', label: 'Pre-Workout' },
+  { value: 'postworkout', label: 'Post-Workout' },
+  { value: 'dinner', label: 'Dinner' },
+];
 
 export function DietTemplateList() {
   const { toast } = useToast();
@@ -42,7 +67,9 @@ export function DietTemplateList() {
     description: "",
     category: "weight_loss",
     targetCalories: "",
+    meals: [],
   });
+  const [selectedMealTypes, setSelectedMealTypes] = useState<string[]>([]);
 
   const { data: templates = [], isLoading } = useQuery<any[]>({
     queryKey: ['/api/diet-plan-templates', categoryFilter],
@@ -111,7 +138,9 @@ export function DietTemplateList() {
       description: "",
       category: "weight_loss",
       targetCalories: "",
+      meals: [],
     });
+    setSelectedMealTypes([]);
   };
 
   const handleEdit = (template: any) => {
@@ -121,8 +150,73 @@ export function DietTemplateList() {
       description: template.description ?? "",
       category: template.category ?? "weight_loss",
       targetCalories: String(template.targetCalories ?? ""),
+      meals: template.meals || [],
     });
+    const mealTypes = (template.meals || []).map((m: any) => m.type);
+    setSelectedMealTypes(mealTypes);
     setEditDialogOpen(true);
+  };
+
+  const toggleMealType = (mealType: string) => {
+    if (selectedMealTypes.includes(mealType)) {
+      setSelectedMealTypes(selectedMealTypes.filter(t => t !== mealType));
+      setFormData({
+        ...formData,
+        meals: formData.meals.filter(m => m.type !== mealType)
+      });
+    } else {
+      setSelectedMealTypes([...selectedMealTypes, mealType]);
+      setFormData({
+        ...formData,
+        meals: [...formData.meals, { type: mealType, dishes: [] }]
+      });
+    }
+  };
+
+  const addDishToMeal = (mealType: string) => {
+    const newDish: Dish = {
+      name: "",
+      description: "",
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fats: 0,
+    };
+    setFormData({
+      ...formData,
+      meals: formData.meals.map(meal =>
+        meal.type === mealType
+          ? { ...meal, dishes: [...meal.dishes, newDish] }
+          : meal
+      )
+    });
+  };
+
+  const updateDish = (mealType: string, dishIndex: number, field: keyof Dish, value: any) => {
+    setFormData({
+      ...formData,
+      meals: formData.meals.map(meal =>
+        meal.type === mealType
+          ? {
+              ...meal,
+              dishes: meal.dishes.map((dish, idx) =>
+                idx === dishIndex ? { ...dish, [field]: value } : dish
+              )
+            }
+          : meal
+      )
+    });
+  };
+
+  const removeDish = (mealType: string, dishIndex: number) => {
+    setFormData({
+      ...formData,
+      meals: formData.meals.map(meal =>
+        meal.type === mealType
+          ? { ...meal, dishes: meal.dishes.filter((_, idx) => idx !== dishIndex) }
+          : meal
+      )
+    });
   };
 
   const handleSubmit = () => {
@@ -346,6 +440,139 @@ export function DietTemplateList() {
                 placeholder="0"
                 data-testid="input-target-calories"
               />
+            </div>
+
+            <Separator className="my-6" />
+
+            <div className="space-y-4">
+              <div>
+                <Label className="text-base font-semibold">Meal Planning</Label>
+                <p className="text-sm text-muted-foreground mt-1">Select meal types and add dishes with their nutritional information</p>
+              </div>
+
+              <div className="space-y-3">
+                {MEAL_TYPES.map((mealType) => (
+                  <div key={mealType.value} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          checked={selectedMealTypes.includes(mealType.value)}
+                          onCheckedChange={() => toggleMealType(mealType.value)}
+                          data-testid={`switch-${mealType.value}`}
+                        />
+                        <Label className="font-medium">{mealType.label}</Label>
+                      </div>
+                      {selectedMealTypes.includes(mealType.value) && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addDishToMeal(mealType.value)}
+                          data-testid={`button-add-dish-${mealType.value}`}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Dish
+                        </Button>
+                      )}
+                    </div>
+
+                    {selectedMealTypes.includes(mealType.value) && (
+                      <div className="ml-6 space-y-3">
+                        {formData.meals
+                          .find((m) => m.type === mealType.value)
+                          ?.dishes.map((dish, dishIndex) => (
+                            <Card key={dishIndex} className="p-4">
+                              <div className="space-y-3">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Dish Name *</Label>
+                                        <Input
+                                          value={dish.name}
+                                          onChange={(e) => updateDish(mealType.value, dishIndex, 'name', e.target.value)}
+                                          placeholder="e.g., Scrambled Eggs"
+                                          data-testid={`input-dish-name-${mealType.value}-${dishIndex}`}
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Calories</Label>
+                                        <Input
+                                          type="number"
+                                          value={dish.calories}
+                                          onChange={(e) => updateDish(mealType.value, dishIndex, 'calories', parseFloat(e.target.value) || 0)}
+                                          placeholder="0"
+                                          data-testid={`input-dish-calories-${mealType.value}-${dishIndex}`}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Description</Label>
+                                      <Textarea
+                                        value={dish.description}
+                                        onChange={(e) => updateDish(mealType.value, dishIndex, 'description', e.target.value)}
+                                        placeholder="Short description of the dish..."
+                                        rows={2}
+                                        data-testid={`textarea-dish-description-${mealType.value}-${dishIndex}`}
+                                      />
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Protein (g)</Label>
+                                        <Input
+                                          type="number"
+                                          value={dish.protein}
+                                          onChange={(e) => updateDish(mealType.value, dishIndex, 'protein', parseFloat(e.target.value) || 0)}
+                                          placeholder="0"
+                                          data-testid={`input-dish-protein-${mealType.value}-${dishIndex}`}
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Carbs (g)</Label>
+                                        <Input
+                                          type="number"
+                                          value={dish.carbs}
+                                          onChange={(e) => updateDish(mealType.value, dishIndex, 'carbs', parseFloat(e.target.value) || 0)}
+                                          placeholder="0"
+                                          data-testid={`input-dish-carbs-${mealType.value}-${dishIndex}`}
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Fats (g)</Label>
+                                        <Input
+                                          type="number"
+                                          value={dish.fats}
+                                          onChange={(e) => updateDish(mealType.value, dishIndex, 'fats', parseFloat(e.target.value) || 0)}
+                                          placeholder="0"
+                                          data-testid={`input-dish-fats-${mealType.value}-${dishIndex}`}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => removeDish(mealType.value, dishIndex)}
+                                    data-testid={`button-remove-dish-${mealType.value}-${dishIndex}`}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        {formData.meals.find((m) => m.type === mealType.value)?.dishes.length === 0 && (
+                          <p className="text-sm text-muted-foreground italic">No dishes added yet. Click "Add Dish" to get started.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
