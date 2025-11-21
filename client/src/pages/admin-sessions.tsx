@@ -19,7 +19,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar as CalendarIcon, Users, Clock, Trash2, UserPlus, List, Video } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Users, Clock, Trash2, UserPlus, List, Video, Copy } from "lucide-react";
 import { format } from "date-fns";
 import { AssignSessionDialog } from "@/components/assign-session-dialog";
 
@@ -44,6 +44,9 @@ export default function AdminSessions() {
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [assignSessionId, setAssignSessionId] = useState<string>("");
   const [assignSessionTitle, setAssignSessionTitle] = useState<string>("");
+  const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
+  const [cloneSessionData, setCloneSessionData] = useState<any>(null);
+  const [cloneForm, setCloneForm] = useState({ scheduledAt: "" });
   const { toast } = useToast();
 
   const form = useForm<SessionFormData>({
@@ -120,6 +123,24 @@ export default function AdminSessions() {
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message || "Failed to create Zoom meeting", variant: "destructive" });
+    },
+  });
+
+  const cloneSessionMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      return await apiRequest("POST", `/api/sessions/${sessionId}/clone`, {
+        scheduledAt: new Date(cloneForm.scheduledAt),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+      toast({ title: "Success", description: "Session cloned successfully" });
+      setIsCloneDialogOpen(false);
+      setCloneSessionData(null);
+      setCloneForm({ scheduledAt: "" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to clone session", variant: "destructive" });
     },
   });
 
@@ -217,9 +238,16 @@ export default function AdminSessions() {
                 </Card>
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {sessions.map((session: any) => (
+                  {sessions.map((session: any) => {
+                    const packageName = session.packageId?.name || session.packageName || '';
+                    return (
                     <Card key={session._id} className="hover-elevate" data-testid={`card-session-${session._id}`}>
                       <CardHeader className="gap-2">
+                        {packageName && (
+                          <Badge className="w-fit text-xs" variant="outline">
+                            {packageName}
+                          </Badge>
+                        )}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <CardTitle className="line-clamp-1">{session.title}</CardTitle>
@@ -318,6 +346,18 @@ export default function AdminSessions() {
                           )}
                           <Button
                             size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setCloneSessionData(session);
+                              setCloneForm({ scheduledAt: "" });
+                              setIsCloneDialogOpen(true);
+                            }}
+                            data-testid={`button-clone-${session._id}`}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
                             variant="destructive"
                             onClick={() => {
                               if (confirm("Are you sure you want to permanently delete this session?")) {
@@ -331,7 +371,8 @@ export default function AdminSessions() {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -498,6 +539,67 @@ export default function AdminSessions() {
         sessionId={assignSessionId}
         sessionTitle={assignSessionTitle}
       />
+
+      <Dialog open={isCloneDialogOpen} onOpenChange={setIsCloneDialogOpen}>
+        <DialogContent data-testid="dialog-clone-session">
+          <DialogHeader>
+            <DialogTitle>Clone Session</DialogTitle>
+            <DialogDescription>Create a copy with new timing for remaining clients</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="clone-title">Session Title</Label>
+              <Input id="clone-title" value={cloneSessionData?.title} disabled className="bg-muted" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="clone-package">Package</Label>
+              <Input 
+                id="clone-package" 
+                value={cloneSessionData?.packageId?.name || cloneSessionData?.packageName || 'N/A'} 
+                disabled 
+                className="bg-muted" 
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="clone-datetime">New Date & Time</Label>
+              <Input
+                id="clone-datetime"
+                type="datetime-local"
+                value={cloneForm.scheduledAt}
+                onChange={(e) => setCloneForm({ scheduledAt: e.target.value })}
+                data-testid="input-clone-datetime"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <Label className="text-muted-foreground">Duration</Label>
+                <p className="font-medium">{cloneSessionData?.duration} minutes</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Capacity</Label>
+                <p className="font-medium">{cloneSessionData?.maxCapacity} slots</p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCloneDialogOpen(false)} data-testid="button-cancel-clone">
+              Cancel
+            </Button>
+            <Button
+              onClick={() => cloneSessionMutation.mutate(cloneSessionData?._id)}
+              disabled={!cloneForm.scheduledAt || cloneSessionMutation.isPending}
+              data-testid="button-confirm-clone"
+            >
+              {cloneSessionMutation.isPending ? "Cloning..." : "Clone Session"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 }
