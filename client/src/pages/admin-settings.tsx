@@ -32,51 +32,51 @@ export default function AdminSettings() {
   // Define the 4 packages with their respective pricing for 4, 8, and 12 weeks
   const packages = [
     {
-      id: "basic",
-      name: "Basic Package",
-      description: "Perfect for beginners getting started with their fitness journey",
-      features: ["Video Library Access", "Basic Diet Plans", "Email Support", "Weekly Check-ins"],
+      id: "fit-basics",
+      name: "Fit Basics",
+      description: "Diet + Workout + Recorded Sessions Access",
+      features: ["Diet Plan Access", "Workout Plan Access", "Recorded Sessions Access", "Email Support"],
       color: "bg-blue-500",
       weeks: [
-        { duration: 4, price: 2000 },
-        { duration: 8, price: 3500 },
-        { duration: 12, price: 4800 }
+        { duration: 4, price: 2500 },
+        { duration: 8, price: 4800 },
+        { duration: 12, price: 7200 }
       ]
     },
     {
-      id: "premium",
-      name: "Premium Package",
-      description: "Most popular choice for serious fitness enthusiasts",
-      features: ["Everything in Basic", "Custom Workout Plans", "4 Live Sessions/Month", "Priority Support", "Nutrition Tracking"],
+      id: "fit-plus",
+      name: "Fit Plus (Main Group Program)",
+      description: "Live Group Training + Personalized Diet + Weekly Check-in",
+      features: ["Live Group Training", "Personalized Diet Plan", "Weekly Check-in", "All Fit Basics Features"],
       color: "bg-purple-500",
       weeks: [
-        { duration: 4, price: 4000 },
-        { duration: 8, price: 7000 },
-        { duration: 12, price: 9500 }
+        { duration: 4, price: 5000 },
+        { duration: 8, price: 9500 },
+        { duration: 12, price: 13500 }
       ]
     },
     {
-      id: "elite",
-      name: "Elite Package",
-      description: "Complete fitness solution with personal attention",
-      features: ["Everything in Premium", "Unlimited Live Sessions", "Personal Trainer", "Nutrition Consultation", "Progress Tracking", "Body Composition Analysis"],
+      id: "pro-transformation",
+      name: "Pro Transformation",
+      description: "Fit Plus + Weekly 1:1 Call + Habit Coaching",
+      features: ["All Fit Plus Features", "Weekly 1:1 Call with Trainer", "Habit Coaching", "Progress Tracking"],
       color: "bg-orange-500",
       weeks: [
-        { duration: 4, price: 6000 },
-        { duration: 8, price: 11000 },
-        { duration: 12, price: 15000 }
+        { duration: 4, price: 7500 },
+        { duration: 8, price: 14000 },
+        { duration: 12, price: 19500 }
       ]
     },
     {
-      id: "platinum",
-      name: "Platinum Package",
-      description: "Ultimate fitness experience with VIP treatment",
-      features: ["Everything in Elite", "One-on-One Daily Training", "Custom Meal Prep Guidance", "24/7 Priority Support", "Monthly Body Analysis", "Injury Prevention Consultation"],
+      id: "elite-athlete",
+      name: "Elite Athlete / Fast Result",
+      description: "Pro Transformation + Performance Tracking + Priority Support",
+      features: ["All Pro Transformation Features", "Performance Tracking", "Priority Support", "Body Composition Analysis", "Advanced Metrics"],
       color: "bg-green-500",
       weeks: [
         { duration: 4, price: 10000 },
-        { duration: 8, price: 18000 },
-        { duration: 12, price: 24000 }
+        { duration: 8, price: 18500 },
+        { duration: 12, price: 26000 }
       ]
     }
   ];
