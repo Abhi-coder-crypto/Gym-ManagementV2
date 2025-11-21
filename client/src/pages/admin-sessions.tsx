@@ -151,6 +151,19 @@ export default function AdminSessions() {
     },
   });
 
+  const deleteSessionMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      return await apiRequest("DELETE", `/api/sessions/${sessionId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+      toast({ title: "Success", description: "Session deleted successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete session", variant: "destructive" });
+    },
+  });
+
   const onSubmit = (data: SessionFormData) => {
     createSessionMutation.mutate(data);
   };
@@ -324,13 +337,25 @@ export default function AdminSessions() {
                           {session.status !== "cancelled" && (
                             <Button
                               size="sm"
-                              variant="destructive"
+                              variant="outline"
                               onClick={() => cancelSessionMutation.mutate(session._id)}
                               data-testid={`button-cancel-${session._id}`}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              Cancel
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                              if (confirm("Are you sure you want to permanently delete this session?")) {
+                                deleteSessionMutation.mutate(session._id);
+                              }
+                            }}
+                            data-testid={`button-delete-${session._id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
