@@ -2416,6 +2416,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return clientSafeSession;
   };
 
+  // Get eligible clients for live sessions (with liveGroupTrainingAccess)
+  app.get("/api/sessions/eligible-clients", optionalAuth, async (req, res) => {
+    try {
+      const allClients = await storage.getAllClients();
+      const eligibleClients = [];
+
+      for (const client of allClients) {
+        if (client.packageId) {
+          const pkg = typeof client.packageId === 'object' ? client.packageId : await storage.getPackage(client.packageId.toString());
+          
+          if (pkg && (pkg.liveGroupTrainingAccess === true || (pkg.liveSessionsPerMonth && pkg.liveSessionsPerMonth > 0))) {
+            if (!client.subscription?.endDate || new Date(client.subscription.endDate) >= new Date()) {
+              eligibleClients.push(client);
+            }
+          }
+        }
+      }
+
+      res.json(eligibleClients);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Live Session routes
   app.get("/api/sessions", optionalAuth, async (req, res) => {
     try {
