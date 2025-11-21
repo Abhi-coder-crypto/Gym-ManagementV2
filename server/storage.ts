@@ -1695,6 +1695,72 @@ export class MongoStorage implements IStorage {
   async getUnreadNotificationCount(userId: string): Promise<number> {
     return await Notification.countDocuments({ userId, isRead: false });
   }
+
+  // Client Package Access methods
+  async checkClientPackageAccess(clientId: string, feature: string): Promise<boolean> {
+    const client = await Client.findById(clientId).populate('packageId');
+    if (!client || !client.packageId) {
+      return false;
+    }
+    
+    const pkg = client.packageId as any;
+    const featureMap: Record<string, keyof IPackage> = {
+      'video': 'videoAccess',
+      'diet': 'dietPlanAccess',
+      'workout': 'workoutPlanAccess',
+      'live_sessions': 'liveGroupTrainingAccess',
+      'recorded_sessions': 'recordedSessionsAccess',
+      'personalized_diet': 'personalizedDietAccess',
+      'weekly_checkin': 'weeklyCheckInAccess',
+      'one_on_one_call': 'oneOnOneCallAccess',
+      'habit_coaching': 'habitCoachingAccess',
+      'performance_tracking': 'performanceTrackingAccess',
+      'priority_support': 'prioritySupportAccess',
+    };
+    
+    const pkgFeature = featureMap[feature];
+    if (!pkgFeature) return false;
+    
+    // Check if client subscription is still active
+    if (client.subscription?.endDate && new Date(client.subscription.endDate) < new Date()) {
+      return false;
+    }
+    
+    return (pkg[pkgFeature] as any) === true;
+  }
+
+  async getClientPackageDetails(clientId: string): Promise<any> {
+    const client = await Client.findById(clientId).populate('packageId');
+    if (!client) {
+      return null;
+    }
+    
+    const pkg = client.packageId as any;
+    const isSubscriptionActive = !client.subscription?.endDate || new Date(client.subscription.endDate) >= new Date();
+    
+    return {
+      packageId: client.packageId?._id,
+      packageName: pkg?.name || null,
+      duration: client.packageDuration,
+      subscriptionStart: client.subscription?.startDate,
+      subscriptionEnd: client.subscription?.endDate,
+      isActive: isSubscriptionActive,
+      features: pkg ? {
+        videoAccess: pkg.videoAccess,
+        dietPlanAccess: pkg.dietPlanAccess,
+        workoutPlanAccess: pkg.workoutPlanAccess,
+        recordedSessionsAccess: pkg.recordedSessionsAccess,
+        personalizedDietAccess: pkg.personalizedDietAccess,
+        weeklyCheckInAccess: pkg.weeklyCheckInAccess,
+        liveGroupTrainingAccess: pkg.liveGroupTrainingAccess,
+        oneOnOneCallAccess: pkg.oneOnOneCallAccess,
+        habitCoachingAccess: pkg.habitCoachingAccess,
+        performanceTrackingAccess: pkg.performanceTrackingAccess,
+        prioritySupportAccess: pkg.prioritySupportAccess,
+        liveSessionsPerMonth: pkg.liveSessionsPerMonth,
+      } : null,
+    };
+  }
 }
 
 export const storage = new MongoStorage();
