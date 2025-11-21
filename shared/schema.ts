@@ -25,6 +25,9 @@ export const clients = pgTable("clients", {
   phone: text("phone").notNull().unique(),
   email: text("email"),
   packageId: varchar("package_id").references(() => packages.id),
+  accessDurationWeeks: integer("access_duration_weeks").default(4), // 4, 8, or 12 weeks
+  subscriptionStartDate: timestamp("subscription_start_date"),
+  subscriptionEndDate: timestamp("subscription_end_date"),
   age: integer("age"),
   gender: text("gender"),
   height: decimal("height", { precision: 5, scale: 2 }),
