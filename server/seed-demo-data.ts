@@ -1,7 +1,14 @@
 import mongoose from 'mongoose';
-import { Package, Trainer, Client, LiveSession, SessionClient } from './models';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { Package, Trainer, Client, LiveSession, SessionClient } from './models.js';
 
-const MONGODB_URL = process.env.MONGODB_URL || 'mongodb://localhost:27017/fitpro';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '../.env') });
+
+const MONGODB_URL = process.env.MONGODB_URI || 'mongodb://localhost:27017/fitpro';
 
 async function seedDemoData() {
   try {
@@ -47,7 +54,7 @@ async function seedDemoData() {
         name: 'aniket',
         email: 'aniket@fitpro.com',
         phone: '9876543211',
-        packageName: 'Fit Plus',
+        packageName: 'Fit Plus (Main Group Program)',
         goal: 'muscle_gain',
         fitnessLevel: 'intermediate',
         age: 30,
@@ -71,7 +78,7 @@ async function seedDemoData() {
         name: 'sejal',
         email: 'sejal@fitpro.com',
         phone: '9876543213',
-        packageName: 'Elite Athlete',
+        packageName: 'Elite Athlete / Fast Result',
         goal: 'performance',
         fitnessLevel: 'advanced',
         age: 26,
@@ -85,7 +92,8 @@ async function seedDemoData() {
     for (const clientData of clientsData) {
       const packageId = packageMap[clientData.packageName];
       if (!packageId) {
-        console.warn(`⚠️  Package not found: ${clientData.packageName}`);
+        console.error(`❌ Package not found: ${clientData.packageName}`);
+        console.error(`Available packages: ${Object.keys(packageMap).join(', ')}`);
         continue;
       }
 
@@ -188,7 +196,7 @@ async function seedDemoData() {
       {
         title: 'Fit Plus Live Training - Cardio Bootcamp',
         description: 'Dynamic cardio workout for Fit Plus members',
-        packageRequirement: 'Fit Plus',
+        packageRequirement: 'Fit Plus (Main Group Program)',
         trainerIndex: 1, // Priya Singh (Cardio specialist)
         clientIndices: [1], // aniket (Fit Plus)
         time: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
@@ -204,7 +212,7 @@ async function seedDemoData() {
       {
         title: 'Elite Athlete Live Session - Performance Training',
         description: 'Elite performance optimization for Elite Athlete members',
-        packageRequirement: 'Elite Athlete',
+        packageRequirement: 'Elite Athlete / Fast Result',
         trainerIndex: 2, // Arjun Patel (Functional specialist)
         clientIndices: [3], // sejal (Elite Athlete)
         time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now

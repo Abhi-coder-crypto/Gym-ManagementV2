@@ -130,18 +130,23 @@ app.use((req, res, next) => {
         const packages = await storage.getAllPackages();
         const premiumPackage = packages.find(p => p.name === "Premium");
         
-        demoClient = await storage.createClient({
+        const clientData: any = {
           name: "Abhijeet Singh",
           email: demoClientEmail,
           phone: demoClientPhone,
-          packageId: premiumPackage?._id?.toString() || "",
           age: 28,
           gender: "male",
           height: 175,
           weight: 75,
           goal: "Build Muscle",
           status: "active"
-        });
+        };
+        
+        if (premiumPackage?._id) {
+          clientData.packageId = premiumPackage._id.toString();
+        }
+        
+        demoClient = await storage.createClient(clientData);
         log(`👤 Created demo client: Abhijeet Singh`);
         
         // Create user account for demo client
