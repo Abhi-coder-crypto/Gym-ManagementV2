@@ -3386,9 +3386,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Progress Tracking - Weight
-  app.get("/api/progress/weight", async (req, res) => {
+  app.get("/api/progress/weight", authenticateToken, async (req, res) => {
     try {
-      const clientId = req.query.clientId as string || 'default-client';
+      const clientId = req.user?.clientId;
+      if (!clientId) {
+        return res.status(400).json({ message: "Client ID not found in authentication" });
+      }
+      
       const history = await storage.getClientWeightHistory(clientId);
       const goal = await storage.getClientWeightGoal(clientId);
       
@@ -3403,9 +3407,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/progress/weight", async (req, res) => {
+  app.post("/api/progress/weight", authenticateToken, async (req, res) => {
     try {
-      const clientId = req.body.clientId || 'default-client';
+      const clientId = req.user?.clientId;
+      if (!clientId) {
+        return res.status(400).json({ message: "Client ID not found in authentication" });
+      }
+      
       const { weight, date } = req.body;
       const entry = await storage.createWeightEntry(clientId, weight, date);
       res.json(entry);
@@ -3414,9 +3422,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/progress/goal", async (req, res) => {
+  app.post("/api/progress/goal", authenticateToken, async (req, res) => {
     try {
-      const clientId = req.body.clientId || 'default-client';
+      const clientId = req.user?.clientId;
+      if (!clientId) {
+        return res.status(400).json({ message: "Client ID not found in authentication" });
+      }
+      
       const { goalWeight } = req.body;
       const result = await storage.setClientWeightGoal(clientId, goalWeight);
       res.json(result);
@@ -3426,9 +3438,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Progress Tracking - Body Measurements
-  app.get("/api/progress/measurements", async (req, res) => {
+  app.get("/api/progress/measurements", authenticateToken, async (req, res) => {
     try {
-      const clientId = req.query.clientId as string || 'default-client';
+      const clientId = req.user?.clientId;
+      if (!clientId) {
+        return res.status(400).json({ message: "Client ID not found in authentication" });
+      }
+      
       const history = await storage.getClientBodyMeasurementsHistory(clientId);
       
       res.json({
@@ -3441,9 +3457,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/progress/measurements", async (req, res) => {
+  app.post("/api/progress/measurements", authenticateToken, async (req, res) => {
     try {
-      const clientId = req.body.clientId || 'default-client';
+      const clientId = req.user?.clientId;
+      if (!clientId) {
+        return res.status(400).json({ message: "Client ID not found in authentication" });
+      }
+      
       const { date, ...measurements } = req.body;
       const entry = await storage.createBodyMeasurement(clientId, measurements, date);
       res.json(entry);
@@ -3453,9 +3473,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Progress Tracking - Personal Records
-  app.get("/api/progress/records", async (req, res) => {
+  app.get("/api/progress/records", authenticateToken, async (req, res) => {
     try {
-      const clientId = req.query.clientId as string || 'default-client';
+      const clientId = req.user?.clientId;
+      if (!clientId) {
+        return res.status(400).json({ message: "Client ID not found in authentication" });
+      }
+      
       const records = await storage.getClientPersonalRecords(clientId);
       res.json({ records });
     } catch (error: any) {
@@ -3463,9 +3487,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/progress/records", async (req, res) => {
+  app.post("/api/progress/records", authenticateToken, async (req, res) => {
     try {
-      const clientId = req.body.clientId || 'default-client';
+      const clientId = req.user?.clientId;
+      if (!clientId) {
+        return res.status(400).json({ message: "Client ID not found in authentication" });
+      }
+      
       const { category, value, date } = req.body;
       const record = await storage.createPersonalRecord(clientId, category, value, date);
       res.json(record);
@@ -3475,9 +3503,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Progress Tracking - Weekly Completion
-  app.get("/api/progress/weekly-completion", async (req, res) => {
+  app.get("/api/progress/weekly-completion", authenticateToken, async (req, res) => {
     try {
-      const clientId = req.query.clientId as string || 'default-client';
+      const clientId = req.user?.clientId;
+      if (!clientId) {
+        return res.status(400).json({ message: "Client ID not found in authentication" });
+      }
+      
       const current = await storage.getClientWeeklyCompletion(clientId);
       const history = await storage.getWeeklyCompletionHistory(clientId);
       res.json({ ...current, history });
@@ -3487,9 +3519,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Progress Tracking - Achievements (Stats for UI)
-  app.get("/api/progress/achievements", async (req, res) => {
+  app.get("/api/progress/achievements", authenticateToken, async (req, res) => {
     try {
-      const clientId = req.query.clientId as string || 'default-client';
+      const clientId = req.user?.clientId;
+      if (!clientId) {
+        return res.status(400).json({ message: "Client ID not found in authentication" });
+      }
+      
       const sessions = await storage.getClientWorkoutSessions(clientId);
       const achievements = await storage.getClientAchievements(clientId);
       const weightHistory = await storage.getClientWeightHistory(clientId);
@@ -3512,9 +3548,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Progress Tracking - Monthly Reports
-  app.get("/api/progress/monthly-reports", async (req, res) => {
+  app.get("/api/progress/monthly-reports", authenticateToken, async (req, res) => {
     try {
-      const clientId = req.query.clientId as string || 'default-client';
+      const clientId = req.user?.clientId;
+      if (!clientId) {
+        return res.status(400).json({ message: "Client ID not found in authentication" });
+      }
+      
       const sessions = await storage.getClientWorkoutSessions(clientId);
       const achievements = await storage.getClientAchievements(clientId);
       const weightHistory = await storage.getClientWeightHistory(clientId);
@@ -3552,12 +3592,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Goal routes
-  app.get("/api/goals", async (req, res) => {
+  app.get("/api/goals", authenticateToken, async (req, res) => {
     try {
-      const clientId = req.query.clientId as string;
+      const clientId = req.user?.clientId;
       if (!clientId) {
-        return res.status(400).json({ message: "Client ID is required" });
+        return res.status(400).json({ message: "Client ID not found in authentication" });
       }
+      
       const goals = await storage.getClientGoals(clientId);
       res.json(goals);
     } catch (error: any) {

@@ -290,6 +290,22 @@ All import tasks have been successfully completed. The FitPro Management System 
 [x] 365. Screenshot confirmed - FitPro landing page displaying perfectly with hero image and "Client Login" CTA button
 [x] 366. ✅ ALL MIGRATION TASKS 100% COMPLETE - All 366 progress tracker items marked [x] and verified!
 
+### Session (2025-11-21 15:20 UTC) - Weight Tracking Authentication Fix
+[x] 367. Fixed weight tracking endpoints to use proper authentication (authenticateToken middleware)
+[x] 368. Updated GET /api/progress/weight to use req.user.clientId instead of default 'default-client'
+[x] 369. Updated POST /api/progress/weight to use req.user.clientId for weight entry saving
+[x] 370. Updated POST /api/progress/goal to use req.user.clientId for goal weight setting
+[x] 371. Fixed GET /api/progress/measurements to use authenticated client ID
+[x] 372. Fixed POST /api/progress/measurements to use authenticated client ID
+[x] 373. Fixed GET /api/progress/records to use authenticated client ID
+[x] 374. Fixed POST /api/progress/records to use authenticated client ID
+[x] 375. Fixed GET /api/progress/weekly-completion to use authenticated client ID
+[x] 376. Fixed GET /api/progress/achievements to use authenticated client ID
+[x] 377. Fixed GET /api/progress/monthly-reports to use authenticated client ID
+[x] 378. Fixed GET /api/goals to use authenticated client ID
+[x] 379. Workflow restarted successfully - Server running on http://0.0.0.0:5000
+[x] 380. ✅ WEIGHT TRACKING FIX COMPLETE - All progress endpoints now properly authenticated and use logged-in client's ID!
+
 ### Ready for Use:
 The FitPro Management System is now 100% operational in the Replit environment and ready for production use!
 
