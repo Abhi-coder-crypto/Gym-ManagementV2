@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -48,6 +48,12 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     enabled: open && !!sessionId,
   });
 
+  // Fetch ALL sessions to check which clients are already assigned to any session
+  const { data: allSessions = [] } = useQuery<any[]>({
+    queryKey: ['/api/sessions'],
+    enabled: open,
+  });
+
   // Map package plan to package name patterns
   const getPackageNamePattern = (plan: string): string => {
     switch (plan.toLowerCase()) {
@@ -62,9 +68,28 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     }
   };
 
-  // Filter clients by session's package plan
+  // Get all clients who are already assigned to ANY session
+  const clientsInAnySessions = useMemo(() => {
+    const clientSet = new Set<string>();
+    allSessions.forEach((session: any) => {
+      if (session.clients && Array.isArray(session.clients)) {
+        session.clients.forEach((clientId: string) => {
+          clientSet.add(clientId);
+        });
+      }
+    });
+    return clientSet;
+  }, [allSessions]);
+
+  // Filter clients by session's package plan and exclude those already in any session
   const filteredClients = allClients.filter(client => {
     if (!client.packageId) return false;
+    
+    // Exclude clients already assigned to any session (except the current session being edited)
+    const isInCurrentSession = sessionClients.some((sc: any) => sc._id === client._id);
+    if (!isInCurrentSession && clientsInAnySessions.has(client._id)) {
+      return false;
+    }
     
     const pkg = typeof client.packageId === 'object' ? client.packageId : null;
     const packageName = pkg?.name || '';
