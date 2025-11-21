@@ -29,6 +29,7 @@ const SESSION_STATUSES = ["upcoming", "live", "completed", "cancelled"];
 
 const sessionSchema = z.object({
   title: z.string().min(1, "Title is required"),
+  packageId: z.string().min(1, "Package is required"),
   scheduledAt: z.string().min(1, "Date and time are required"),
   duration: z.coerce.number().min(1, "Duration must be at least 1 minute"),
   maxCapacity: z.coerce.number().min(1, "Capacity must be at least 1"),
@@ -54,9 +55,10 @@ export default function AdminSessions() {
     resolver: zodResolver(sessionSchema),
     defaultValues: {
       title: "",
+      packageId: "",
       scheduledAt: "",
       duration: 60,
-      maxCapacity: 15,
+      maxCapacity: 10,
     },
   });
 
@@ -68,12 +70,21 @@ export default function AdminSessions() {
     queryKey: ["/api/clients"],
   });
 
+  const { data: packages = [] } = useQuery<any[]>({
+    queryKey: ["/api/packages"],
+  });
+
   const createSessionMutation = useMutation({
     mutationFn: async (data: SessionFormData) => {
       return await apiRequest("POST", "/api/sessions", {
-        ...data,
+        title: data.title,
+        packageId: data.packageId,
         scheduledAt: new Date(data.scheduledAt),
+        duration: data.duration,
+        maxCapacity: data.maxCapacity,
         currentCapacity: 0,
+        status: "upcoming",
+        sessionType: "live",
       });
     },
     onSuccess: () => {
@@ -322,7 +333,7 @@ export default function AdminSessions() {
                             data-testid={`button-assign-${session._id}`}
                           >
                             <UserPlus className="h-4 w-4 mr-1" />
-                            Assign
+                            Assign ({session.currentCapacity}/10)
                           </Button>
                           {session.status !== "cancelled" && (
                             <Button
@@ -528,6 +539,7 @@ export default function AdminSessions() {
         onOpenChange={setShowAssignDialog}
         sessionId={assignSessionId}
         sessionTitle={assignSessionTitle}
+        packageId={sessions.find((s: any) => s._id === assignSessionId)?.packageId?._id || sessions.find((s: any) => s._id === assignSessionId)?.packageId}
       />
 
       <Dialog open={isCloneDialogOpen} onOpenChange={setIsCloneDialogOpen}>

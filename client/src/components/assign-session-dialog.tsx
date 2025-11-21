@@ -17,14 +17,14 @@ interface AssignSessionDialogProps {
   onOpenChange: (open: boolean) => void;
   sessionId: string;
   sessionTitle: string;
+  packageId?: string;
 }
 
-export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitle }: AssignSessionDialogProps) {
+export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitle, packageId = "" }: AssignSessionDialogProps) {
   const { toast } = useToast();
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [selectedTrainer, setSelectedTrainer] = useState<string | null>(null);
-  const [selectedPackage, setSelectedPackage] = useState<string>("");
-  const [step, setStep] = useState<'package' | 'trainer' | 'clients'>('package');
+  const [step, setStep] = useState<'trainer' | 'clients'>('trainer');
 
   const { data: packages = [], isLoading: isLoadingPackages } = useQuery<any[]>({
     queryKey: ['/api/packages'],
@@ -48,16 +48,12 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     enabled: open && !!sessionId,
   });
 
-  // Filter clients by selected package and eligibility
-  const filteredClients = selectedPackage
+  // Filter clients by session's package
+  const filteredClients = packageId
     ? allClients.filter(client => {
         if (!client.packageId) return false;
-        const pkg = typeof client.packageId === 'object' ? client.packageId : null;
         const pkgId = typeof client.packageId === 'object' ? client.packageId?._id : client.packageId;
-        const packageName = pkg?.name || '';
-        
-        // Match by package ID
-        return pkgId === selectedPackage;
+        return pkgId === packageId;
       })
     : [];
 
@@ -86,7 +82,7 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
 
   const assignMutation = useMutation({
     mutationFn: async (clientIds: string[]) => {
-      return await apiRequest('POST', `/api/sessions/${sessionId}/assign`, { clientIds, packageId: selectedPackage });
+      return await apiRequest('POST', `/api/sessions/${sessionId}/assign`, { clientIds, packageId });
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
@@ -100,10 +96,19 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
         title: "Success",
         description: message,
       });
+      
+      // Check if 10 clients were assigned
+      if (data.assigned === 10) {
+        toast({
+          title: "Batch Full",
+          description: "10 clients assigned! Clone this session for remaining clients.",
+          variant: "default",
+        });
+      }
+      
       setSelectedClients([]);
-      setSelectedPackage("");
       setSelectedTrainer(null);
-      setStep('package');
+      setStep('trainer');
       onOpenChange(false);
     },
     onError: (error: any) => {
@@ -180,9 +185,8 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       setSelectedClients([]);
-      setSelectedPackage("");
       setSelectedTrainer(null);
-      setStep('package');
+      setStep('trainer');
     }
     onOpenChange(newOpen);
   };
@@ -199,60 +203,16 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            {step === 'package' ? 'Select Package Batch' : step === 'trainer' ? 'Assign Trainer' : 'Assign Clients'}
+            {step === 'trainer' ? 'Assign Trainer' : 'Assign Clients'}
           </DialogTitle>
           <DialogDescription>
-            {step === 'package' 
-              ? `Choose package for "${sessionTitle}"`
-              : step === 'trainer'
+            {step === 'trainer'
               ? `Select a trainer to manage "${sessionTitle}"`
-              : `Assign up to 10 "${sessionTitle}" clients from selected package`}
+              : `Assign up to 10 clients from this package`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {step === 'package' && (
-            <div className="space-y-3">
-              {isLoadingPackages ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <div className="grid gap-3">
-                  {eligiblePackages.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No eligible packages found
-                    </div>
-                  ) : (
-                    eligiblePackages.map((pkg: any) => (
-                      <Card
-                        key={pkg._id}
-                        className={`p-4 cursor-pointer hover-elevate border-2 transition-colors ${
-                          selectedPackage === pkg._id
-                            ? 'border-primary bg-primary/5'
-                            : 'border-transparent'
-                        }`}
-                        onClick={() => setSelectedPackage(pkg._id)}
-                        data-testid={`package-option-${pkg._id}`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-semibold">{pkg.name}</div>
-                            <div className="text-sm text-muted-foreground">₹{pkg.price}/month</div>
-                          </div>
-                          <Checkbox
-                            checked={selectedPackage === pkg._id}
-                            onCheckedChange={() => setSelectedPackage(pkg._id)}
-                            data-testid={`checkbox-package-${pkg._id}`}
-                          />
-                        </div>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-          )}
 
           {step === 'trainer' && (
             <ScrollArea className="h-[300px] pr-4">
@@ -357,12 +317,11 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
             variant="outline"
             onClick={() => {
               if (step === 'clients') setStep('trainer');
-              else if (step === 'trainer') setStep('package');
               else onOpenChange(false);
             }}
             data-testid="button-cancel-assign"
           >
-            {step === 'package' ? 'Cancel' : 'Back'}
+            {step === 'trainer' ? 'Cancel' : 'Back'}
           </Button>
           {step === 'trainer' && (
             <Button
@@ -375,20 +334,16 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
           )}
           <Button
             onClick={() => {
-              if (step === 'package') setStep('trainer');
-              else if (step === 'trainer') handleSubmitTrainer();
+              if (step === 'trainer') handleSubmitTrainer();
               else handleSubmitClients();
             }}
             disabled={
-              step === 'package' ? !selectedPackage : 
               step === 'trainer' ? assignTrainerMutation.isPending : 
               assignMutation.isPending
             }
             data-testid="button-submit-assign"
           >
-            {step === 'package'
-              ? 'Next: Select Trainer'
-              : step === 'trainer'
+            {step === 'trainer'
               ? assignTrainerMutation.isPending ? 'Assigning...' : 'Next: Select Clients'
               : assignMutation.isPending ? 'Assigning...' : `Assign Batch (${selectedClients.length})`}
           </Button>
