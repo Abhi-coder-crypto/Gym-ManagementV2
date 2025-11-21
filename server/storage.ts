@@ -874,6 +874,11 @@ export class MongoStorage implements IStorage {
   }
 
   async deleteSession(id: string): Promise<boolean> {
+    // Delete all SessionClient records for this session first
+    await SessionClient.deleteMany({ sessionId: id });
+    // Delete all SessionWaitlist records for this session
+    await SessionWaitlist.deleteMany({ sessionId: id });
+    // Then delete the session itself
     const result = await LiveSession.findByIdAndDelete(id);
     return !!result;
   }

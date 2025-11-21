@@ -45,6 +45,38 @@ The system uses a fitness-focused Material Design with a blue, orange, and green
 - **Responsive Design**: Fully responsive across devices.
 
 ## Recent Changes
+### November 21, 2025 - Critical Fix: Trainer Sessions and Clients Not Loading
+Fixed a critical authentication endpoint issue that prevented trainers from seeing assigned sessions and clients:
+
+**Root Cause:**
+- All trainer and admin dashboard pages were querying `/api/me` (non-existent endpoint) instead of `/api/auth/me`
+- This caused the user object to be null/undefined, making trainerId undefined
+- With no trainerId, all trainer-specific data queries were disabled and never executed
+
+**Changes Made:**
+1. **Updated API Endpoint**: Changed all pages to query `/api/auth/me` instead of `/api/me`
+   - trainer-dashboard.tsx
+   - trainer-clients.tsx
+   - trainer-analytics.tsx
+   - trainer-diet.tsx
+   - trainer-sessions.tsx
+   - admin-dashboard.tsx
+
+2. **Fixed User Data Extraction**: 
+   - Response structure from `/api/auth/me` is `{ user: {...}, client: {...} }`
+   - Extract user from `authData.user` instead of directly from response
+   - Use `user?._id?.toString() || user?.id` to get trainerId as string (handles both ObjectId and string formats)
+
+3. **Impact**: 
+   - Trainers can now see sessions assigned to them by admin
+   - Trainers can now see clients assigned to them
+   - All trainer dashboard analytics and data now load correctly
+
+**Technical Details:**
+- `/api/auth/me` endpoint at server/routes.ts:274 returns authenticated user with proper JWT validation
+- trainerId must be a string to match MongoDB queries in getTrainerSessions and getTrainerClients
+- Mongoose provides both `_id` (ObjectId) and `id` (string virtual), using fallback ensures compatibility
+
 ### November 21, 2025 - Comprehensive Session Assignment Fixes
 Fixed four critical issues in the live session assignment system to ensure proper UI state management and data synchronization:
 

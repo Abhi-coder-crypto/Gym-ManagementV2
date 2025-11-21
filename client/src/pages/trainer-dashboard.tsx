@@ -15,11 +15,12 @@ export default function TrainerDashboard() {
     "--sidebar-width": "16rem",
   };
 
-  const { data: user } = useQuery<any>({
-    queryKey: ['/api/me']
+  const { data: authData } = useQuery<any>({
+    queryKey: ['/api/auth/me']
   });
 
-  const trainerId = user?.userId;
+  const user = authData?.user;
+  const trainerId = user?._id?.toString() || user?.id;
 
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ['/api/trainers', trainerId, 'clients'],
@@ -76,7 +77,7 @@ export default function TrainerDashboard() {
             <div className="flex items-center gap-4">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
               <h1 className="text-2xl font-display font-bold tracking-tight">
-                Trainer Dashboard
+                {user ? `Welcome, ${user.name || 'Trainer'}` : 'Trainer Dashboard'}
               </h1>
             </div>
             <div className="flex items-center gap-4">

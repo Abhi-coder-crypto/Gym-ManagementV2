@@ -12,11 +12,12 @@ export default function TrainerAnalytics() {
     "--sidebar-width": "16rem",
   };
 
-  const { data: user } = useQuery<any>({
-    queryKey: ['/api/me']
+  const { data: authData } = useQuery<any>({
+    queryKey: ['/api/auth/me']
   });
 
-  const trainerId = user?.userId;
+  const user = authData?.user;
+  const trainerId = user?._id?.toString() || user?.id;
 
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ['/api/trainers', trainerId, 'clients'],

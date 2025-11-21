@@ -16,9 +16,11 @@ export default function AdminDashboard() {
     "--sidebar-width": "16rem",
   };
 
-  const { data: user } = useQuery<any>({
-    queryKey: ['/api/me']
+  const { data: authData } = useQuery<any>({
+    queryKey: ['/api/auth/me']
   });
+
+  const user = authData?.user;
 
   const { data: clients = [] } = useQuery<any[]>({
     queryKey: ['/api/clients'],

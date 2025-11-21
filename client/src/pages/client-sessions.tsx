@@ -31,10 +31,12 @@ export default function ClientSessions() {
 
     const formatSession = (session: any) => {
       const sessionDate = new Date(session.scheduledAt);
+      // Get trainer name from trainerId (populated) or trainerName field
+      const trainerName = session.trainerId?.name || session.trainerName || "Trainer";
       return {
         id: session._id,
         title: session.title,
-        trainer: session.trainer || "HOC Trainer",
+        trainer: trainerName,
         date: sessionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         time: sessionDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
         duration: `${session.duration} min`,

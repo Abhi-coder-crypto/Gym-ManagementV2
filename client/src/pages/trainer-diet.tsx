@@ -22,11 +22,12 @@ export default function TrainerDiet() {
   const [editingPlan, setEditingPlan] = useState<any>(null);
   const [editingMeal, setEditingMeal] = useState<any>(null);
 
-  const { data: user } = useQuery<any>({
-    queryKey: ['/api/me']
+  const { data: authData } = useQuery<any>({
+    queryKey: ['/api/auth/me']
   });
 
-  const trainerId = user?.userId;
+  const user = authData?.user;
+  const trainerId = user?._id?.toString() || user?.id;
 
   // Fetch trainer's assigned clients
   const { data: clients = [] } = useQuery<any[]>({
