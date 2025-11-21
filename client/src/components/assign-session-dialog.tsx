@@ -43,12 +43,17 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     enabled: open && !!sessionId,
   });
 
-  // Initialize selectedTrainer when currentAssignments loads
+  // Initialize selectedTrainer when dialog opens and currentAssignments loads
   useEffect(() => {
-    if (currentAssignments?.trainerId && open) {
+    if (open && currentAssignments?.trainerId) {
       setSelectedTrainer(currentAssignments.trainerId);
+    } else if (!open) {
+      // Reset when dialog closes
+      setSelectedTrainer(null);
+      setSelectedClients([]);
+      setStep('trainer');
     }
-  }, [currentAssignments, open]);
+  }, [open, currentAssignments?.trainerId]);
 
   const { data: sessionClients = [], isLoading: isLoadingAssigned } = useQuery<any[]>({
     queryKey: ['/api/sessions', sessionId, 'clients'],
@@ -242,11 +247,6 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      setSelectedClients([]);
-      setSelectedTrainer(null);
-      setStep('trainer');
-    }
     onOpenChange(newOpen);
   };
 
@@ -281,26 +281,37 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
                     No trainers found
                   </div>
                 ) : (
-                  trainers.map((trainer: any) => (
-                    <div
-                      key={trainer._id}
-                      className="flex items-center space-x-3 p-3 rounded-lg border hover-elevate"
-                      data-testid={`trainer-item-${trainer._id}`}
-                    >
-                      <Checkbox
-                        id={`trainer-${trainer._id}`}
-                        checked={selectedTrainer === trainer._id}
-                        onCheckedChange={() => setSelectedTrainer(selectedTrainer === trainer._id ? null : trainer._id)}
-                        data-testid={`checkbox-trainer-${trainer._id}`}
-                      />
-                      <Label htmlFor={`trainer-${trainer._id}`} className="flex-1 cursor-pointer">
-                        <div>
-                          <div className="font-medium">{trainer.name || trainer.email}</div>
-                          <div className="text-sm text-muted-foreground">{trainer.email}</div>
-                        </div>
-                      </Label>
-                    </div>
-                  ))
+                  trainers.map((trainer: any) => {
+                    const isCurrentlyAssigned = currentAssignments?.trainerId === trainer._id;
+                    return (
+                      <div
+                        key={trainer._id}
+                        className="flex items-center space-x-3 p-3 rounded-lg border hover-elevate"
+                        data-testid={`trainer-item-${trainer._id}`}
+                      >
+                        <Checkbox
+                          id={`trainer-${trainer._id}`}
+                          checked={selectedTrainer === trainer._id}
+                          onCheckedChange={() => setSelectedTrainer(selectedTrainer === trainer._id ? null : trainer._id)}
+                          disabled={isCurrentlyAssigned && selectedTrainer !== trainer._id}
+                          data-testid={`checkbox-trainer-${trainer._id}`}
+                        />
+                        <Label htmlFor={`trainer-${trainer._id}`} className="flex-1 cursor-pointer">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">{trainer.name || trainer.email}</div>
+                              <div className="text-sm text-muted-foreground">{trainer.email}</div>
+                            </div>
+                            {isCurrentlyAssigned && (
+                              <Badge variant="outline" className="text-xs">
+                                Currently Assigned
+                              </Badge>
+                            )}
+                          </div>
+                        </Label>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </ScrollArea>
@@ -311,7 +322,7 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
               {packagePlan && (
                 <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                   <p className="text-sm font-medium">
-                    Batch - {selectedClients.length}/10 selected
+                    Batch - {sessionClients.length + selectedClients.length}/10 selected
                   </p>
                 </div>
               )}

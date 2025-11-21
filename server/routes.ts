@@ -2771,6 +2771,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get session assignments (trainer + clients)
+  app.get("/api/sessions/:sessionId/assignments", async (req, res) => {
+    try {
+      const session = await storage.getSession(req.params.sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      const clients = await storage.getSessionClients(req.params.sessionId);
+      
+      res.json({
+        trainerId: session.trainerId?.toString() || null,
+        trainerName: session.trainerName || null,
+        clients: clients.map((c: any) => c._id.toString()),
+        clientCount: clients.length
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Advanced Session Management routes
   app.get("/api/sessions/calendar/:start/:end", async (req, res) => {
     try {
