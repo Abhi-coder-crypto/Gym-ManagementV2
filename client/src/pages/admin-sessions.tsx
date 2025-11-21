@@ -29,6 +29,7 @@ const SESSION_STATUSES = ["upcoming", "live", "completed", "cancelled"];
 const sessionSchema = z.object({
   title: z.string().min(1, "Title is required"),
   packagePlan: z.enum(["fitplus", "pro", "elite"], { required_error: "Package plan is required" }),
+  trainerId: z.string().optional(),
   scheduledAt: z.string().min(1, "Date and time are required"),
   duration: z.coerce.number().min(1, "Duration must be at least 1 minute"),
   maxCapacity: z.coerce.number().min(1, "Capacity must be at least 1"),
@@ -55,6 +56,7 @@ export default function AdminSessions() {
     defaultValues: {
       title: "",
       packagePlan: "fitplus",
+      trainerId: "",
       scheduledAt: "",
       duration: 60,
       maxCapacity: 10,
@@ -73,11 +75,16 @@ export default function AdminSessions() {
     queryKey: ["/api/packages"],
   });
 
+  const { data: trainers = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/trainers"],
+  });
+
   const createSessionMutation = useMutation({
     mutationFn: async (data: SessionFormData) => {
       return await apiRequest("POST", "/api/sessions", {
         title: data.title,
         packagePlan: data.packagePlan,
+        trainerId: data.trainerId || undefined,
         scheduledAt: new Date(data.scheduledAt),
         duration: data.duration,
         maxCapacity: data.maxCapacity,
@@ -87,7 +94,8 @@ export default function AdminSessions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
-      toast({ title: "Success", description: "Session created successfully. You can now assign a trainer." });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/trainers"] });
+      toast({ title: "Success", description: "Session created successfully. You can now assign clients." });
       setIsCreateDialogOpen(false);
       form.reset();
     },
@@ -422,6 +430,31 @@ export default function AdminSessions() {
                         <SelectItem value="fitplus">FitPlus</SelectItem>
                         <SelectItem value="pro">Pro</SelectItem>
                         <SelectItem value="elite">Elite</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="trainerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign Trainer (Optional)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-trainer">
+                          <SelectValue placeholder="Select trainer" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {trainers.map((trainer: any) => (
+                          <SelectItem key={trainer._id} value={trainer._id}>
+                            {trainer.name || trainer.email}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />

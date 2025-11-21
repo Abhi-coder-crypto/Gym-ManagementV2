@@ -23,37 +23,21 @@ interface AssignSessionDialogProps {
 export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitle, packagePlan = "" }: AssignSessionDialogProps) {
   const { toast } = useToast();
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
-  const [selectedTrainer, setSelectedTrainer] = useState<string | null>(null);
-  const [step, setStep] = useState<'trainer' | 'clients'>('trainer');
 
   const { data: packages = [], isLoading: isLoadingPackages } = useQuery<any[]>({
     queryKey: ['/api/packages'],
-  });
-
-  const { data: trainers = [], isLoading: isLoadingTrainers } = useQuery<any[]>({
-    queryKey: ['/api/trainers'],
   });
 
   const { data: allClients = [], isLoading: isLoadingAllClients } = useQuery<any[]>({
     queryKey: ['/api/clients'],
   });
 
-  const { data: currentAssignments = {} } = useQuery<any>({
-    queryKey: ['/api/sessions', sessionId, 'assignments'],
-    enabled: open && !!sessionId,
-  });
-
-  // Initialize selectedTrainer when dialog opens and currentAssignments loads
+  // Reset when dialog closes
   useEffect(() => {
-    if (open && currentAssignments?.trainerId) {
-      setSelectedTrainer(currentAssignments.trainerId);
-    } else if (!open) {
-      // Reset when dialog closes
-      setSelectedTrainer(null);
+    if (!open) {
       setSelectedClients([]);
-      setStep('trainer');
     }
-  }, [open, currentAssignments?.trainerId]);
+  }, [open]);
 
   const { data: sessionClients = [], isLoading: isLoadingAssigned } = useQuery<any[]>({
     queryKey: ['/api/sessions', sessionId, 'clients'],
@@ -65,20 +49,6 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     queryKey: ['/api/sessions'],
     enabled: open,
   });
-
-  // Map package plan to package name patterns
-  const getPackageNamePattern = (plan: string): string => {
-    switch (plan.toLowerCase()) {
-      case 'fitplus':
-        return 'Fit Plus (Main Group Program)';
-      case 'pro':
-        return 'Pro Transformation';
-      case 'elite':
-        return 'Elite Athlete / Fast Result';
-      default:
-        return '';
-    }
-  };
 
   // Get all clients who are already assigned to ANY session
   const clientsInAnySessions = useMemo(() => {
@@ -93,6 +63,21 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     return clientSet;
   }, [allSessions]);
 
+  // Check if a package name matches a session plan (more flexible matching)
+  const packageMatchesPlan = (packageName: string, plan: string): boolean => {
+    const normalizedPkgName = packageName.toLowerCase();
+    switch (plan.toLowerCase()) {
+      case 'fitplus':
+        return normalizedPkgName.includes('fit plus');
+      case 'pro':
+        return normalizedPkgName.includes('pro transformation');
+      case 'elite':
+        return normalizedPkgName.includes('elite');
+      default:
+        return false;
+    }
+  };
+
   // Filter clients by session's package plan and exclude those already in any session
   const filteredClients = allClients.filter(client => {
     if (!client.packageId) return false;
@@ -106,10 +91,9 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     const pkg = typeof client.packageId === 'object' ? client.packageId : null;
     const packageName = pkg?.name || '';
     
-    // If packagePlan is provided, filter by exact package name match
+    // If packagePlan is provided, filter by flexible package name matching
     if (packagePlan) {
-      const expectedPackageName = getPackageNamePattern(packagePlan);
-      return packageName === expectedPackageName;
+      return packageMatchesPlan(packageName, packagePlan);
     }
     
     // Fallback: show clients from Fit Plus and higher packages (excluding Fit Basics)
@@ -117,30 +101,6 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
   });
 
   const assignedClientIds = new Set(sessionClients.map((client: any) => client._id));
-
-  const assignTrainerMutation = useMutation({
-    mutationFn: async (trainerId: string) => {
-      return await apiRequest('POST', `/api/sessions/${sessionId}/assign-trainer`, { trainerId });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/sessions', sessionId, 'assignments'] });
-      // Invalidate trainer-specific queries to refresh their dashboards
-      queryClient.invalidateQueries({ queryKey: ['/api/trainers'] });
-      toast({
-        title: "Success",
-        description: "Trainer assigned successfully",
-      });
-      setStep('clients');
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to assign trainer",
-        variant: "destructive",
-      });
-    },
-  });
 
   const assignMutation = useMutation({
     mutationFn: async (clientIds: string[]) => {
@@ -171,8 +131,6 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
       }
       
       setSelectedClients([]);
-      setSelectedTrainer(null);
-      setStep('trainer');
       onOpenChange(false);
     },
     onError: (error: any) => {
@@ -200,27 +158,11 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
     );
   };
 
-  const handleSubmitTrainer = () => {
-    if (!selectedTrainer) {
-      toast({
-        title: "Error",
-        description: "Please select a trainer",
-        variant: "destructive",
-      });
-      return;
-    }
-    assignTrainerMutation.mutate(selectedTrainer);
-  };
-
   const handleSubmitClients = () => {
     if (selectedClients.length === 0) {
       return; // Button should be disabled, but just in case
     }
     assignMutation.mutate(selectedClients);
-  };
-
-  const handleSkipTrainer = () => {
-    setStep('clients');
   };
 
   const getPackageName = (packageId: string) => {
@@ -257,178 +199,107 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            {step === 'trainer' ? 'Assign Trainer' : 'Assign Clients'}
+            Assign Clients
           </DialogTitle>
           <DialogDescription>
-            {step === 'trainer'
-              ? `Select a trainer to manage "${sessionTitle}"`
-              : `Assign up to 10 clients from this package`}
+            Assign up to 10 clients from this package
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 py-2">
+          <>
+            {packagePlan && (
+              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <p className="text-sm font-medium">
+                  Batch - {sessionClients.length + selectedClients.length}/10 selected
+                </p>
+              </div>
+            )}
 
-          {step === 'trainer' && (
-            <ScrollArea className="h-[250px] pr-4">
-              <div className="space-y-2">
-                {trainers.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No trainers found
-                  </div>
-                ) : (
-                  trainers.map((trainer: any) => {
-                    const isCurrentlyAssigned = currentAssignments?.trainerId === trainer._id;
-                    return (
+            {sessionClients.length > 0 && (
+              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                <p className="text-sm text-green-700 dark:text-green-400">
+                  <strong>Already assigned:</strong> {sessionClients.map((c: any) => c.name).join(', ')}
+                </p>
+              </div>
+            )}
+
+            {isLoadingAllClients || isLoadingAssigned ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <ScrollArea className="h-[300px] pr-4">
+                <div className="space-y-2">
+                  {filteredClients.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p className="font-medium">No eligible clients in this package</p>
+                      <p className="text-sm mt-2">All clients are already assigned to sessions or no clients exist for this package plan.</p>
+                    </div>
+                  ) : filteredClients.filter(client => !assignedClientIds.has(client._id)).length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p className="font-medium">All eligible clients are already assigned</p>
+                      <p className="text-sm mt-2">Click "Done" to finish.</p>
+                    </div>
+                  ) : (
+                    filteredClients.map((client) => (
                       <div
-                        key={trainer._id}
+                        key={client._id}
                         className="flex items-center space-x-3 p-3 rounded-lg border hover-elevate"
-                        data-testid={`trainer-item-${trainer._id}`}
+                        data-testid={`client-item-${client._id}`}
                       >
                         <Checkbox
-                          id={`trainer-${trainer._id}`}
-                          checked={selectedTrainer === trainer._id}
-                          onCheckedChange={() => setSelectedTrainer(selectedTrainer === trainer._id ? null : trainer._id)}
-                          disabled={isCurrentlyAssigned && selectedTrainer !== trainer._id}
-                          data-testid={`checkbox-trainer-${trainer._id}`}
+                          id={`client-${client._id}`}
+                          checked={selectedClients.includes(client._id)}
+                          onCheckedChange={() => handleToggleClient(client._id)}
+                          disabled={assignedClientIds.has(client._id)}
+                          data-testid={`checkbox-client-${client._id}`}
                         />
-                        <Label htmlFor={`trainer-${trainer._id}`} className="flex-1 cursor-pointer">
+                        <Label htmlFor={`client-${client._id}`} className="flex-1 cursor-pointer">
                           <div className="flex items-center justify-between">
                             <div>
-                              <div className="font-medium">{trainer.name || trainer.email}</div>
-                              <div className="text-sm text-muted-foreground">{trainer.email}</div>
+                              <div className="font-medium">{client.name}</div>
+                              <div className="text-sm text-muted-foreground">{client.email}</div>
                             </div>
-                            {isCurrentlyAssigned && (
-                              <Badge variant="outline" className="text-xs">
-                                Currently Assigned
-                              </Badge>
+                            {assignedClientIds.has(client._id) && (
+                              <Badge variant="secondary">Already Assigned</Badge>
                             )}
                           </div>
                         </Label>
                       </div>
-                    );
-                  })
-                )}
-              </div>
-            </ScrollArea>
-          )}
-
-          {step === 'clients' && (
-            <>
-              {packagePlan && (
-                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                  <p className="text-sm font-medium">
-                    Batch - {sessionClients.length + selectedClients.length}/10 selected
-                  </p>
+                    ))
+                  )}
                 </div>
-              )}
-
-              {sessionClients.length > 0 && (
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                  <p className="text-sm text-green-700 dark:text-green-400">
-                    <strong>Already assigned:</strong> {sessionClients.map((c: any) => c.name).join(', ')}
-                  </p>
-                </div>
-              )}
-
-              {isLoadingAllClients || isLoadingAssigned ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <ScrollArea className="h-[300px] pr-4">
-                  <div className="space-y-2">
-                    {filteredClients.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <p className="font-medium">No eligible clients in this package</p>
-                        <p className="text-sm mt-2">All clients are already assigned to sessions or no clients exist for this package plan.</p>
-                      </div>
-                    ) : filteredClients.filter(client => !assignedClientIds.has(client._id)).length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <p className="font-medium">All eligible clients are already assigned</p>
-                        <p className="text-sm mt-2">Click "Done" to finish.</p>
-                      </div>
-                    ) : (
-                      filteredClients.map((client) => (
-                        <div
-                          key={client._id}
-                          className="flex items-center space-x-3 p-3 rounded-lg border hover-elevate"
-                          data-testid={`client-item-${client._id}`}
-                        >
-                          <Checkbox
-                            id={`client-${client._id}`}
-                            checked={selectedClients.includes(client._id)}
-                            onCheckedChange={() => handleToggleClient(client._id)}
-                            disabled={assignedClientIds.has(client._id)}
-                            data-testid={`checkbox-client-${client._id}`}
-                          />
-                          <Label htmlFor={`client-${client._id}`} className="flex-1 cursor-pointer">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-medium">{client.name}</div>
-                                <div className="text-sm text-muted-foreground">{client.email}</div>
-                              </div>
-                              {assignedClientIds.has(client._id) && (
-                                <Badge variant="secondary">Already Assigned</Badge>
-                              )}
-                            </div>
-                          </Label>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </ScrollArea>
-              )}
-            </>
-          )}
+              </ScrollArea>
+            )}
+          </>
         </div>
 
-        <DialogFooter className="flex justify-between gap-2">
+        <DialogFooter className="flex justify-end gap-2">
           <Button
             variant="outline"
-            onClick={() => {
-              if (step === 'clients') setStep('trainer');
-              else onOpenChange(false);
-            }}
-            data-testid="button-cancel-assign"
+            onClick={() => onOpenChange(false)}
+            data-testid="button-back"
           >
-            {step === 'trainer' ? 'Cancel' : 'Back'}
+            Cancel
           </Button>
           
-          {step === 'trainer' ? (
-            <Button
-              variant="outline"
-              onClick={handleSkipTrainer}
-              data-testid="button-skip-trainer"
-            >
-              Skip
-            </Button>
-          ) : (
-            <Button
-              onClick={handleSubmitClients}
-              disabled={selectedClients.length === 0 || assignMutation.isPending}
-              data-testid="button-assign"
-            >
-              {assignMutation.isPending ? 'Assigning...' : `Assign (${selectedClients.length})`}
-            </Button>
-          )}
+          <Button
+            onClick={handleSubmitClients}
+            disabled={selectedClients.length === 0 || assignMutation.isPending}
+            data-testid="button-assign"
+          >
+            {assignMutation.isPending ? 'Assigning...' : `Assign (${selectedClients.length})`}
+          </Button>
           
           <Button
             onClick={() => {
-              if (step === 'trainer') handleSubmitTrainer();
-              else {
-                // Close the dialog when clicking Done in clients step
-                setSelectedClients([]);
-                setSelectedTrainer(null);
-                setStep('trainer');
-                onOpenChange(false);
-              }
+              setSelectedClients([]);
+              onOpenChange(false);
             }}
-            disabled={step === 'trainer' ? assignTrainerMutation.isPending : false}
-            data-testid="button-submit-assign"
+            data-testid="button-done"
           >
-            {step === 'trainer'
-              ? assignTrainerMutation.isPending ? 'Assigning...' : 'Next'
-              : 'Done'}
+            Done
           </Button>
         </DialogFooter>
       </DialogContent>
