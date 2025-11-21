@@ -213,27 +213,8 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
   };
 
   const handleSubmitClients = () => {
-    // If no clients are available to select (all already assigned), just close the dialog
-    const availableClients = filteredClients.filter(client => !assignedClientIds.has(client._id));
-    if (availableClients.length === 0) {
-      toast({
-        title: "Success",
-        description: "Trainer assigned successfully. All eligible clients are already assigned to this session.",
-      });
-      setSelectedClients([]);
-      setSelectedTrainer(null);
-      setStep('trainer');
-      onOpenChange(false);
-      return;
-    }
-    
     if (selectedClients.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select at least one client",
-        variant: "destructive",
-      });
-      return;
+      return; // Button should be disabled, but just in case
     }
     assignMutation.mutate(selectedClients);
   };
@@ -272,7 +253,7 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl" data-testid="dialog-assign-session">
+      <DialogContent className="max-w-xl max-h-[85vh]" data-testid="dialog-assign-session">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
@@ -285,10 +266,10 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-3 py-2">
 
           {step === 'trainer' && (
-            <ScrollArea className="h-[300px] pr-4">
+            <ScrollArea className="h-[250px] pr-4">
               <div className="space-y-2">
                 {trainers.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -354,7 +335,7 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-                <ScrollArea className="h-[400px] pr-4">
+                <ScrollArea className="h-[300px] pr-4">
                   <div className="space-y-2">
                     {filteredClients.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
@@ -401,7 +382,7 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex justify-between gap-2">
           <Button
             variant="outline"
             onClick={() => {
@@ -412,32 +393,42 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
           >
             {step === 'trainer' ? 'Cancel' : 'Back'}
           </Button>
-          {step === 'trainer' && (
+          
+          {step === 'trainer' ? (
             <Button
               variant="outline"
               onClick={handleSkipTrainer}
               data-testid="button-skip-trainer"
             >
-              Skip Trainer
+              Skip
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmitClients}
+              disabled={selectedClients.length === 0 || assignMutation.isPending}
+              data-testid="button-assign"
+            >
+              {assignMutation.isPending ? 'Assigning...' : `Assign (${selectedClients.length})`}
             </Button>
           )}
+          
           <Button
             onClick={() => {
               if (step === 'trainer') handleSubmitTrainer();
-              else handleSubmitClients();
+              else {
+                // Close the dialog when clicking Done in clients step
+                setSelectedClients([]);
+                setSelectedTrainer(null);
+                setStep('trainer');
+                onOpenChange(false);
+              }
             }}
-            disabled={
-              step === 'trainer' ? assignTrainerMutation.isPending : 
-              assignMutation.isPending
-            }
+            disabled={step === 'trainer' ? assignTrainerMutation.isPending : false}
             data-testid="button-submit-assign"
           >
             {step === 'trainer'
-              ? assignTrainerMutation.isPending ? 'Assigning...' : 'Next: Select Clients'
-              : assignMutation.isPending ? 'Assigning...' : 
-                filteredClients.filter(client => !assignedClientIds.has(client._id)).length === 0
-                  ? 'Done'
-                  : `Assign Batch (${selectedClients.length})`}
+              ? assignTrainerMutation.isPending ? 'Assigning...' : 'Next'
+              : 'Done'}
           </Button>
         </DialogFooter>
       </DialogContent>
