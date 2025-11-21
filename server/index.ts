@@ -15,6 +15,7 @@ import { Trainer } from "./models";
 import { startSessionReminderScheduler } from "./utils/session-reminder-scheduler";
 import { emailService } from "./utils/email";
 import { migrateLiveSessionReferences } from "./migrate-sessions";
+import { inspectLiveSessionData } from "./inspect-sessions";
 
 const app = express();
 
@@ -68,6 +69,9 @@ app.use((req, res, next) => {
     await storage.connect();
     log("✅ Database connected successfully");
 
+    // Inspect LiveSession data first
+    await inspectLiveSessionData();
+    
     // Run LiveSession schema migration
     await migrateLiveSessionReferences();
 
