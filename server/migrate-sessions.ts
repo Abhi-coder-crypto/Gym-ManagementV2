@@ -46,6 +46,13 @@ export async function migrateLiveSessionReferences() {
         needsUpdate = true;
       }
       
+      // Add default packagePlan if missing
+      if (!session.packagePlan) {
+        updates.packagePlan = 'fitplus';
+        needsUpdate = true;
+        console.log(`  ✓ Adding default packagePlan for: ${session.title}`);
+      }
+      
       if (needsUpdate) {
         bulkOps.push({
           updateOne: {

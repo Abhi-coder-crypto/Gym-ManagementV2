@@ -132,7 +132,7 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
 
   const assignMutation = useMutation({
     mutationFn: async (clientIds: string[]) => {
-      return await apiRequest('POST', `/api/sessions/${sessionId}/assign`, { clientIds, packagePlan });
+      return await apiRequest('POST', `/api/sessions/${sessionId}/assign`, { clientIds });
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });

@@ -492,8 +492,8 @@ const MealSchema = new Schema({
 const LiveSessionSchema = new Schema({
   title: { type: String, required: true },
   description: String,
-  sessionType: { type: String, required: true },
-  packagePlan: { type: String, enum: ['fitplus', 'pro', 'elite'], required: true },
+  sessionType: String,
+  packagePlan: { type: String, enum: ['fitplus', 'pro', 'elite'], required: true, default: 'fitplus' },
   packageId: { type: Schema.Types.ObjectId, ref: 'Package' },
   scheduledAt: { type: Date, required: true },
   duration: { type: Number, required: true },
