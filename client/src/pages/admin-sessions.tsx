@@ -291,6 +291,11 @@ export default function AdminSessions() {
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Users className="h-4 w-4" />
                             {session.currentCapacity}/{session.maxCapacity} participants
+                            {session.currentCapacity >= 10 && (
+                              <Badge variant="default" className="ml-2 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+                                Batch Complete
+                              </Badge>
+                            )}
                           </div>
                         </div>
 

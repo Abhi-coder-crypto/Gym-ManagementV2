@@ -58,11 +58,11 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
   const getPackageNamePattern = (plan: string): string => {
     switch (plan.toLowerCase()) {
       case 'fitplus':
-        return 'Fit Plus';
+        return 'Fit Plus (Main Group Program)';
       case 'pro':
         return 'Pro Transformation';
       case 'elite':
-        return 'Elite Athlete';
+        return 'Elite Athlete / Fast Result';
       default:
         return '';
     }
