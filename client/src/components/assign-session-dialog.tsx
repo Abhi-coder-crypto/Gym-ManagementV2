@@ -28,7 +28,14 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
   });
 
   const { data: clients = [], isLoading: isLoadingClients } = useQuery<any[]>({
-    queryKey: ['/api/clients'],
+    queryKey: ['/api/sessions/eligible-clients'],
+    queryFn: async () => {
+      const response = await fetch('/api/sessions/eligible-clients');
+      if (!response.ok) {
+        throw new Error('Failed to fetch eligible clients');
+      }
+      return response.json();
+    },
   });
 
   const { data: currentAssignments = {} } = useQuery<any>({
