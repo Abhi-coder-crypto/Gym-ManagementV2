@@ -6,8 +6,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Users, Video as VideoIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import type { LiveSession } from "@shared/schema";
 import { format } from "date-fns";
+
+// MongoDB LiveSession interface (matches actual backend data)
+interface LiveSession {
+  _id: string;
+  title: string;
+  description?: string;
+  sessionType: string;
+  scheduledAt: string | Date;
+  duration: number;
+  meetingLink?: string;
+  trainerName?: string;
+  maxCapacity: number;
+  currentCapacity: number;
+  status: string;
+  joinUrl?: string;
+  startUrl?: string;
+}
 
 export default function TrainerSessions() {
   const style = {
@@ -110,7 +126,7 @@ export default function TrainerSessions() {
                                   </div>
                                   <div className="flex items-center gap-1.5">
                                     <Users className="h-3.5 w-3.5" />
-                                    <span>{session.maxParticipants || 10} max participants</span>
+                                    <span>{session.currentCapacity || 0}/{session.maxCapacity || 10} participants</span>
                                   </div>
                                   <Badge variant="default">
                                     {session.sessionType || 'Group'}
