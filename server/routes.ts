@@ -3706,6 +3706,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get assigned workouts for authenticated client
+  app.get("/api/my-workouts", authenticateToken, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const user = await storage.getUserById(req.user.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if user is a client and has clientId
+      if (user.role !== 'client' || !user.clientId) {
+        return res.status(403).json({ message: "Only clients can access workout plans" });
+      }
+      
+      // Fetch assigned workout plans for this client
+      const workoutPlans = await storage.getClientWorkoutPlans(user.clientId.toString());
+      res.json(workoutPlans);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/achievements/:clientId", async (req, res) => {
     try {
       const achievements = await storage.getClientAchievements(req.params.clientId);

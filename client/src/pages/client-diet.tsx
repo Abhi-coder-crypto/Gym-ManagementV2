@@ -36,6 +36,8 @@ export default function ClientDiet() {
   const { toast } = useToast();
   const [clientId, setClientId] = useState<string | null>(null);
   const [waterIntake, setWaterIntake] = useState(0);
+  const [showDietaryReport, setShowDietaryReport] = useState(false);
+  const [showAddMealDialog, setShowAddMealDialog] = useState(false);
 
   useEffect(() => {
     const id = localStorage.getItem('clientId');
@@ -52,6 +54,37 @@ export default function ClientDiet() {
   });
 
   const currentPlan = dietPlans?.find(plan => plan.clientId === clientId);
+
+  // Handler functions for clickable elements
+  const handleDietaryReport = () => {
+    toast({
+      title: "Dietary Report",
+      description: "Opening your detailed daily dietary report...",
+    });
+    setShowDietaryReport(true);
+  };
+
+  const handleAISuggestion = () => {
+    toast({
+      title: "AI Meal Suggestion",
+      description: "Generating personalized meal recommendations based on your goals and preferences...",
+    });
+  };
+
+  const handleAddMeal = (mealType: string) => {
+    toast({
+      title: `Add ${mealType}`,
+      description: `Adding custom ${mealType.toLowerCase()} to your meal plan...`,
+    });
+    setShowAddMealDialog(true);
+  };
+
+  const handleNextMeal = () => {
+    toast({
+      title: "Next Day",
+      description: "Viewing tomorrow's meal plan...",
+    });
+  };
 
   // Meal type icon configuration with colors
   const getMealTypeIcon = (mealType: string) => {
@@ -258,7 +291,11 @@ export default function ClientDiet() {
             </Card>
 
                 {/* Next Button */}
-                <Button className="w-full bg-green-500 hover:bg-green-600 h-12 text-lg font-semibold">
+                <Button 
+                  onClick={handleNextMeal} 
+                  className="w-full bg-green-500 hover:bg-green-600 h-12 text-lg font-semibold"
+                  data-testid="button-next-meal"
+                >
                   Next
                 </Button>
               </>
@@ -360,13 +397,13 @@ export default function ClientDiet() {
 
                 {/* Daily Report & Breakfast */}
                 <div className="space-y-3">
-                  <Card className="hover-elevate">
+                  <Card className="hover-elevate cursor-pointer" onClick={handleDietaryReport} data-testid="button-dietary-report">
                     <CardContent className="p-4 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">🍔</span>
                         <span className="font-semibold">My Daily Dietary Report</span>
                       </div>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" data-testid="button-report-icon">
                         <TrendingDown className="h-5 w-5" />
                       </Button>
                     </CardContent>
@@ -378,10 +415,20 @@ export default function ClientDiet() {
                         <span className="font-semibold">Breakfast</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="secondary" size="sm">
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          onClick={handleAISuggestion}
+                          data-testid="button-ai-suggestion"
+                        >
                           <span className="text-green-500 text-lg">🤖</span>
                         </Button>
-                        <Button variant="secondary" size="sm">
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          onClick={() => handleAddMeal('Breakfast')}
+                          data-testid="button-add-breakfast"
+                        >
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
