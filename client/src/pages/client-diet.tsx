@@ -31,6 +31,8 @@ import {
   Cookie
 } from "lucide-react";
 
+const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
 export default function ClientDiet() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -38,6 +40,16 @@ export default function ClientDiet() {
   const [waterIntake, setWaterIntake] = useState(0);
   const [showDietaryReport, setShowDietaryReport] = useState(false);
   const [showAddMealDialog, setShowAddMealDialog] = useState(false);
+  
+  // Get current day of week for default
+  const getCurrentDay = () => {
+    const dayIndex = new Date().getDay();
+    // Sunday is 0, Monday is 1, etc. Convert to our format
+    const dayMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return dayMap[dayIndex];
+  };
+  
+  const [selectedDay, setSelectedDay] = useState(getCurrentDay());
 
   useEffect(() => {
     const id = localStorage.getItem('clientId');
@@ -146,35 +158,38 @@ export default function ClientDiet() {
   // Meal schedule from assigned diet plan
   const hasDietPlan = currentPlan && Object.keys(currentPlan.meals || {}).length > 0;
   
+  // Extract meals for the selected day
+  const todayMeals = hasDietPlan && currentPlan.meals[selectedDay] ? currentPlan.meals[selectedDay] : {};
+  
   const mealSchedule = hasDietPlan ? [
-    currentPlan.meals?.breakfast && {
+    todayMeals?.breakfast && {
       type: "Breakfast",
-      meal: currentPlan.meals.breakfast,
+      meal: todayMeals.breakfast,
       ...getMealTypeIcon('breakfast')
     },
-    currentPlan.meals?.lunch && {
+    todayMeals?.lunch && {
       type: "Lunch",
-      meal: currentPlan.meals.lunch,
+      meal: todayMeals.lunch,
       ...getMealTypeIcon('lunch')
     },
-    currentPlan.meals?.preWorkout && {
+    (todayMeals?.preworkout || todayMeals?.preWorkout) && {
       type: "Pre-Workout",
-      meal: currentPlan.meals.preWorkout,
+      meal: todayMeals.preworkout || todayMeals.preWorkout,
       ...getMealTypeIcon('preWorkout')
     },
-    currentPlan.meals?.postWorkout && {
+    (todayMeals?.postworkout || todayMeals?.postWorkout) && {
       type: "Post-Workout",
-      meal: currentPlan.meals.postWorkout,
+      meal: todayMeals.postworkout || todayMeals.postWorkout,
       ...getMealTypeIcon('postWorkout')
     },
-    currentPlan.meals?.dinner && {
+    todayMeals?.dinner && {
       type: "Dinner",
-      meal: currentPlan.meals.dinner,
+      meal: todayMeals.dinner,
       ...getMealTypeIcon('dinner')
     },
-    currentPlan.meals?.snacks && {
+    todayMeals?.snacks && {
       type: "Snacks",
-      meal: currentPlan.meals.snacks,
+      meal: todayMeals.snacks,
       ...getMealTypeIcon('snacks')
     }
   ].filter(Boolean) : [];
@@ -251,6 +266,22 @@ export default function ClientDiet() {
                       {currentPlan?.name && (
                         <p className="text-sm text-muted-foreground">Plan: {currentPlan.name}</p>
                       )}
+                    </div>
+
+                    {/* Day Selector */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+                      {DAYS_OF_WEEK.map((day) => (
+                        <Button
+                          key={day}
+                          variant={selectedDay === day ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedDay(day)}
+                          data-testid={`button-day-${day.toLowerCase()}`}
+                          className="min-w-[80px]"
+                        >
+                          {day.substring(0, 3)}
+                        </Button>
+                      ))}
                     </div>
 
                 {/* Total Calories Card */}
