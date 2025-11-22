@@ -1089,6 +1089,87 @@ const SystemSettingsSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// Meal Completion Tracking
+export interface IMealCompletion extends Document {
+  clientId: string;
+  dietPlanId: string;
+  mealType: 'breakfast' | 'lunch' | 'snacks' | 'preWorkout' | 'postWorkout';
+  completedAt: Date;
+  date: Date; // Date of the meal (YYYY-MM-DD format)
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  fiber?: number;
+}
+
+const MealCompletionSchema = new Schema({
+  clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
+  dietPlanId: { type: Schema.Types.ObjectId, ref: 'DietPlan', required: true },
+  mealType: { 
+    type: String, 
+    enum: ['breakfast', 'lunch', 'snacks', 'preWorkout', 'postWorkout'],
+    required: true 
+  },
+  completedAt: { type: Date, default: Date.now },
+  date: { type: Date, required: true },
+  calories: { type: Number, required: true },
+  protein: { type: Number, required: true },
+  carbs: { type: Number, required: true },
+  fats: { type: Number, required: true },
+  fiber: Number,
+});
+
+// Water Intake Tracking
+export interface IWaterIntake extends Document {
+  clientId: string;
+  date: Date; // Date of the intake (YYYY-MM-DD format)
+  glasses: number; // Number of glasses consumed (each glass = 250ml)
+  totalMl: number; // Total water in ml
+  goal: number; // Daily goal in ml
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const WaterIntakeSchema = new Schema({
+  clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
+  date: { type: Date, required: true },
+  glasses: { type: Number, default: 0, min: 0, max: 8 },
+  totalMl: { type: Number, default: 0 },
+  goal: { type: Number, default: 2000 }, // 2000ml = 8 glasses
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+// Workout Completion Tracking
+export interface IWorkoutCompletion extends Document {
+  clientId: string;
+  workoutPlanId: string;
+  exerciseName: string;
+  sets: number;
+  reps: number;
+  weight?: number;
+  duration?: number; // in minutes
+  caloriesBurned: number;
+  completedAt: Date;
+  date: Date; // Date of the workout (YYYY-MM-DD format)
+  notes?: string;
+}
+
+const WorkoutCompletionSchema = new Schema({
+  clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
+  workoutPlanId: { type: Schema.Types.ObjectId, ref: 'WorkoutPlan', required: true },
+  exerciseName: { type: String, required: true },
+  sets: { type: Number, required: true },
+  reps: { type: Number, required: true },
+  weight: Number,
+  duration: Number,
+  caloriesBurned: { type: Number, default: 0 },
+  completedAt: { type: Date, default: Date.now },
+  date: { type: Date, required: true },
+  notes: String,
+});
+
 export const Package = mongoose.model<IPackage>('Package', PackageSchema);
 export const Trainer = mongoose.model<ITrainer>('Trainer', TrainerSchema);
 export const Client = mongoose.model<IClient>('Client', ClientSchema);
@@ -1113,3 +1194,6 @@ export const Refund = mongoose.model<IRefund>('Refund', RefundSchema);
 export const PaymentReminder = mongoose.model<IPaymentReminder>('PaymentReminder', PaymentReminderSchema);
 export const ClientActivity = mongoose.model<IClientActivity>('ClientActivity', ClientActivitySchema);
 export const SystemSettings = mongoose.model<ISystemSettings>('SystemSettings', SystemSettingsSchema);
+export const MealCompletion = mongoose.model<IMealCompletion>('MealCompletion', MealCompletionSchema);
+export const WaterIntake = mongoose.model<IWaterIntake>('WaterIntake', WaterIntakeSchema);
+export const WorkoutCompletion = mongoose.model<IWorkoutCompletion>('WorkoutCompletion', WorkoutCompletionSchema);
