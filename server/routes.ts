@@ -2448,6 +2448,230 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===========================================
+  // MEAL COMPLETION & TRACKING ENDPOINTS
+  // ===========================================
+
+  // Mark a meal as completed
+  app.post("/api/meal-completions", authenticateToken, async (req, res) => {
+    try {
+      const { clientId, dietPlanId, mealType, calories, protein, carbs, fats, fiber } = req.body;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const mealCompletion = await storage.createMealCompletion({
+        clientId,
+        dietPlanId,
+        mealType,
+        date: today,
+        calories,
+        protein,
+        carbs,
+        fats,
+        fiber,
+      });
+
+      res.status(201).json(mealCompletion);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get meal completions for a specific date
+  app.get("/api/meal-completions/:clientId/:date", authenticateToken, async (req, res) => {
+    try {
+      const { clientId, date } = req.params;
+      const completions = await storage.getMealCompletions(clientId, new Date(date));
+      res.json(completions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get today's meal completions for client
+  app.get("/api/meal-completions/today/:clientId", authenticateToken, async (req, res) => {
+    try {
+      const { clientId } = req.params;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const completions = await storage.getMealCompletions(clientId, today);
+      res.json(completions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ===========================================
+  // WATER INTAKE TRACKING ENDPOINTS
+  // ===========================================
+
+  // Log or update water intake
+  app.post("/api/water-intake", authenticateToken, async (req, res) => {
+    try {
+      const { clientId, glasses, date } = req.body;
+      const targetDate = date ? new Date(date) : new Date();
+      targetDate.setHours(0, 0, 0, 0);
+
+      const totalMl = glasses * 250; // Each glass = 250ml
+      
+      // Check if entry exists for today
+      const existing = await storage.getWaterIntake(clientId, targetDate);
+      
+      if (existing) {
+        // Update existing entry
+        const updated = await storage.updateWaterIntake(existing._id.toString(), {
+          glasses,
+          totalMl,
+          updatedAt: new Date(),
+        });
+        res.json(updated);
+      } else {
+        // Create new entry
+        const waterIntake = await storage.createWaterIntake({
+          clientId,
+          date: targetDate,
+          glasses,
+          totalMl,
+          goal: 2000, // Default 2000ml = 8 glasses
+        });
+        res.status(201).json(waterIntake);
+      }
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get water intake for a specific date
+  app.get("/api/water-intake/:clientId/:date", authenticateToken, async (req, res) => {
+    try {
+      const { clientId, date } = req.params;
+      const intake = await storage.getWaterIntake(clientId, new Date(date));
+      res.json(intake || { glasses: 0, totalMl: 0, goal: 2000 });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get today's water intake
+  app.get("/api/water-intake/today/:clientId", authenticateToken, async (req, res) => {
+    try {
+      const { clientId } = req.params;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const intake = await storage.getWaterIntake(clientId, today);
+      res.json(intake || { glasses: 0, totalMl: 0, goal: 2000 });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ===========================================
+  // WORKOUT COMPLETION TRACKING ENDPOINTS
+  // ===========================================
+
+  // Log workout completion
+  app.post("/api/workout-completions", authenticateToken, async (req, res) => {
+    try {
+      const { clientId, workoutPlanId, exerciseName, sets, reps, weight, duration, caloriesBurned, notes } = req.body;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const completion = await storage.createWorkoutCompletion({
+        clientId,
+        workoutPlanId,
+        exerciseName,
+        sets,
+        reps,
+        weight,
+        duration,
+        caloriesBurned: caloriesBurned || 0,
+        date: today,
+        notes,
+      });
+
+      res.status(201).json(completion);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get workout completions for a specific date
+  app.get("/api/workout-completions/:clientId/:date", authenticateToken, async (req, res) => {
+    try {
+      const { clientId, date } = req.params;
+      const completions = await storage.getWorkoutCompletions(clientId, new Date(date));
+      res.json(completions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get today's workout completions
+  app.get("/api/workout-completions/today/:clientId", authenticateToken, async (req, res) => {
+    try {
+      const { clientId } = req.params;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const completions = await storage.getWorkoutCompletions(clientId, today);
+      res.json(completions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ===========================================
+  // DAILY NUTRITION SUMMARY ENDPOINT
+  // ===========================================
+
+  // Get daily nutrition summary (calories + macros from meals and workouts)
+  app.get("/api/daily-nutrition/:clientId/:date", authenticateToken, async (req, res) => {
+    try {
+      const { clientId, date } = req.params;
+      const targetDate = new Date(date);
+      targetDate.setHours(0, 0, 0, 0);
+
+      // Get meal completions
+      const meals = await storage.getMealCompletions(clientId, targetDate);
+      
+      // Get workout completions
+      const workouts = await storage.getWorkoutCompletions(clientId, targetDate);
+
+      // Calculate totals
+      const foodCalories = meals.reduce((sum: number, meal: any) => sum + (meal.calories || 0), 0);
+      const exerciseCalories = workouts.reduce((sum: number, workout: any) => sum + (workout.caloriesBurned || 0), 0);
+      
+      const totalProtein = meals.reduce((sum: number, meal: any) => sum + (meal.protein || 0), 0);
+      const totalCarbs = meals.reduce((sum: number, meal: any) => sum + (meal.carbs || 0), 0);
+      const totalFats = meals.reduce((sum: number, meal: any) => sum + (meal.fats || 0), 0);
+      const totalFiber = meals.reduce((sum: number, meal: any) => sum + (meal.fiber || 0), 0);
+
+      // Get client's diet plan for goal
+      const dietPlans = await storage.getClientDietPlans(clientId);
+      const baseGoal = dietPlans.length > 0 ? dietPlans[0].targetCalories : 2000;
+
+      // Remaining calories = Goal - Food + Exercise
+      const remainingCalories = baseGoal - foodCalories + exerciseCalories;
+
+      res.json({
+        date: targetDate,
+        baseGoal,
+        foodCalories,
+        exerciseCalories,
+        remainingCalories,
+        macros: {
+          protein: Math.round(totalProtein),
+          carbs: Math.round(totalCarbs),
+          fats: Math.round(totalFats),
+          fiber: Math.round(totalFiber),
+        },
+        mealsCompleted: meals.length,
+        workoutsCompleted: workouts.length,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Delete plan assignment (removes both diet and workout plans from client)
   app.delete("/api/diet-plan-assignments/:id", authenticateToken, requireRole('admin', 'trainer'), async (req, res) => {
     try {

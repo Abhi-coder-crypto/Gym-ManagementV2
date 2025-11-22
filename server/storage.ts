@@ -20,6 +20,9 @@ import {
   PaymentHistory,
   SystemSettings,
   Trainer,
+  MealCompletion,
+  WaterIntake,
+  WorkoutCompletion,
   type IPackage,
   type IClient,
   type IBodyMetrics,
@@ -40,6 +43,9 @@ import {
   type IPaymentHistory,
   type ISystemSettings,
   type ITrainer,
+  type IMealCompletion,
+  type IWaterIntake,
+  type IWorkoutCompletion,
 } from './models';
 import { Message, type IMessage } from './models/message';
 import { Ticket, type ITicket } from './models/ticket';
@@ -262,6 +268,19 @@ export interface IStorage {
   getSystemSettings(): Promise<ISystemSettings>;
   updateSystemSettings(data: Partial<ISystemSettings>): Promise<ISystemSettings>;
   initializeSystemSettings(): Promise<ISystemSettings>;
+  
+  // Meal Completion Tracking methods
+  createMealCompletion(data: Partial<IMealCompletion>): Promise<IMealCompletion>;
+  getMealCompletions(clientId: string, date: Date): Promise<IMealCompletion[]>;
+  
+  // Water Intake Tracking methods
+  createWaterIntake(data: Partial<IWaterIntake>): Promise<IWaterIntake>;
+  getWaterIntake(clientId: string, date: Date): Promise<IWaterIntake | null>;
+  updateWaterIntake(id: string, data: Partial<IWaterIntake>): Promise<IWaterIntake | null>;
+  
+  // Workout Completion Tracking methods
+  createWorkoutCompletion(data: Partial<IWorkoutCompletion>): Promise<IWorkoutCompletion>;
+  getWorkoutCompletions(clientId: string, date: Date): Promise<IWorkoutCompletion[]>;
 }
 
 export class MongoStorage implements IStorage {
@@ -1829,6 +1848,76 @@ export class MongoStorage implements IStorage {
         liveSessionsPerMonth: pkg.liveSessionsPerMonth,
       } : null,
     };
+  }
+
+  // ===========================================
+  // MEAL COMPLETION TRACKING IMPLEMENTATIONS
+  // ===========================================
+
+  async createMealCompletion(data: Partial<IMealCompletion>): Promise<IMealCompletion> {
+    const mealCompletion = new MealCompletion(data);
+    return await mealCompletion.save();
+  }
+
+  async getMealCompletions(clientId: string, date: Date): Promise<IMealCompletion[]> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return await MealCompletion.find({
+      clientId,
+      date: { $gte: startOfDay, $lte: endOfDay }
+    }).sort({ completedAt: -1 });
+  }
+
+  // ===========================================
+  // WATER INTAKE TRACKING IMPLEMENTATIONS
+  // ===========================================
+
+  async createWaterIntake(data: Partial<IWaterIntake>): Promise<IWaterIntake> {
+    const waterIntake = new WaterIntake(data);
+    return await waterIntake.save();
+  }
+
+  async getWaterIntake(clientId: string, date: Date): Promise<IWaterIntake | null> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return await WaterIntake.findOne({
+      clientId,
+      date: { $gte: startOfDay, $lte: endOfDay }
+    });
+  }
+
+  async updateWaterIntake(id: string, data: Partial<IWaterIntake>): Promise<IWaterIntake | null> {
+    return await WaterIntake.findByIdAndUpdate(id, data, { new: true });
+  }
+
+  // ===========================================
+  // WORKOUT COMPLETION TRACKING IMPLEMENTATIONS
+  // ===========================================
+
+  async createWorkoutCompletion(data: Partial<IWorkoutCompletion>): Promise<IWorkoutCompletion> {
+    const workoutCompletion = new WorkoutCompletion(data);
+    return await workoutCompletion.save();
+  }
+
+  async getWorkoutCompletions(clientId: string, date: Date): Promise<IWorkoutCompletion[]> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return await WorkoutCompletion.find({
+      clientId,
+      date: { $gte: startOfDay, $lte: endOfDay }
+    }).sort({ completedAt: -1 });
   }
 }
 
