@@ -183,37 +183,32 @@ export function AssignDietPlanDialog({ open, onOpenChange, dietPlan }: AssignDie
 }
 
 function generateMeals(calories: number, mealCount: number, type: string) {
-  const caloriesPerMeal = Math.round(calories / mealCount);
-  const mealTimes = ["7:00 AM", "10:00 AM", "12:00 PM", "3:00 PM", "7:00 PM"];
+  // Fixed at 5 meals per week as per user requirement
+  const mealsPerWeek = 5;
+  const caloriesPerMeal = Math.round(calories / mealsPerWeek);
+  
+  const mealTimes = ["7:00 AM", "10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM"];
   const mealTypes = ["Breakfast", "Snack", "Lunch", "Snack", "Dinner"];
+  
   const mealNames: Record<string, string[]> = {
     "Low Carb": ["Scrambled Eggs & Avocado", "Almonds & Cheese", "Grilled Chicken Salad", "Greek Yogurt", "Salmon with Vegetables"],
-    "High Protein": ["Protein Pancakes", "Protein Shake", "Turkey & Quinoa Bowl", "Cottage Cheese & Berries", "Lean Beef with Broccoli"],
+    "High Protein": ["Protein Pancakes", "Protein Shake", "Turkey & Quinoa Bowl", "Cottage Cheese", "Lean Beef with Broccoli"],
     "Balanced": ["Oatmeal with Berries", "Apple & Peanut Butter", "Chicken & Rice", "Greek Yogurt & Fruit", "Fish with Sweet Potato"],
-    "Ketogenic": ["Keto Breakfast Bowl", "Keto Fat Bombs", "Keto Chicken Salad", "Keto Snack Plate", "Keto Dinner"],
-    "Vegan": ["Tofu Scramble", "Hummus & Veggies", "Lentil Buddha Bowl", "Mixed Nuts", "Vegan Stir Fry"],
+    "Ketogenic": ["Keto Breakfast Bowl", "Keto Fat Bombs", "Keto Chicken Salad", "Keto Cheese Plate", "Keto Steak Dinner"],
+    "Vegan": ["Tofu Scramble", "Hummus & Veggies", "Lentil Buddha Bowl", "Mixed Nuts & Berries", "Vegan Stir Fry"],
   };
 
   const names = mealNames[type] || mealNames["Balanced"];
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   
-  // Generate meals for 7 days (1 week) with specified meals per day
-  const meals = [];
-  for (let day = 0; day < 7; day++) {
-    for (let meal = 0; meal < mealCount; meal++) {
-      meals.push({
-        day: days[day],
-        dayIndex: day,
-        time: mealTimes[meal % mealTimes.length],
-        type: mealTypes[meal % mealTypes.length],
-        name: names[meal % names.length],
-        calories: caloriesPerMeal,
-        protein: Math.round(caloriesPerMeal * 0.30 / 4),
-        carbs: Math.round(caloriesPerMeal * 0.40 / 4),
-        fats: Math.round(caloriesPerMeal * 0.30 / 9),
-      });
-    }
-  }
-  
-  return meals;
+  // Generate 5 meals for Week 1
+  return Array.from({ length: mealsPerWeek }, (_, i) => ({
+    weekNumber: 1,
+    time: mealTimes[i],
+    type: mealTypes[i],
+    name: names[i],
+    calories: caloriesPerMeal,
+    protein: Math.round(caloriesPerMeal * 0.30 / 4),
+    carbs: Math.round(caloriesPerMeal * 0.40 / 4),
+    fats: Math.round(caloriesPerMeal * 0.30 / 9),
+  }));
 }

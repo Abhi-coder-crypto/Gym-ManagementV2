@@ -40,7 +40,7 @@ export default function ClientDiet() {
   const [clientId, setClientId] = useState<string | null>(null);
   const [waterIntake, setWaterIntake] = useState(0);
   const [showDietaryReport, setShowDietaryReport] = useState(false);
-  const [currentDay, setCurrentDay] = useState(0);
+  const [currentWeek, setCurrentWeek] = useState(1);
   
   useEffect(() => {
     const id = localStorage.getItem('clientId');
@@ -58,9 +58,9 @@ export default function ClientDiet() {
 
   const currentPlan = dietPlans?.find(plan => plan.clientId === clientId);
   
-  // Reset currentDay when diet plan changes
+  // Reset currentWeek when diet plan changes
   useEffect(() => {
-    setCurrentDay(0);
+    setCurrentWeek(1);
   }, [currentPlan?._id]);
 
   // Handler functions for clickable elements
@@ -75,12 +75,12 @@ export default function ClientDiet() {
     });
   };
 
-  const handleNextDay = () => {
-    setCurrentDay(currentDay + 1);
+  const handleNextWeek = () => {
+    setCurrentWeek(currentWeek + 1);
   };
 
-  const handlePrevDay = () => {
-    setCurrentDay(currentDay - 1);
+  const handlePrevWeek = () => {
+    setCurrentWeek(currentWeek - 1);
   };
 
   // Meal type icon configuration with colors
@@ -124,29 +124,28 @@ export default function ClientDiet() {
   const hasDietPlan = currentPlan && Array.isArray(currentPlan.meals) && currentPlan.meals.length > 0;
   const allMeals = hasDietPlan ? currentPlan.meals : [];
   
-  // Group meals by day (using dayIndex field if available)
-  const mealsByDay: Record<number, any[]> = {};
-  const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  // Group meals by week (using weekNumber field)
+  const mealsByWeek: Record<number, any[]> = {};
   
   allMeals.forEach((meal: any) => {
-    const dayIdx = meal.dayIndex ?? 0;
-    if (!mealsByDay[dayIdx]) {
-      mealsByDay[dayIdx] = [];
+    const weekNum = meal.weekNumber ?? 1;
+    if (!mealsByWeek[weekNum]) {
+      mealsByWeek[weekNum] = [];
     }
-    mealsByDay[dayIdx].push(meal);
+    mealsByWeek[weekNum].push(meal);
   });
   
-  const totalDays = Object.keys(mealsByDay).length;
-  const dayMeals = mealsByDay[currentDay] || [];
-  const currentDayName = dayNames[currentDay] || `Day ${currentDay + 1}`;
-  const hasNextDay = currentDay < totalDays - 1;
-  const hasPrevDay = currentDay > 0;
+  const totalWeeks = Math.max(...Object.keys(mealsByWeek).map(Number), 1);
+  const weekMeals = mealsByWeek[currentWeek] || [];
+  const currentWeekLabel = `Week ${currentWeek}`;
+  const hasNextWeek = currentWeek < totalWeeks;
+  const hasPrevWeek = currentWeek > 1;
 
-  // Macro calculations for the current day
-  const totalCalories = dayMeals.reduce((sum: number, meal: any) => sum + (meal.calories || 0), 0);
-  const totalProtein = dayMeals.reduce((sum: number, meal: any) => sum + (meal.protein || 0), 0);
-  const totalCarbs = dayMeals.reduce((sum: number, meal: any) => sum + (meal.carbs || 0), 0);
-  const totalFats = dayMeals.reduce((sum: number, meal: any) => sum + (meal.fats || 0), 0);
+  // Macro calculations for the current week
+  const totalCalories = weekMeals.reduce((sum: number, meal: any) => sum + (meal.calories || 0), 0);
+  const totalProtein = weekMeals.reduce((sum: number, meal: any) => sum + (meal.protein || 0), 0);
+  const totalCarbs = weekMeals.reduce((sum: number, meal: any) => sum + (meal.carbs || 0), 0);
+  const totalFats = weekMeals.reduce((sum: number, meal: any) => sum + (meal.fats || 0), 0);
   
   // These are daily totals (all meals for the current day)
   const dailyCalories = totalCalories;
@@ -224,9 +223,9 @@ export default function ClientDiet() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handlePrevDay}
+                        onClick={handlePrevWeek}
                         disabled={!hasPrevDay}
-                        data-testid="button-prev-day"
+                        data-testid="button-prev-week"
                         className="flex items-center gap-2"
                       >
                         <ChevronLeft className="h-4 w-4" />
@@ -234,18 +233,18 @@ export default function ClientDiet() {
                       </Button>
                       <div className="text-center">
                         <p className="font-semibold text-gray-900 dark:text-white">
-                          {currentDayName}
+                          {currentWeekLabel}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {dayMeals.length} meals
+                          {weekMeals.length} meals
                         </p>
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleNextDay}
+                        onClick={handleNextWeek}
                         disabled={!hasNextDay}
-                        data-testid="button-next-day"
+                        data-testid="button-next-week"
                         className="flex items-center gap-2"
                       >
                         Next
@@ -257,13 +256,13 @@ export default function ClientDiet() {
                     <div className="bg-orange-100 dark:bg-orange-900/30 rounded-lg p-4 mb-6 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Flame className="h-6 w-6 text-orange-500" />
-                        <span className="font-medium text-gray-800 dark:text-gray-200">{currentDayName} Total Calories</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{currentWeekLabel} Total Calories</span>
                       </div>
                       <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">{totalCalories} Cal</span>
                     </div>
 
                     {/* Meals List */}
-                    {dayMeals.length === 0 ? (
+                    {weekMeals.length === 0 ? (
                       <Card className="border-dashed">
                         <CardContent className="p-8 text-center">
                           <UtensilsCrossed className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
@@ -273,7 +272,7 @@ export default function ClientDiet() {
                       </Card>
                     ) : (
                       <div className="space-y-3">
-                        {dayMeals.map((meal: any, idx: number) => {
+                        {weekMeals.map((meal: any, idx: number) => {
                           const config = getMealTypeIcon(idx);
                           const IconComponent = config.icon;
                           return (
@@ -311,20 +310,20 @@ export default function ClientDiet() {
                 {/* Day Navigation Buttons */}
                 <div className="flex gap-3">
                   <Button 
-                    onClick={handlePrevDay} 
+                    onClick={handlePrevWeek} 
                     disabled={!hasPrevDay}
                     variant="outline"
                     className="flex-1 h-12 text-lg font-semibold"
-                    data-testid="button-prev-day-bottom"
+                    data-testid="button-prev-week-bottom"
                   >
                     <ChevronLeft className="h-5 w-5 mr-2" />
                     Previous Day
                   </Button>
                   <Button 
-                    onClick={handleNextDay} 
+                    onClick={handleNextWeek} 
                     disabled={!hasNextDay}
                     className="flex-1 bg-green-500 hover:bg-green-600 h-12 text-lg font-semibold"
-                    data-testid="button-next-day-bottom"
+                    data-testid="button-next-week-bottom"
                   >
                     Next Day
                     <ChevronRight className="h-5 w-5 ml-2" />
@@ -453,7 +452,7 @@ export default function ClientDiet() {
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold flex items-center gap-2">
               <TrendingDown className="h-6 w-6 text-green-600" />
-              Daily Dietary Report - {currentDayName}
+              Daily Dietary Report - {currentWeekLabel}
             </DialogTitle>
           </DialogHeader>
           
@@ -501,7 +500,7 @@ export default function ClientDiet() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {dayMeals.map((meal: any, idx: number) => (
+                  {weekMeals.map((meal: any, idx: number) => (
                     <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div>
                         <p className="font-medium">{meal.name}</p>
