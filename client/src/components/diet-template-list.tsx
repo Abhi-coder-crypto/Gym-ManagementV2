@@ -199,9 +199,20 @@ export function DietTemplateList() {
         meal.type === mealType
           ? {
               ...meal,
-              dishes: meal.dishes.map((dish, idx) =>
-                idx === dishIndex ? { ...dish, [field]: value } : dish
-              )
+              dishes: meal.dishes.map((dish, idx) => {
+                if (idx === dishIndex) {
+                  const updatedDish = { ...dish, [field]: value };
+                  // Auto-calculate calories when macros change
+                  if (field === 'protein' || field === 'carbs' || field === 'fats') {
+                    const protein = field === 'protein' ? value : dish.protein;
+                    const carbs = field === 'carbs' ? value : dish.carbs;
+                    const fats = field === 'fats' ? value : dish.fats;
+                    updatedDish.calories = Math.round((protein * 4) + (carbs * 4) + (fats * 9));
+                  }
+                  return updatedDish;
+                }
+                return dish;
+              })
             }
           : meal
       )
@@ -496,12 +507,14 @@ export function DietTemplateList() {
                                         />
                                       </div>
                                       <div className="space-y-1">
-                                        <Label className="text-xs">Calories</Label>
+                                        <Label className="text-xs">Calories (auto)</Label>
                                         <Input
                                           type="number"
                                           value={dish.calories}
-                                          onChange={(e) => updateDish(mealType.value, dishIndex, 'calories', parseFloat(e.target.value) || 0)}
+                                          readOnly
+                                          disabled
                                           placeholder="0"
+                                          className="bg-muted"
                                           data-testid={`input-dish-calories-${mealType.value}-${dishIndex}`}
                                         />
                                       </div>
