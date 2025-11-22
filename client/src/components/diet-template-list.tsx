@@ -24,6 +24,16 @@ const DIET_CATEGORIES = [
   { value: 'vegetarian', label: 'Vegetarian' },
 ];
 
+const DAYS_OF_WEEK = [
+  { value: 'Monday', label: 'Monday' },
+  { value: 'Tuesday', label: 'Tuesday' },
+  { value: 'Wednesday', label: 'Wednesday' },
+  { value: 'Thursday', label: 'Thursday' },
+  { value: 'Friday', label: 'Friday' },
+  { value: 'Saturday', label: 'Saturday' },
+  { value: 'Sunday', label: 'Sunday' },
+];
+
 interface Dish {
   name: string;
   description: string;
@@ -44,6 +54,7 @@ interface DietTemplateFormData {
   category: string;
   targetCalories: string;
   meals: Meal[];
+  selectedDay: string;
 }
 
 const MEAL_TYPES = [
@@ -68,6 +79,7 @@ export function DietTemplateList() {
     category: "weight_loss",
     targetCalories: "",
     meals: [],
+    selectedDay: "Monday",
   });
   const [selectedMealTypes, setSelectedMealTypes] = useState<string[]>([]);
 
@@ -139,20 +151,43 @@ export function DietTemplateList() {
       category: "weight_loss",
       targetCalories: "",
       meals: [],
+      selectedDay: "Monday",
     });
     setSelectedMealTypes([]);
   };
 
   const handleEdit = (template: any) => {
     setEditingTemplate(template);
+    
+    // Convert object-based meals back to array for editing
+    let mealsArray = [];
+    let day = "Monday";
+    if (template.meals) {
+      if (Array.isArray(template.meals)) {
+        mealsArray = template.meals;
+      } else if (typeof template.meals === 'object') {
+        // Extract from day-based structure (e.g., { Monday: { breakfast: {...} } })
+        const firstDay = Object.keys(template.meals)[0];
+        if (firstDay) {
+          day = firstDay;
+          const dayMeals = template.meals[firstDay];
+          mealsArray = Object.keys(dayMeals).map(type => ({
+            type,
+            dishes: dayMeals[type].dishes || []
+          }));
+        }
+      }
+    }
+    
     setFormData({
       name: template.name,
       description: template.description ?? "",
       category: template.category ?? "weight_loss",
       targetCalories: String(template.targetCalories ?? ""),
-      meals: template.meals || [],
+      meals: mealsArray,
+      selectedDay: day,
     });
-    const mealTypes = (template.meals || []).map((m: any) => m.type);
+    const mealTypes = mealsArray.map((m: any) => m.type);
     setSelectedMealTypes(mealTypes);
     setEditDialogOpen(true);
   };
@@ -242,10 +277,35 @@ export function DietTemplateList() {
       return;
     }
 
+    // Convert meals array to day-based object structure with aggregated values
+    const mealsObject: any = {};
+    const selectedDay = formData.selectedDay || "Monday";
+    mealsObject[selectedDay] = {};
+    
+    formData.meals.forEach((meal) => {
+      // Aggregate calories and macros from dishes
+      const totalCalories = meal.dishes.reduce((sum, dish) => sum + (dish.calories || 0), 0);
+      const totalProtein = meal.dishes.reduce((sum, dish) => sum + (dish.protein || 0), 0);
+      const totalCarbs = meal.dishes.reduce((sum, dish) => sum + (dish.carbs || 0), 0);
+      const totalFats = meal.dishes.reduce((sum, dish) => sum + (dish.fats || 0), 0);
+      
+      mealsObject[selectedDay][meal.type] = {
+        name: meal.dishes.map(d => d.name).filter(Boolean).join(', ') || `${meal.type} meal`,
+        dishes: meal.dishes,
+        calories: totalCalories,
+        protein: totalProtein,
+        carbs: totalCarbs,
+        fats: totalFats,
+      };
+    });
+
     const submitData = {
-      ...formData,
+      name: formData.name,
+      description: formData.description,
+      category: formData.category,
       targetCalories,
       isTemplate: true,
+      meals: mealsObject,
     };
 
     if (editingTemplate) {
@@ -440,6 +500,21 @@ export function DietTemplateList() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="selected-day">Day of Week *</Label>
+              <Select value={formData.selectedDay} onValueChange={(value) => setFormData({ ...formData, selectedDay: value })}>
+                <SelectTrigger id="selected-day" data-testid="select-day">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DAYS_OF_WEEK.map(day => (
+                    <SelectItem key={day.value} value={day.value}>{day.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Select which day this meal plan is for</p>
             </div>
 
             <div className="space-y-2">
