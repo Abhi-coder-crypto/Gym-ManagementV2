@@ -35,13 +35,15 @@ interface WorkoutPlan {
 export default function ClientWorkouts() {
   const [selectedWeek, setSelectedWeek] = useState(new Date());
 
-  const { data: workoutSessions = [] } = useQuery<WorkoutSession[]>({
+  const { data: workoutSessions = [], isLoading: isLoadingSessions } = useQuery<WorkoutSession[]>({
     queryKey: ['/api/workout-sessions'],
   });
 
-  const { data: assignedWorkouts = [] } = useQuery<WorkoutPlan[]>({
+  const { data: assignedWorkouts = [], isLoading: isLoadingWorkouts } = useQuery<WorkoutPlan[]>({
     queryKey: ['/api/my-workouts'],
   });
+
+  const isLoading = isLoadingSessions || isLoadingWorkouts;
 
   const currentWeekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
   const currentWeekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 });
@@ -86,6 +88,28 @@ export default function ClientWorkouts() {
   const goToCurrentWeek = () => {
     setSelectedWeek(new Date());
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <ClientHeader currentPage="workouts" />
+        <main className="flex-1 container mx-auto px-6 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-display font-bold tracking-tight mb-2">My Workouts</h1>
+            <p className="text-muted-foreground">
+              Track your assigned workouts and weekly progress
+            </p>
+          </div>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <Dumbbell className="h-12 w-12 mx-auto mb-3 opacity-50 animate-pulse" />
+              <p className="text-muted-foreground">Loading your workouts...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
