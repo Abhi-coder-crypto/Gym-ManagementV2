@@ -1363,27 +1363,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to calculate prorated revenue for a month based on enrollment weeks
+  const calculateMonthlyRevenue = (clients: any[], packages: any[], targetMonth: Date) => {
+    // Create package lookup map (avoid N+1)
+    const packageMap = new Map();
+    packages.forEach(pkg => {
+      packageMap.set(pkg._id.toString(), pkg);
+    });
+
+    const monthStart = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1);
+    const monthEnd = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0, 23, 59, 59);
+    
+    return clients.reduce((sum, client) => {
+      // Only count active clients with a package
+      if (!client.packageId || client.status !== 'active') {
+        return sum;
+      }
+
+      const packageId = typeof client.packageId === 'object' ? client.packageId._id.toString() : client.packageId.toString();
+      const pkg = packageMap.get(packageId);
+      if (!pkg) {
+        return sum;
+      }
+
+      // Determine subscription dates
+      let startDate: Date;
+      let endDate: Date;
+      
+      if (client.subscription?.startDate) {
+        startDate = new Date(client.subscription.startDate);
+      } else if (client.createdAt) {
+        // Fall back to createdAt if subscription.startDate not set
+        startDate = new Date(client.createdAt);
+      } else {
+        // Skip if no start date available
+        return sum;
+      }
+
+      if (client.subscription?.endDate) {
+        endDate = new Date(client.subscription.endDate);
+      } else {
+        // Calculate endDate based on packageDuration if not set
+        const duration = client.packageDuration || 4;
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + (duration * 7)); // Convert weeks to days
+      }
+      
+      // Check if subscription overlaps with target month
+      if (startDate > monthEnd || endDate < monthStart) {
+        return sum;
+      }
+
+      // Calculate overlap period in weeks
+      const overlapStart = startDate > monthStart ? startDate : monthStart;
+      const overlapEnd = endDate < monthEnd ? endDate : monthEnd;
+      
+      // Calculate weeks in overlap (7 days = 1 week)
+      const overlapDays = (overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24);
+      const overlapWeeks = Math.max(0, overlapDays / 7);
+      
+      // Get package duration in weeks (default 4 if not set)
+      const packageDuration = client.packageDuration || 4;
+      
+      // Prorate revenue based on overlap weeks vs total package duration
+      // If overlap is equal to or greater than package duration, charge full price
+      // Otherwise, prorate based on the fraction of weeks used in this month
+      const proratedRevenue = overlapWeeks >= packageDuration 
+        ? pkg.price 
+        : (pkg.price * overlapWeeks) / packageDuration;
+      
+      return sum + proratedRevenue;
+    }, 0);
+  };
+
   // Get payment statistics (admin only - protected)
   app.get("/api/payments/stats", authenticateToken, requireAdmin, async (req, res) => {
     try {
-      const { startDate, endDate } = req.query;
-      const dateFilter: any = {};
-      
-      if (startDate || endDate) {
-        if (startDate) dateFilter.$gte = new Date(startDate as string);
-        if (endDate) dateFilter.$lte = new Date(endDate as string);
-      } else {
-        const now = new Date();
-        dateFilter.$gte = new Date(now.getFullYear(), now.getMonth(), 1);
-        dateFilter.$lte = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      }
+      const now = new Date();
+      const clients = await storage.getAllClients();
+      const packages = await storage.getPackages();
 
-      const payments = await PaymentHistory.find({ billingDate: dateFilter });
-      
-      const totalRevenue = payments
-        .filter(p => p.status === 'completed')
-        .reduce((sum, p) => sum + p.amount, 0);
-      
+      // Calculate current month revenue (prorated based on subscription overlap)
+      const currentMonthRevenue = calculateMonthlyRevenue(clients, packages, now);
+
+      // Calculate last month revenue
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthRevenue = calculateMonthlyRevenue(clients, packages, lastMonth);
+
+      const growthRate = lastMonthRevenue > 0 
+        ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
+        : (currentMonthRevenue > 0 ? 100 : 0);
+
+      // Get payment data for pending/overdue stats
+      const payments = await PaymentHistory.find({});
       const pendingPayments = payments.filter(p => p.status === 'pending');
       const overduePayments = payments.filter(p => p.status === 'overdue');
       const completedPayments = payments.filter(p => p.status === 'completed');
@@ -1391,26 +1463,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const paymentsDue = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
       const paymentsOverdue = overduePayments.reduce((sum, p) => sum + p.amount, 0);
 
-      const lastMonthStart = new Date(new Date().setMonth(new Date().getMonth() - 1));
-      const lastMonthPayments = await PaymentHistory.find({
-        billingDate: { $gte: lastMonthStart, $lt: dateFilter.$gte },
-        status: 'completed'
-      });
-      
-      const lastMonthRevenue = lastMonthPayments.reduce((sum, p) => sum + p.amount, 0);
-      const growthRate = lastMonthRevenue > 0 
-        ? ((totalRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
-        : 0;
-
       res.json({
-        totalRevenue,
+        totalRevenue: Math.round(currentMonthRevenue),
         paymentsDue,
         paymentsOverdue,
         pendingCount: pendingPayments.length,
         overdueCount: overduePayments.length,
         completedCount: completedPayments.length,
         growthRate: Math.round(growthRate * 10) / 10,
-        lastMonthRevenue
+        lastMonthRevenue: Math.round(lastMonthRevenue)
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -1423,25 +1484,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { months = 6 } = req.query;
       const trends = [];
       
+      const clients = await storage.getAllClients();
+      const packages = await storage.getPackages();
+      
       for (let i = parseInt(months as string) - 1; i >= 0; i--) {
         const date = new Date();
         date.setMonth(date.getMonth() - i);
         const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
         const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
         
-        const payments = await PaymentHistory.find({
-          billingDate: { $gte: startOfMonth, $lte: endOfMonth },
-          status: 'completed'
-        });
+        // Calculate prorated revenue for this month using helper function
+        const revenue = calculateMonthlyRevenue(clients, packages, date);
         
-        const revenue = payments.reduce((sum, p) => sum + p.amount, 0);
-        const clientIds = new Set(payments.map(p => String(p.clientId)));
+        // Count clients who started subscription in this month
+        const monthClients = clients.filter(client => {
+          if (!client.subscription?.startDate) return false;
+          const startDate = new Date(client.subscription.startDate);
+          return startDate >= startOfMonth && startDate <= endOfMonth;
+        });
+
+        // Count clients with active subscriptions in this month
+        const activeClients = clients.filter(client => {
+          if (!client.subscription?.startDate || !client.subscription?.endDate) return false;
+          const startDate = new Date(client.subscription.startDate);
+          const endDate = new Date(client.subscription.endDate);
+          return startDate <= endOfMonth && endDate >= startOfMonth;
+        });
         
         trends.push({
           month: startOfMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-          revenue,
-          clientCount: clientIds.size,
-          paymentCount: payments.length
+          revenue: Math.round(revenue),
+          clientCount: activeClients.length,
+          newClients: monthClients.length
         });
       }
       
@@ -3911,12 +3985,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clients = await storage.getAllClients();
       const packages = await storage.getAllPackages();
 
-      // Create package lookup map
-      const packageById = packages.reduce((map: Record<string, any>, pkg: any) => {
-        map[pkg._id.toString()] = pkg;
-        return map;
-      }, {});
-
       // Get last 6 months
       const now = new Date();
       const monthsData = [];
@@ -3926,17 +3994,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const nextMonthDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
         const monthName = monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
-        // Count clients created up to this month
-        const clientsUpToMonth = clients.filter(c => 
-          new Date(c.createdAt) < nextMonthDate
-        );
-
-        // Calculate revenue for clients active this month
-        const monthRevenue = clientsUpToMonth.reduce((sum, client: any) => {
-          const packageId = typeof client.packageId === 'object' ? client.packageId._id : client.packageId;
-          const pkg = packageById[packageId?.toString()];
-          return sum + (pkg?.price || 0);
-        }, 0);
+        // Calculate prorated revenue for this month using helper function
+        const monthRevenue = calculateMonthlyRevenue(clients, packages, monthDate);
 
         // Count new clients in this specific month
         const newClients = clients.filter(c => {
@@ -3944,10 +4003,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return createdDate >= monthDate && createdDate < nextMonthDate;
         }).length;
 
+        // Count clients created up to this month
+        const clientsUpToMonth = clients.filter(c => 
+          new Date(c.createdAt) < nextMonthDate
+        ).length;
+
         monthsData.push({
           month: monthName,
-          revenue: monthRevenue,
-          clients: clientsUpToMonth.length,
+          revenue: Math.round(monthRevenue),
+          clients: clientsUpToMonth,
           newClients: newClients
         });
       }
