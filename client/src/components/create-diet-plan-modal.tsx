@@ -22,6 +22,7 @@ export function CreateDietPlanModal({ open, onOpenChange, plan }: CreateDietPlan
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Balanced");
+  const [weekNumber, setWeekNumber] = useState("1");
   const [targetCalories, setTargetCalories] = useState("");
   const [protein, setProtein] = useState("");
   const [carbs, setCarbs] = useState("");
@@ -33,6 +34,7 @@ export function CreateDietPlanModal({ open, onOpenChange, plan }: CreateDietPlan
       setName(plan.name || "");
       setDescription(plan.description || "");
       setCategory(plan.category || "Balanced");
+      setWeekNumber("1");
       setTargetCalories(String(plan.targetCalories || ""));
       setProtein(String(plan.protein || ""));
       setCarbs(String(plan.carbs || ""));
@@ -47,6 +49,7 @@ export function CreateDietPlanModal({ open, onOpenChange, plan }: CreateDietPlan
     setName("");
     setDescription("");
     setCategory("Balanced");
+    setWeekNumber("1");
     setTargetCalories("");
     setProtein("");
     setCarbs("");
@@ -116,6 +119,32 @@ export function CreateDietPlanModal({ open, onOpenChange, plan }: CreateDietPlan
       return;
     }
 
+    // Generate 5 meals for the selected week
+    const caloriesPerMeal = Math.round(parseFloat(targetCalories) / 5);
+    const mealTimes = ["7:00 AM", "10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM"];
+    const mealTypes = ["Breakfast", "Snack", "Lunch", "Snack", "Dinner"];
+    const mealNames: Record<string, string[]> = {
+      "Low Carb": ["Scrambled Eggs & Avocado", "Almonds & Cheese", "Grilled Chicken Salad", "Greek Yogurt", "Salmon with Vegetables"],
+      "High Protein": ["Protein Pancakes", "Protein Shake", "Turkey & Quinoa Bowl", "Cottage Cheese", "Lean Beef with Broccoli"],
+      "Balanced": ["Oatmeal with Berries", "Apple & Peanut Butter", "Chicken & Rice", "Greek Yogurt & Fruit", "Fish with Sweet Potato"],
+      "Ketogenic": ["Keto Breakfast Bowl", "Keto Fat Bombs", "Keto Chicken Salad", "Keto Cheese Plate", "Keto Steak Dinner"],
+      "Vegan": ["Tofu Scramble", "Hummus & Veggies", "Lentil Buddha Bowl", "Mixed Nuts & Berries", "Vegan Stir Fry"],
+    };
+    
+    const names = mealNames[category] || mealNames["Balanced"];
+    const weekNum = parseInt(weekNumber);
+    
+    const generatedMeals = Array.from({ length: 5 }, (_, i) => ({
+      weekNumber: weekNum,
+      time: mealTimes[i],
+      type: mealTypes[i],
+      name: names[i],
+      calories: caloriesPerMeal,
+      protein: protein ? Math.round(parseFloat(protein) / 5) : Math.round(caloriesPerMeal * 0.30 / 4),
+      carbs: carbs ? Math.round(parseFloat(carbs) / 5) : Math.round(caloriesPerMeal * 0.40 / 4),
+      fats: fats ? Math.round(parseFloat(fats) / 5) : Math.round(caloriesPerMeal * 0.30 / 9),
+    }));
+
     const data = {
       name,
       description,
@@ -125,11 +154,7 @@ export function CreateDietPlanModal({ open, onOpenChange, plan }: CreateDietPlan
       carbs: carbs ? parseFloat(carbs) : undefined,
       fats: fats ? parseFloat(fats) : undefined,
       isTemplate,
-      meals: plan?.meals || {
-        breakfast: { name: "Custom Breakfast", calories: 0, protein: 0, carbs: 0, fats: 0 },
-        lunch: { name: "Custom Lunch", calories: 0, protein: 0, carbs: 0, fats: 0 },
-        dinner: { name: "Custom Dinner", calories: 0, protein: 0, carbs: 0, fats: 0 },
-      },
+      meals: plan?.meals ? [...plan.meals, ...generatedMeals] : generatedMeals,
     };
 
     createOrUpdateMutation.mutate(data);
@@ -198,7 +223,25 @@ export function CreateDietPlanModal({ open, onOpenChange, plan }: CreateDietPlan
             </div>
 
             <div>
-              <Label htmlFor="calories">Target Calories *</Label>
+              <Label htmlFor="week">Week Number *</Label>
+              <Select value={weekNumber} onValueChange={setWeekNumber}>
+                <SelectTrigger id="week" data-testid="select-week">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Week 1</SelectItem>
+                  <SelectItem value="2">Week 2</SelectItem>
+                  <SelectItem value="3">Week 3</SelectItem>
+                  <SelectItem value="4">Week 4</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-1">
+                {plan ? "Add meals for a specific week to this plan" : "Select which week this plan is for (5 meals per week)"}
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="calories">Target Calories (Weekly Total) *</Label>
               <div className="flex gap-2">
                 <Input
                   id="calories"

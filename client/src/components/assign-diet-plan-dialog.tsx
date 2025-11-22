@@ -60,7 +60,6 @@ export function AssignDietPlanDialog({ open, onOpenChange, dietPlan }: AssignDie
           carbs: Math.round(dietPlan.calories * 0.40 / 4),
           fats: Math.round(dietPlan.calories * 0.30 / 9),
           meals: generateMeals(dietPlan.calories, dietPlan.meals, dietPlan.type),
-          mealsPerDay: dietPlan.meals,
         })
       );
       
