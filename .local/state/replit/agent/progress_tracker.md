@@ -1776,3 +1776,14 @@ The FitPro Management System is now 100% operational in the Replit environment a
 [x] 645. ✅ DIET TEMPLATE FIX COMPLETE - Created templates now visible in admin panel!
 
 **CURRENT STATUS:** ✅ All 645 progress tracker items marked [x] - Diet templates now save correctly with isTemplate flag and display properly!
+
+## Session Update (2025-11-22 13:12 UTC) - Updated Existing Diet Template
+[x] 646. Created temporary script (scripts/fix-diet-template.ts) to update diet plans in database
+[x] 647. Connected to MongoDB and queried for diet plans without isTemplate flag
+[x] 648. Found user's "High-Protein Weight Loss Plan" template (ID: 6921b4f1ce3122f25e48e01e)
+[x] 649. Updated template with isTemplate: true flag in database
+[x] 650. Template now visible in admin Diet Templates tab at /api/diet-plan-templates
+[x] 651. Cleaned up temporary script file
+[x] 652. ✅ USER'S DIET TEMPLATE NOW VISIBLE - "High-Protein Weight Loss Plan" appears in admin panel!
+
+**CURRENT STATUS:** ✅ All 652 progress tracker items marked [x] - User's diet template successfully updated and now visible!
