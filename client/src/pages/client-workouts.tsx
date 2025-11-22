@@ -3,7 +3,7 @@ import { ClientHeader } from "@/components/client-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, CheckCircle2, Target, Clock, Flame, Droplet, Plus } from "lucide-react";
+import { Dumbbell, CheckCircle2, Target, Clock, Flame, Droplet, Plus, TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
 
@@ -59,6 +59,10 @@ export default function ClientWorkouts() {
   const totalWeeklyWorkouts = completedThisWeek.length;
   const totalCaloriesBurned = completedThisWeek.reduce((sum, session) => sum + (session.caloriesBurned || 0), 0);
   const totalDuration = completedThisWeek.reduce((sum, session) => sum + (session.duration || 0), 0);
+  
+  // Calculate workout completion percentage (assuming 5 workouts per week as goal)
+  const weeklyGoal = 5;
+  const completionPercentage = Math.min((totalWeeklyWorkouts / weeklyGoal) * 100, 100);
 
   const getWorkoutsForDay = (date: Date) => {
     return workoutSessions.filter(session => {
@@ -70,10 +74,6 @@ export default function ClientWorkouts() {
   const hasWorkoutOnDay = (date: Date) => {
     return getWorkoutsForDay(date).length > 0;
   };
-
-  const recentWorkouts = [...workoutSessions]
-    .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
-    .slice(0, 10);
 
   const goToPreviousWeek = () => {
     const newDate = new Date(selectedWeek);
@@ -134,52 +134,108 @@ export default function ClientWorkouts() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Workouts This Week</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+        {/* Workout Overview with Circular Progress */}
+        <div className="grid gap-6 lg:grid-cols-3 mb-8">
+          {/* Circular Progress Card */}
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle>Weekly Progress</CardTitle>
+              <CardDescription>Your workout completion this week</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{totalWeeklyWorkouts}</div>
-              <p className="text-xs text-muted-foreground mt-1">Completed sessions</p>
+            <CardContent className="flex flex-col items-center justify-center py-6">
+              <div className="relative w-40 h-40">
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="70"
+                    stroke="currentColor"
+                    strokeWidth="12"
+                    fill="none"
+                    className="text-muted/20"
+                  />
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="70"
+                    stroke="currentColor"
+                    strokeWidth="12"
+                    fill="none"
+                    strokeDasharray={`${2 * Math.PI * 70}`}
+                    strokeDashoffset={`${2 * Math.PI * 70 * (1 - completionPercentage / 100)}`}
+                    className="text-primary transition-all duration-500"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-4xl font-bold">{Math.round(completionPercentage)}%</span>
+                  <span className="text-sm text-muted-foreground">Complete</span>
+                </div>
+              </div>
+              <div className="mt-6 text-center">
+                <p className="text-2xl font-bold">{totalWeeklyWorkouts}/{weeklyGoal}</p>
+                <p className="text-sm text-muted-foreground">Workouts completed</p>
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Duration</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{totalDuration}</div>
-              <p className="text-xs text-muted-foreground mt-1">Minutes this week</p>
-            </CardContent>
-          </Card>
+          {/* Weekly Stats */}
+          <div className="lg:col-span-2 grid gap-4 sm:grid-cols-2">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Duration</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{totalDuration}</div>
+                <p className="text-xs text-muted-foreground mt-1">Minutes this week</p>
+                <div className="mt-2 flex items-center text-xs text-green-600 dark:text-green-400">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  <span>Keep it up!</span>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Calories Burned</CardTitle>
-              <Flame className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{totalCaloriesBurned}</div>
-              <p className="text-xs text-muted-foreground mt-1">Total calories</p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Calories Burned</CardTitle>
+                <Flame className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{totalCaloriesBurned}</div>
+                <p className="text-xs text-muted-foreground mt-1">Total calories</p>
+                <div className="mt-2 flex items-center text-xs text-orange-600 dark:text-orange-400">
+                  <Flame className="h-3 w-3 mr-1" />
+                  <span>Great progress!</span>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Assigned Workouts</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{assignedWorkouts.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Active plans</p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Assigned Workouts</CardTitle>
+                <Target className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{assignedWorkouts.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">Active plans</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">This Week</CardTitle>
+                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{totalWeeklyWorkouts}</div>
+                <p className="text-xs text-muted-foreground mt-1">Completed sessions</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
+        {/* Weekly Calendar */}
         <Card className="mb-8">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -243,171 +299,126 @@ export default function ClientWorkouts() {
           </CardContent>
         </Card>
 
-        {/* Fitness Tracking */}
+        {/* Water Intake Tracking */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Fitness Tracking</CardTitle>
-            <CardDescription>Track your weight and water intake</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Droplet className="h-5 w-5 text-blue-500" />
+              Daily Water Intake
+            </CardTitle>
+            <CardDescription>Track your hydration throughout the day</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Weight In */}
-              <Card className="hover-elevate bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border-0">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="text-4xl">⚖️</div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white">Weight in</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">88.5 kg</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" data-testid="button-record-weight">
-                    Record
-                  </Button>
-                </CardContent>
-              </Card>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-3xl font-bold">{waterIntake * 250} ml</p>
+                  <p className="text-sm text-muted-foreground">of {waterGoal * 250} ml goal</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                    {waterIntake}/{waterGoal} glasses
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {Math.round((waterIntake / waterGoal) * 100)}% complete
+                  </p>
+                </div>
+              </div>
 
-              {/* Water Intake */}
-              <Card className="hover-elevate">
-                <CardContent className="p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-gray-900 dark:text-white">Water</h4>
-                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{waterIntake * 250} ml</span>
-                  </div>
-
-                  {/* Water Glasses Grid */}
-                  <div className="grid grid-cols-4 gap-2">
-                    {Array.from({ length: waterGoal }).map((_, idx) => (
-                      <div
-                        key={idx}
-                        onClick={() => {
-                          if (idx === waterIntake) {
-                            handleWaterIntake();
-                          }
-                        }}
-                        className={`aspect-square rounded-lg flex items-center justify-center cursor-pointer transition-all ${
-                          idx < waterIntake
-                            ? 'bg-blue-500 dark:bg-blue-600'
-                            : 'bg-gray-200 dark:bg-gray-700'
-                        }`}
-                        data-testid={`water-glass-${idx}`}
-                      >
-                        {idx < waterIntake ? (
-                          <Droplet className="h-4 w-4 text-white" />
-                        ) : idx === waterIntake ? (
-                          <Plus className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleResetWater}
-                    className="w-full"
-                    data-testid="button-reset-water"
+              {/* Water Glasses Grid */}
+              <div className="grid grid-cols-8 gap-3">
+                {Array.from({ length: waterGoal }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      if (idx === waterIntake) {
+                        handleWaterIntake();
+                      }
+                    }}
+                    className={`aspect-square rounded-lg flex items-center justify-center cursor-pointer transition-all hover-elevate ${
+                      idx < waterIntake
+                        ? 'bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-500 dark:to-blue-700'
+                        : 'bg-muted'
+                    }`}
+                    data-testid={`water-glass-${idx}`}
                   >
-                    Reset
-                  </Button>
-                </CardContent>
-              </Card>
+                    {idx < waterIntake ? (
+                      <Droplet className="h-6 w-6 text-white fill-white" />
+                    ) : idx === waterIntake ? (
+                      <Plus className="h-6 w-6 text-muted-foreground" />
+                    ) : (
+                      <Droplet className="h-6 w-6 text-muted-foreground opacity-30" />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResetWater}
+                className="w-full"
+                data-testid="button-reset-water"
+              >
+                Reset Daily Intake
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Assigned Workout Plans
-              </CardTitle>
-              <CardDescription>Your current training programs</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {assignedWorkouts.length > 0 ? (
-                <div className="space-y-4">
-                  {assignedWorkouts.map((workout) => (
-                    <div
-                      key={workout._id}
-                      className="p-4 rounded-md border hover-elevate"
-                      data-testid={`workout-plan-${workout._id}`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold">{workout.name}</h3>
-                        <Badge variant="outline">{workout.difficulty}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">{workout.description}</p>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Dumbbell className="h-4 w-4" />
-                        <span>{workout.exercises?.length || 0} exercises</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-muted-foreground py-8">
-                  <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No workout plans assigned yet</p>
-                  <p className="text-sm">Your trainer will assign workouts soon</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5" />
-                Recent Completed Workouts
-              </CardTitle>
-              <CardDescription>Your latest workout sessions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {recentWorkouts.length > 0 ? (
-                <div className="space-y-3">
-                  {recentWorkouts.map((session) => (
-                    <div
-                      key={session._id}
-                      className="p-3 rounded-md border"
-                      data-testid={`completed-workout-${session._id}`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="font-medium">{session.workoutName}</h4>
-                          <p className="text-xs text-muted-foreground">
-                            {format(parseISO(session.completedAt), 'PPP')}
-                          </p>
-                        </div>
-                        <Badge variant="secondary">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Done
+        {/* Assigned Workout Plans */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Assigned Workout Plans
+            </CardTitle>
+            <CardDescription>Your current training programs from your trainer</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {assignedWorkouts.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {assignedWorkouts.map((workout) => (
+                  <Card
+                    key={workout._id}
+                    className="hover-elevate"
+                    data-testid={`workout-plan-${workout._id}`}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-lg">{workout.name}</CardTitle>
+                        <Badge 
+                          variant={
+                            workout.difficulty === 'Beginner' ? 'secondary' : 
+                            workout.difficulty === 'Intermediate' ? 'default' : 
+                            'destructive'
+                          }
+                        >
+                          {workout.difficulty}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          <span>{session.duration} min</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Flame className="h-4 w-4" />
-                          <span>{session.caloriesBurned} cal</span>
-                        </div>
+                      <CardDescription className="line-clamp-2">{workout.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Dumbbell className="h-4 w-4" />
+                        <span className="font-medium">{workout.exercises?.length || 0} exercises</span>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-muted-foreground py-8">
-                  <Dumbbell className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No completed workouts yet</p>
-                  <p className="text-sm">Start your first workout to track progress</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Target className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <h3 className="text-lg font-semibold mb-2">No workout plans assigned yet</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Your trainer will assign personalized workouts soon
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </main>
     </div>
   );
