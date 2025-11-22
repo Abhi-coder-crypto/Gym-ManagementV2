@@ -300,7 +300,7 @@ export default function ClientWorkouts() {
         </Card>
 
         {/* Water Intake Tracking */}
-        <Card className="mb-8">
+        <Card className="mb-8 bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200 dark:from-blue-950/30 dark:to-cyan-950/30 dark:border-blue-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Droplet className="h-5 w-5 text-blue-500" />
@@ -309,55 +309,88 @@ export default function ClientWorkouts() {
             <CardDescription>Track your hydration throughout the day</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-3xl font-bold">{waterIntake * 250} ml</p>
-                  <p className="text-sm text-muted-foreground">of {waterGoal * 250} ml goal</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">{waterIntake * 250} ml</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">of {waterGoal * 250} ml goal</p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
                     {waterIntake}/{waterGoal} glasses
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
                     {Math.round((waterIntake / waterGoal) * 100)}% complete
                   </p>
                 </div>
               </div>
 
-              {/* Water Glasses Grid */}
+              {/* Water Glasses Grid with Pouring Effect */}
               <div className="grid grid-cols-8 gap-3">
-                {Array.from({ length: waterGoal }).map((_, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => {
-                      if (idx === waterIntake) {
-                        handleWaterIntake();
-                      }
-                    }}
-                    className={`aspect-square rounded-lg flex items-center justify-center cursor-pointer transition-all hover-elevate ${
-                      idx < waterIntake
-                        ? 'bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-500 dark:to-blue-700'
-                        : 'bg-muted'
-                    }`}
-                    data-testid={`water-glass-${idx}`}
-                  >
-                    {idx < waterIntake ? (
-                      <Droplet className="h-6 w-6 text-white fill-white" />
-                    ) : idx === waterIntake ? (
-                      <Plus className="h-6 w-6 text-muted-foreground" />
-                    ) : (
-                      <Droplet className="h-6 w-6 text-muted-foreground opacity-30" />
-                    )}
-                  </div>
-                ))}
+                {Array.from({ length: waterGoal }).map((_, idx) => {
+                  const isFilled = idx < waterIntake;
+                  const isNext = idx === waterIntake;
+                  
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => {
+                        if (idx === waterIntake) {
+                          handleWaterIntake();
+                        }
+                      }}
+                      className={`relative aspect-square rounded-lg cursor-pointer transition-all duration-300 overflow-hidden ${
+                        isFilled
+                          ? 'hover-elevate'
+                          : isNext
+                          ? 'hover-elevate'
+                          : ''
+                      }`}
+                      data-testid={`water-glass-${idx}`}
+                    >
+                      {/* Glass Container */}
+                      <div className={`absolute inset-0 rounded-lg border-2 transition-all ${
+                        isFilled
+                          ? 'border-blue-400 dark:border-blue-500 bg-white dark:bg-slate-800'
+                          : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800'
+                      }`}>
+                        {/* Water Fill with Pouring Animation */}
+                        {isFilled && (
+                          <div className="absolute inset-0 overflow-hidden rounded-lg">
+                            <div 
+                              className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-500 via-blue-400 to-cyan-300 dark:from-blue-600 dark:via-blue-500 dark:to-cyan-400 animate-fill"
+                              style={{
+                                height: '85%',
+                                animation: 'fillGlass 0.8s ease-out'
+                              }}
+                            >
+                              {/* Water Surface Ripple Effect */}
+                              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-pulse"></div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Icon Overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          {isFilled ? (
+                            <Droplet className="h-6 w-6 text-white dark:text-blue-100 z-10 drop-shadow-md" />
+                          ) : isNext ? (
+                            <Plus className="h-6 w-6 text-blue-500 dark:text-blue-400 transition-transform hover:scale-110" />
+                          ) : (
+                            <Droplet className="h-6 w-6 text-gray-400 dark:text-gray-600 opacity-40" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleResetWater}
-                className="w-full"
+                className="w-full bg-white dark:bg-slate-800 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50"
                 data-testid="button-reset-water"
               >
                 Reset Daily Intake
@@ -365,6 +398,22 @@ export default function ClientWorkouts() {
             </div>
           </CardContent>
         </Card>
+        
+        <style>{`
+          @keyframes fillGlass {
+            0% {
+              height: 0%;
+              opacity: 0.6;
+            }
+            50% {
+              opacity: 0.8;
+            }
+            100% {
+              height: 85%;
+              opacity: 1;
+            }
+          }
+        `}</style>
 
         {/* Assigned Workout Plans */}
         <Card>

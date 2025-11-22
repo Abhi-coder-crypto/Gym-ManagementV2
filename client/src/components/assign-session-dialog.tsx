@@ -275,33 +275,26 @@ export function AssignSessionDialog({ open, onOpenChange, sessionId, sessionTitl
           </>
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-2">
+        <DialogFooter className="flex items-center justify-end gap-2 pt-4">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="flex-1"
             data-testid="button-cancel"
           >
             Cancel
           </Button>
           
-          {selectedClients.length > 0 && (
+          {selectedClients.length > 0 ? (
             <Button
               onClick={handleSubmitClients}
               disabled={assignMutation.isPending}
-              className="flex-1"
               data-testid="button-assign"
             >
               {assignMutation.isPending ? 'Assigning...' : `Assign (${selectedClients.length})`}
             </Button>
-          )}
-          
-          {selectedClients.length === 0 && (
+          ) : (
             <Button
-              onClick={() => {
-                onOpenChange(false);
-              }}
-              className="flex-1"
+              onClick={() => onOpenChange(false)}
               data-testid="button-done"
             >
               Done
