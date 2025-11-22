@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
@@ -28,10 +29,10 @@ import {
   Plus,
   Coffee,
   Salad,
-  Cookie
+  Cookie,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
-
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function ClientDiet() {
   const [, setLocation] = useLocation();
@@ -39,18 +40,8 @@ export default function ClientDiet() {
   const [clientId, setClientId] = useState<string | null>(null);
   const [waterIntake, setWaterIntake] = useState(0);
   const [showDietaryReport, setShowDietaryReport] = useState(false);
-  const [showAddMealDialog, setShowAddMealDialog] = useState(false);
+  const [currentDay, setCurrentDay] = useState(0);
   
-  // Get current day of week for default
-  const getCurrentDay = () => {
-    const dayIndex = new Date().getDay();
-    // Sunday is 0, Monday is 1, etc. Convert to our format
-    const dayMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return dayMap[dayIndex];
-  };
-  
-  const [selectedDay, setSelectedDay] = useState(getCurrentDay());
-
   useEffect(() => {
     const id = localStorage.getItem('clientId');
     if (!id) {
@@ -66,13 +57,14 @@ export default function ClientDiet() {
   });
 
   const currentPlan = dietPlans?.find(plan => plan.clientId === clientId);
+  
+  // Reset currentDay when diet plan changes
+  useEffect(() => {
+    setCurrentDay(0);
+  }, [currentPlan?._id]);
 
   // Handler functions for clickable elements
   const handleDietaryReport = () => {
-    toast({
-      title: "Dietary Report",
-      description: "Opening your detailed daily dietary report...",
-    });
     setShowDietaryReport(true);
   };
 
@@ -83,127 +75,86 @@ export default function ClientDiet() {
     });
   };
 
-  const handleAddMeal = (mealType: string) => {
-    toast({
-      title: `Add ${mealType}`,
-      description: `Adding custom ${mealType.toLowerCase()} to your meal plan...`,
-    });
-    setShowAddMealDialog(true);
+  const handleNextDay = () => {
+    setCurrentDay(currentDay + 1);
   };
 
-  const handleNextMeal = () => {
-    toast({
-      title: "Next Day",
-      description: "Viewing tomorrow's meal plan...",
-    });
+  const handlePrevDay = () => {
+    setCurrentDay(currentDay - 1);
   };
 
   // Meal type icon configuration with colors
-  const getMealTypeIcon = (mealType: string) => {
-    switch (mealType.toLowerCase()) {
-      case 'breakfast':
-        return { 
-          icon: Coffee, 
-          bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
-          iconColor: 'text-yellow-600 dark:text-yellow-400',
-          time: '7:00 AM'
-        };
-      case 'lunch':
-        return { 
-          icon: Salad, 
-          bgColor: 'bg-green-100 dark:bg-green-900/30',
-          iconColor: 'text-green-600 dark:text-green-400',
-          time: '12:30 PM'
-        };
-      case 'preworkout':
-      case 'pre-workout':
-        return { 
-          icon: Zap, 
-          bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-          iconColor: 'text-blue-600 dark:text-blue-400',
-          time: '3:00 PM'
-        };
-      case 'postworkout':
-      case 'post-workout':
-        return { 
-          icon: Dumbbell, 
-          bgColor: 'bg-purple-100 dark:bg-purple-900/30',
-          iconColor: 'text-purple-600 dark:text-purple-400',
-          time: '5:00 PM'
-        };
-      case 'dinner':
-        return { 
-          icon: ChefHat, 
-          bgColor: 'bg-orange-100 dark:bg-orange-900/30',
-          iconColor: 'text-orange-600 dark:text-orange-400',
-          time: '7:00 PM'
-        };
-      case 'snacks':
-        return { 
-          icon: Cookie, 
-          bgColor: 'bg-pink-100 dark:bg-pink-900/30',
-          iconColor: 'text-pink-600 dark:text-pink-400',
-          time: '4:00 PM'
-        };
-      default:
-        return { 
-          icon: Utensils, 
-          bgColor: 'bg-gray-100 dark:bg-gray-900/30',
-          iconColor: 'text-gray-600 dark:text-gray-400',
-          time: '12:00 PM'
-        };
-    }
+  const getMealTypeIcon = (mealIndex: number) => {
+    const configs = [
+      { 
+        icon: Coffee, 
+        bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+        iconColor: 'text-yellow-600 dark:text-yellow-400',
+        type: 'Breakfast'
+      },
+      { 
+        icon: Salad, 
+        bgColor: 'bg-green-100 dark:bg-green-900/30',
+        iconColor: 'text-green-600 dark:text-green-400',
+        type: 'Lunch'
+      },
+      { 
+        icon: Zap, 
+        bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+        iconColor: 'text-blue-600 dark:text-blue-400',
+        type: 'Snack'
+      },
+      { 
+        icon: ChefHat, 
+        bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+        iconColor: 'text-orange-600 dark:text-orange-400',
+        type: 'Dinner'
+      },
+      { 
+        icon: Cookie, 
+        bgColor: 'bg-pink-100 dark:bg-pink-900/30',
+        iconColor: 'text-pink-600 dark:text-pink-400',
+        type: 'Snack'
+      }
+    ];
+    return configs[mealIndex % configs.length];
   };
 
-  // Meal schedule from assigned diet plan
-  const hasDietPlan = currentPlan && Object.keys(currentPlan.meals || {}).length > 0;
+  // Extract meals from the array structure
+  const hasDietPlan = currentPlan && Array.isArray(currentPlan.meals) && currentPlan.meals.length > 0;
+  const allMeals = hasDietPlan ? currentPlan.meals : [];
   
-  // Extract meals for the selected day
-  const todayMeals = hasDietPlan && currentPlan.meals[selectedDay] ? currentPlan.meals[selectedDay] : {};
+  // Group meals by day (using dayIndex field if available)
+  const mealsByDay: Record<number, any[]> = {};
+  const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   
-  const mealSchedule = hasDietPlan ? [
-    todayMeals?.breakfast && {
-      type: "Breakfast",
-      meal: todayMeals.breakfast,
-      ...getMealTypeIcon('breakfast')
-    },
-    todayMeals?.lunch && {
-      type: "Lunch",
-      meal: todayMeals.lunch,
-      ...getMealTypeIcon('lunch')
-    },
-    (todayMeals?.preworkout || todayMeals?.preWorkout) && {
-      type: "Pre-Workout",
-      meal: todayMeals.preworkout || todayMeals.preWorkout,
-      ...getMealTypeIcon('preWorkout')
-    },
-    (todayMeals?.postworkout || todayMeals?.postWorkout) && {
-      type: "Post-Workout",
-      meal: todayMeals.postworkout || todayMeals.postWorkout,
-      ...getMealTypeIcon('postWorkout')
-    },
-    todayMeals?.dinner && {
-      type: "Dinner",
-      meal: todayMeals.dinner,
-      ...getMealTypeIcon('dinner')
-    },
-    todayMeals?.snacks && {
-      type: "Snacks",
-      meal: todayMeals.snacks,
-      ...getMealTypeIcon('snacks')
+  allMeals.forEach((meal: any) => {
+    const dayIdx = meal.dayIndex ?? 0;
+    if (!mealsByDay[dayIdx]) {
+      mealsByDay[dayIdx] = [];
     }
-  ].filter(Boolean) : [];
+    mealsByDay[dayIdx].push(meal);
+  });
+  
+  const totalDays = Object.keys(mealsByDay).length;
+  const dayMeals = mealsByDay[currentDay] || [];
+  const currentDayName = dayNames[currentDay] || `Day ${currentDay + 1}`;
+  const hasNextDay = currentDay < totalDays - 1;
+  const hasPrevDay = currentDay > 0;
 
-  // Macro calculations
-  const totalCalories = mealSchedule.reduce((sum, item) => sum + item.meal.calories, 0);
-  const totalProtein = mealSchedule.reduce((sum, item) => sum + item.meal.protein, 0);
-  const totalCarbs = mealSchedule.reduce((sum, item) => sum + item.meal.carbs, 0);
-  const totalFats = mealSchedule.reduce((sum, item) => sum + item.meal.fats, 0);
+  // Macro calculations for the current day
+  const totalCalories = dayMeals.reduce((sum: number, meal: any) => sum + (meal.calories || 0), 0);
+  const totalProtein = dayMeals.reduce((sum: number, meal: any) => sum + (meal.protein || 0), 0);
+  const totalCarbs = dayMeals.reduce((sum: number, meal: any) => sum + (meal.carbs || 0), 0);
+  const totalFats = dayMeals.reduce((sum: number, meal: any) => sum + (meal.fats || 0), 0);
+  
+  // These are daily totals (all meals for the current day)
+  const dailyCalories = totalCalories;
   
   // Goal values (can be from diet plan or defaults)
   const calorieGoal = currentPlan?.targetCalories || 2513;
-  const remainingCalories = calorieGoal - totalCalories;
-  const caloriePercent = (totalCalories / calorieGoal) * 100;
+  const remainingCalories = calorieGoal - dailyCalories;
+  const caloriePercent = (dailyCalories / calorieGoal) * 100;
 
   const waterGoal = currentPlan?.waterIntakeGoal || 8;
 
@@ -268,77 +219,117 @@ export default function ClientDiet() {
                       )}
                     </div>
 
-                    {/* Day Selector */}
-                    <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
-                      {DAYS_OF_WEEK.map((day) => (
-                        <Button
-                          key={day}
-                          variant={selectedDay === day ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSelectedDay(day)}
-                          data-testid={`button-day-${day.toLowerCase()}`}
-                          className="min-w-[80px]"
-                        >
-                          {day.substring(0, 3)}
-                        </Button>
-                      ))}
+                    {/* Day Navigation */}
+                    <div className="flex items-center justify-between gap-4 mb-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePrevDay}
+                        disabled={!hasPrevDay}
+                        data-testid="button-prev-day"
+                        className="flex items-center gap-2"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <div className="text-center">
+                        <p className="font-semibold text-gray-900 dark:text-white">
+                          {currentDayName}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {dayMeals.length} meals
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNextDay}
+                        disabled={!hasNextDay}
+                        data-testid="button-next-day"
+                        className="flex items-center gap-2"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
                     </div>
 
-                {/* Total Calories Card */}
-                <div className="bg-orange-100 dark:bg-orange-900/30 rounded-lg p-4 mb-6 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Flame className="h-6 w-6 text-orange-500" />
-                    <span className="font-medium text-gray-800 dark:text-gray-200">{selectedDay}'s Total Calories</span>
-                  </div>
-                  <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">{totalCalories} Cal</span>
+                    {/* Total Calories Card */}
+                    <div className="bg-orange-100 dark:bg-orange-900/30 rounded-lg p-4 mb-6 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Flame className="h-6 w-6 text-orange-500" />
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{currentDayName} Total Calories</span>
+                      </div>
+                      <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">{totalCalories} Cal</span>
+                    </div>
+
+                    {/* Meals List */}
+                    {dayMeals.length === 0 ? (
+                      <Card className="border-dashed">
+                        <CardContent className="p-8 text-center">
+                          <UtensilsCrossed className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                          <p className="text-muted-foreground">No meals planned</p>
+                          <p className="text-sm text-muted-foreground mt-1">Contact your trainer to get a meal plan</p>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div className="space-y-3">
+                        {dayMeals.map((meal: any, idx: number) => {
+                          const config = getMealTypeIcon(idx);
+                          const IconComponent = config.icon;
+                          return (
+                            <Card key={idx} className="border-0 bg-white dark:bg-slate-800 hover-elevate">
+                              <CardContent className="p-4">
+                                <div className="flex items-start gap-4">
+                                  {/* Colored Icon Circle */}
+                                  <div className={`${config.bgColor} rounded-full p-3 flex items-center justify-center`}>
+                                    <IconComponent className={`h-6 w-6 ${config.iconColor}`} />
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h4 className="font-semibold text-gray-900 dark:text-white">{meal.name}</h4>
+                                      <Badge variant="outline" className="text-xs">
+                                        {meal.time || config.type}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                      Protein: {meal.protein}g • Carbs: {meal.carbs}g • Fats: {meal.fats}g
+                                    </p>
+                                  </div>
+                                  <Badge variant="secondary" className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-0">
+                                    {meal.calories}Cal
+                                  </Badge>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Day Navigation Buttons */}
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={handlePrevDay} 
+                    disabled={!hasPrevDay}
+                    variant="outline"
+                    className="flex-1 h-12 text-lg font-semibold"
+                    data-testid="button-prev-day-bottom"
+                  >
+                    <ChevronLeft className="h-5 w-5 mr-2" />
+                    Previous Day
+                  </Button>
+                  <Button 
+                    onClick={handleNextDay} 
+                    disabled={!hasNextDay}
+                    className="flex-1 bg-green-500 hover:bg-green-600 h-12 text-lg font-semibold"
+                    data-testid="button-next-day-bottom"
+                  >
+                    Next Day
+                    <ChevronRight className="h-5 w-5 ml-2" />
+                  </Button>
                 </div>
-
-                {/* Meals List */}
-                {mealSchedule.length === 0 ? (
-                  <Card className="border-dashed">
-                    <CardContent className="p-8 text-center">
-                      <UtensilsCrossed className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                      <p className="text-muted-foreground">No meals planned for {selectedDay}</p>
-                      <p className="text-sm text-muted-foreground mt-1">Select another day to view your meal plan</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="space-y-3">
-                    {mealSchedule.map((meal, idx) => {
-                      const IconComponent = meal.icon;
-                      return (
-                        <Card key={idx} className="border-0 bg-white dark:bg-slate-800 hover-elevate">
-                          <CardContent className="p-4">
-                            <div className="flex items-start gap-4">
-                              {/* Colored Icon Circle */}
-                              <div className={`${meal.bgColor} rounded-full p-3 flex items-center justify-center`}>
-                                <IconComponent className={`h-6 w-6 ${meal.iconColor}`} />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-gray-900 dark:text-white">{meal.type}</h4>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">{meal.meal.name}</p>
-                              </div>
-                              <Badge variant="secondary" className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-0">
-                                {meal.meal.calories}Cal
-                              </Badge>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-                {/* Next Button */}
-                <Button 
-                  onClick={handleNextMeal} 
-                  className="w-full bg-green-500 hover:bg-green-600 h-12 text-lg font-semibold"
-                  data-testid="button-next-meal"
-                >
-                  Next
-                </Button>
               </>
             )}
           </TabsContent>
@@ -396,7 +387,7 @@ export default function ClientDiet() {
                         <UtensilsCrossed className="h-4 w-4 text-orange-500" />
                         <span className="text-sm text-gray-600 dark:text-gray-400">Food</span>
                       </div>
-                      <div className="text-lg font-semibold text-gray-900 dark:text-white">{totalCalories}</div>
+                      <div className="text-lg font-semibold text-gray-900 dark:text-white">{dailyCalories}</div>
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -436,7 +427,7 @@ export default function ClientDiet() {
 
                 <Separator />
 
-                {/* Daily Report & Breakfast */}
+                {/* Daily Report */}
                 <div className="space-y-3">
                   <Card className="hover-elevate cursor-pointer" onClick={handleDietaryReport} data-testid="button-dietary-report">
                     <CardContent className="p-4 flex items-center justify-between">
@@ -449,38 +440,128 @@ export default function ClientDiet() {
                       </Button>
                     </CardContent>
                   </Card>
-                  <Card className="hover-elevate">
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">🥣</span>
-                        <span className="font-semibold">Breakfast</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="secondary" 
-                          size="sm" 
-                          onClick={handleAISuggestion}
-                          data-testid="button-ai-suggestion"
-                        >
-                          <span className="text-green-500 text-lg">🤖</span>
-                        </Button>
-                        <Button 
-                          variant="secondary" 
-                          size="sm" 
-                          onClick={() => handleAddMeal('Breakfast')}
-                          data-testid="button-add-breakfast"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Dietary Report Dialog */}
+      <Dialog open={showDietaryReport} onOpenChange={setShowDietaryReport}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <TrendingDown className="h-6 w-6 text-green-600" />
+              Daily Dietary Report - {currentDayName}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Daily Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Daily Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Total Calories</p>
+                    <p className="text-2xl font-bold text-orange-600">{totalCalories} Cal</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Daily Goal</p>
+                    <p className="text-2xl font-bold text-orange-600">{calorieGoal} Cal</p>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center p-3 bg-red-50 dark:bg-red-950/30 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Protein</p>
+                    <p className="text-lg font-bold">{totalProtein}g</p>
+                  </div>
+                  <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Carbs</p>
+                    <p className="text-lg font-bold">{totalCarbs}g</p>
+                  </div>
+                  <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Fats</p>
+                    <p className="text-lg font-bold">{totalFats}g</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Meal Breakdown */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Meal Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {dayMeals.map((meal: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div>
+                        <p className="font-medium">{meal.name}</p>
+                        <p className="text-sm text-muted-foreground">{meal.time}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-orange-600">{meal.calories} Cal</p>
+                        <p className="text-xs text-muted-foreground">
+                          P: {meal.protein}g • C: {meal.carbs}g • F: {meal.fats}g
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Progress Towards Goal */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Progress Towards Goal</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Daily Total vs Goal</span>
+                    <span className="text-sm font-medium">{Math.round(caloriePercent)}%</span>
+                  </div>
+                  <Progress value={caloriePercent} className="h-3" />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Target: {calorieGoal} Cal/day • Current: {dailyCalories} Cal/day
+                  </p>
+                </div>
+                
+                {remainingCalories > 0 ? (
+                  <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-green-900 dark:text-green-100">On Track!</p>
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        You're {remainingCalories} calories below your daily goal. Great job!
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950/30 rounded-lg">
+                    <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-orange-900 dark:text-orange-100">Above Goal</p>
+                      <p className="text-sm text-orange-700 dark:text-orange-300">
+                        You're {Math.abs(remainingCalories)} calories over your daily goal.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -135,6 +135,7 @@ export interface IDietPlan extends Document {
   carbs?: number;
   fats?: number;
   meals: any;
+  mealsPerDay?: number;
   allergens?: string[];
   waterIntakeGoal?: number;
   supplements?: Array<{
@@ -452,6 +453,7 @@ const DietPlanSchema = new Schema({
   carbs: Number,
   fats: Number,
   meals: { type: Schema.Types.Mixed, required: true },
+  mealsPerDay: Number,
   allergens: [String],
   waterIntakeGoal: Number,
   supplements: [{

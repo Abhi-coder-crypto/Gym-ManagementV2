@@ -113,7 +113,7 @@ export default function ClientSessions() {
               )}
 
               <div>
-                <h2 className="text-2xl font-display font-bold tracking-tight mb-6">Upcoming Sessions</h2>
+                <h2 className="text-2xl font-display font-bold tracking-tight mb-6">Sessions</h2>
                 {upcomingSessions.length > 0 ? (
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {upcomingSessions.map((session: any) => (

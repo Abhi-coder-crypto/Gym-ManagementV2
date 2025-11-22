@@ -60,6 +60,7 @@ export function AssignDietPlanDialog({ open, onOpenChange, dietPlan }: AssignDie
           carbs: Math.round(dietPlan.calories * 0.40 / 4),
           fats: Math.round(dietPlan.calories * 0.30 / 9),
           meals: generateMeals(dietPlan.calories, dietPlan.meals, dietPlan.type),
+          mealsPerDay: dietPlan.meals,
         })
       );
       
@@ -183,22 +184,36 @@ export function AssignDietPlanDialog({ open, onOpenChange, dietPlan }: AssignDie
 
 function generateMeals(calories: number, mealCount: number, type: string) {
   const caloriesPerMeal = Math.round(calories / mealCount);
-  const mealTimes = ["7:00 AM", "12:00 PM", "3:00 PM", "7:00 PM", "9:00 PM"];
+  const mealTimes = ["7:00 AM", "10:00 AM", "12:00 PM", "3:00 PM", "7:00 PM"];
+  const mealTypes = ["Breakfast", "Snack", "Lunch", "Snack", "Dinner"];
   const mealNames: Record<string, string[]> = {
-    "Low Carb": ["Scrambled Eggs & Avocado", "Grilled Chicken Salad", "Almonds & Cheese", "Salmon with Vegetables"],
-    "High Protein": ["Protein Pancakes", "Turkey & Quinoa Bowl", "Protein Shake", "Lean Beef with Broccoli"],
-    "Balanced": ["Oatmeal with Berries", "Chicken & Rice", "Greek Yogurt & Fruit", "Fish with Sweet Potato"],
-    "Ketogenic": ["Keto Breakfast Bowl", "Keto Chicken Salad", "Keto Snack Plate", "Keto Dinner"],
-    "Vegan": ["Tofu Scramble", "Lentil Buddha Bowl", "Hummus & Veggies", "Vegan Stir Fry"],
+    "Low Carb": ["Scrambled Eggs & Avocado", "Almonds & Cheese", "Grilled Chicken Salad", "Greek Yogurt", "Salmon with Vegetables"],
+    "High Protein": ["Protein Pancakes", "Protein Shake", "Turkey & Quinoa Bowl", "Cottage Cheese & Berries", "Lean Beef with Broccoli"],
+    "Balanced": ["Oatmeal with Berries", "Apple & Peanut Butter", "Chicken & Rice", "Greek Yogurt & Fruit", "Fish with Sweet Potato"],
+    "Ketogenic": ["Keto Breakfast Bowl", "Keto Fat Bombs", "Keto Chicken Salad", "Keto Snack Plate", "Keto Dinner"],
+    "Vegan": ["Tofu Scramble", "Hummus & Veggies", "Lentil Buddha Bowl", "Mixed Nuts", "Vegan Stir Fry"],
   };
 
   const names = mealNames[type] || mealNames["Balanced"];
-  return Array.from({ length: mealCount }, (_, i) => ({
-    time: mealTimes[i] || `${8 + i * 3}:00 AM`,
-    name: names[i] || `Meal ${i + 1}`,
-    calories: caloriesPerMeal,
-    protein: Math.round(caloriesPerMeal * 0.30 / 4),
-    carbs: Math.round(caloriesPerMeal * 0.40 / 4),
-    fats: Math.round(caloriesPerMeal * 0.30 / 9),
-  }));
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  
+  // Generate meals for 7 days (1 week) with specified meals per day
+  const meals = [];
+  for (let day = 0; day < 7; day++) {
+    for (let meal = 0; meal < mealCount; meal++) {
+      meals.push({
+        day: days[day],
+        dayIndex: day,
+        time: mealTimes[meal % mealTimes.length],
+        type: mealTypes[meal % mealTypes.length],
+        name: names[meal % names.length],
+        calories: caloriesPerMeal,
+        protein: Math.round(caloriesPerMeal * 0.30 / 4),
+        carbs: Math.round(caloriesPerMeal * 0.40 / 4),
+        fats: Math.round(caloriesPerMeal * 0.30 / 9),
+      });
+    }
+  }
+  
+  return meals;
 }
