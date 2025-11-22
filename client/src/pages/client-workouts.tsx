@@ -1,135 +1,305 @@
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { ClientHeader } from "@/components/client-header";
-import { VideoCard } from "@/components/video-card";
-import { VideoPlayerModal } from "@/components/video-player-modal";
-import { Filter } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import strengthImage from "@assets/generated_images/Strength_training_video_thumbnail_e7f2ebd6.png";
-import yogaImage from "@assets/generated_images/Yoga_class_video_thumbnail_a8a89f8b.png";
-import cardioImage from "@assets/generated_images/Cardio_workout_video_thumbnail_2c386154.png";
-import { useLocation } from "wouter";
-import { useState, useMemo, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Dumbbell, CheckCircle2, Target, Clock, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
+
+interface WorkoutSession {
+  _id: string;
+  clientId: string;
+  workoutPlanId?: {
+    _id: string;
+    name: string;
+  };
+  workoutName: string;
+  duration: number;
+  caloriesBurned: number;
+  exercises: any;
+  completedAt: string;
+  date?: string;
+  notes?: string;
+  completed?: boolean;
+}
+
+interface WorkoutPlan {
+  _id: string;
+  name: string;
+  description: string;
+  exercises: any[];
+  difficulty: string;
+}
 
 export default function ClientWorkouts() {
-  const [, setLocation] = useLocation();
-  const [clientId, setClientId] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [videoModal, setVideoModal] = useState({ open: false, title: "", category: "", duration: "", thumbnail: "", url: "" });
+  const [selectedWeek, setSelectedWeek] = useState(new Date());
 
-  useEffect(() => {
-    const id = localStorage.getItem('clientId');
-    if (!id) {
-      setLocation('/client-access');
-    } else {
-      setClientId(id);
-    }
-  }, [setLocation]);
-
-  // Fetch ONLY videos assigned to this client
-  const { data: assignedVideosData = [], isLoading, isError } = useQuery<any[]>({
-    queryKey: [`/api/clients/${clientId}/videos`],
-    enabled: !!clientId,
+  const { data: workoutSessions = [] } = useQuery<WorkoutSession[]>({
+    queryKey: ['/api/workout-sessions'],
   });
 
-  // Extract videos from assigned data
-  const videosData = useMemo(() => {
-    return assignedVideosData.map((item: any) => item.video || item).filter(Boolean);
-  }, [assignedVideosData]);
+  const { data: assignedWorkouts = [] } = useQuery<WorkoutPlan[]>({
+    queryKey: ['/api/my-workouts'],
+  });
 
-  // Extract unique categories from backend data
-  const categories = useMemo(() => {
-    if (!videosData) return ["All"];
-    const uniqueCategories = new Set(videosData.map(v => v.category));
-    return ["All", ...Array.from(uniqueCategories).sort()];
-  }, [videosData]);
+  const currentWeekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
+  const currentWeekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 });
+  const daysOfWeek = eachDayOfInterval({ start: currentWeekStart, end: currentWeekEnd });
 
-  // Map backend videos to display format
-  const allVideos = useMemo(() => {
-    if (!videosData) return [];
-    return videosData.map((video, index) => ({
-      id: video._id,
-      title: video.title,
-      category: video.category,
-      duration: `${video.duration} min`,
-      thumbnail: video.category === "Strength" ? strengthImage : 
-                 video.category === "Yoga" ? yogaImage : cardioImage,
-      url: video.url,
-      description: video.description,
-    }));
-  }, [videosData]);
+  const completedThisWeek = workoutSessions.filter(session => {
+    const sessionDate = session.date ? parseISO(session.date) : parseISO(session.completedAt);
+    return sessionDate >= currentWeekStart && sessionDate <= currentWeekEnd;
+  });
 
-  const filteredVideos = selectedCategory === "All" 
-    ? allVideos 
-    : allVideos.filter(v => v.category === selectedCategory);
+  const totalWeeklyWorkouts = completedThisWeek.length;
+  const totalCaloriesBurned = completedThisWeek.reduce((sum, session) => sum + (session.caloriesBurned || 0), 0);
+  const totalDuration = completedThisWeek.reduce((sum, session) => sum + (session.duration || 0), 0);
 
-  const handleVideoPlay = (video: typeof allVideos[0]) => {
-    setVideoModal({ open: true, ...video });
+  const getWorkoutsForDay = (date: Date) => {
+    return workoutSessions.filter(session => {
+      const sessionDate = session.date ? parseISO(session.date) : parseISO(session.completedAt);
+      return isSameDay(sessionDate, date);
+    });
+  };
+
+  const hasWorkoutOnDay = (date: Date) => {
+    return getWorkoutsForDay(date).length > 0;
+  };
+
+  const recentWorkouts = [...workoutSessions]
+    .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+    .slice(0, 10);
+
+  const goToPreviousWeek = () => {
+    const newDate = new Date(selectedWeek);
+    newDate.setDate(newDate.getDate() - 7);
+    setSelectedWeek(newDate);
+  };
+
+  const goToNextWeek = () => {
+    const newDate = new Date(selectedWeek);
+    newDate.setDate(newDate.getDate() + 7);
+    setSelectedWeek(newDate);
+  };
+
+  const goToCurrentWeek = () => {
+    setSelectedWeek(new Date());
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <ClientHeader currentPage="workouts" />
+      <main className="flex-1 container mx-auto px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-display font-bold tracking-tight mb-2">My Workouts</h1>
+          <p className="text-muted-foreground">
+            Track your assigned workouts and weekly progress
+          </p>
+        </div>
 
-      <main className="flex-1 py-8">
-        <div className="container mx-auto px-6 space-y-8">
-          <div>
-            <h1 className="text-3xl font-display font-bold tracking-tight">Workout Library</h1>
-            <p className="text-muted-foreground mt-1">Access all your workout videos anytime - {filteredVideos.length} videos</p>
-          </div>
+        <div className="grid gap-6 md:grid-cols-4 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Workouts This Week</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{totalWeeklyWorkouts}</div>
+              <p className="text-xs text-muted-foreground mt-1">Completed sessions</p>
+            </CardContent>
+          </Card>
 
-          <div className="flex items-center gap-3 flex-wrap">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            {categories.map((category) => (
-              <Badge
-                key={category}
-                variant={category === selectedCategory ? "default" : "outline"}
-                className="cursor-pointer hover-elevate"
-                onClick={() => setSelectedCategory(category)}
-                data-testid={`badge-filter-${category.toLowerCase()}`}
-              >
-                {category}
-              </Badge>
-            ))}
-          </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Duration</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{totalDuration}</div>
+              <p className="text-xs text-muted-foreground mt-1">Minutes this week</p>
+            </CardContent>
+          </Card>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading ? (
-              <div className="col-span-full text-center py-12 text-muted-foreground">
-                Loading workout videos...
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Calories Burned</CardTitle>
+              <Flame className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{totalCaloriesBurned}</div>
+              <p className="text-xs text-muted-foreground mt-1">Total calories</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Assigned Workouts</CardTitle>
+              <Target className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{assignedWorkouts.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">Active plans</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Weekly Workout Calendar</CardTitle>
+                <CardDescription>
+                  {format(currentWeekStart, 'MMM dd')} - {format(currentWeekEnd, 'MMM dd, yyyy')}
+                </CardDescription>
               </div>
-            ) : isError ? (
-              <div className="col-span-full text-center py-12 text-destructive">
-                Failed to load videos. Please refresh the page.
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={goToPreviousWeek} data-testid="button-previous-week">
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" onClick={goToCurrentWeek} data-testid="button-current-week">
+                  Today
+                </Button>
+                <Button variant="outline" size="sm" onClick={goToNextWeek} data-testid="button-next-week">
+                  Next
+                </Button>
               </div>
-            ) : filteredVideos.length > 0 ? (
-              filteredVideos.map((video) => (
-                <VideoCard
-                  key={video.id}
-                  title={video.title}
-                  category={video.category}
-                  duration={video.duration}
-                  thumbnail={video.thumbnail}
-                  onPlay={() => handleVideoPlay(video)}
-                />
-              ))
-            ) : (
-              <div className="col-span-full text-center py-12 text-muted-foreground">
-                No videos available in this category
-              </div>
-            )}
-          </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-7 gap-3">
+              {daysOfWeek.map((day, index) => {
+                const hasWorkout = hasWorkoutOnDay(day);
+                const workoutsOnDay = getWorkoutsForDay(day);
+                const isToday = isSameDay(day, new Date());
+
+                return (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-md border ${
+                      hasWorkout
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : isToday
+                        ? 'bg-accent border-accent'
+                        : 'bg-card border-border'
+                    }`}
+                    data-testid={`day-${index}`}
+                  >
+                    <div className="text-center">
+                      <div className="text-xs font-medium mb-1">
+                        {format(day, 'EEE')}
+                      </div>
+                      <div className="text-2xl font-bold mb-2">
+                        {format(day, 'd')}
+                      </div>
+                      {hasWorkout ? (
+                        <div className="text-xs">
+                          {workoutsOnDay.length} {workoutsOnDay.length === 1 ? 'workout' : 'workouts'}
+                        </div>
+                      ) : (
+                        <div className="text-xs opacity-50">Rest</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Assigned Workout Plans
+              </CardTitle>
+              <CardDescription>Your current training programs</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {assignedWorkouts.length > 0 ? (
+                <div className="space-y-4">
+                  {assignedWorkouts.map((workout) => (
+                    <div
+                      key={workout._id}
+                      className="p-4 rounded-md border hover-elevate"
+                      data-testid={`workout-plan-${workout._id}`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold">{workout.name}</h3>
+                        <Badge variant="outline">{workout.difficulty}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">{workout.description}</p>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Dumbbell className="h-4 w-4" />
+                        <span>{workout.exercises?.length || 0} exercises</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No workout plans assigned yet</p>
+                  <p className="text-sm">Your trainer will assign workouts soon</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                Recent Completed Workouts
+              </CardTitle>
+              <CardDescription>Your latest workout sessions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {recentWorkouts.length > 0 ? (
+                <div className="space-y-3">
+                  {recentWorkouts.map((session) => (
+                    <div
+                      key={session._id}
+                      className="p-3 rounded-md border"
+                      data-testid={`completed-workout-${session._id}`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-medium">{session.workoutName}</h4>
+                          <p className="text-xs text-muted-foreground">
+                            {format(parseISO(session.completedAt), 'PPP')}
+                          </p>
+                        </div>
+                        <Badge variant="secondary">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Done
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          <span>{session.duration} min</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Flame className="h-4 w-4" />
+                          <span>{session.caloriesBurned} cal</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  <Dumbbell className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No completed workouts yet</p>
+                  <p className="text-sm">Start your first workout to track progress</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </main>
-
-      <VideoPlayerModal
-        open={videoModal.open}
-        onOpenChange={(open) => setVideoModal({ ...videoModal, open })}
-        videoTitle={videoModal.title}
-        videoCategory={videoModal.category}
-        videoDuration={videoModal.duration}
-        videoThumbnail={videoModal.thumbnail}
-      />
     </div>
   );
 }

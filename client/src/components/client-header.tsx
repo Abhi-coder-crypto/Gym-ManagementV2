@@ -104,11 +104,11 @@ export function ClientHeader({ currentPage }: ClientHeaderProps) {
 
               <Button 
                 variant="ghost" 
-                className={currentPage === 'calendar' ? 'bg-accent' : ''} 
-                onClick={() => setLocation("/client/calendar")}
-                data-testid="link-calendar"
+                className={currentPage === 'workouts' ? 'bg-accent' : ''} 
+                onClick={() => setLocation("/client/workouts")}
+                data-testid="link-workouts"
               >
-                Calendar
+                Workouts
               </Button>
 
               <Button 
@@ -122,7 +122,7 @@ export function ClientHeader({ currentPage }: ClientHeaderProps) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className={['weight-tracking', 'body-measurements', 'progress-charts', 'weekly-completion', 'achievements', 'achievement-gallery', 'personal-records', 'monthly-reports', 'progress'].includes(currentPage || '') ? 'bg-accent' : ''} data-testid="dropdown-progress">
+                  <Button variant="ghost" className={['weight-tracking', 'body-measurements', 'progress-charts', 'achievements', 'personal-records', 'monthly-reports', 'progress'].includes(currentPage || '') ? 'bg-accent' : ''} data-testid="dropdown-progress">
                     {t('nav.progressAnalytics')}
                     <ChevronDown className="h-4 w-4 ml-1" />
                   </Button>
@@ -140,18 +140,10 @@ export function ClientHeader({ currentPage }: ClientHeaderProps) {
                     <LineChart className="h-4 w-4 mr-2" />
                     {t('nav.progressCharts')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLocation("/client/progress/weekly-completion")} data-testid="link-weekly-completion">
-                    <Target className="h-4 w-4 mr-2" />
-                    {t('nav.weeklyCompletion')}
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setLocation("/client/progress/achievements")} data-testid="link-achievements">
                     <Award className="h-4 w-4 mr-2" />
                     {t('nav.achievements')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLocation("/client/progress/achievement-gallery")} data-testid="link-achievement-gallery">
-                    <Trophy className="h-4 w-4 mr-2" />
-                    {t('nav.achievementGallery')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocation("/client/progress/personal-records")} data-testid="link-personal-records">
                     <Trophy className="h-4 w-4 mr-2" />
