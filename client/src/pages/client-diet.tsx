@@ -25,7 +25,10 @@ import {
   TrendingDown,
   UtensilsCrossed,
   Dumbbell,
-  Plus
+  Plus,
+  Coffee,
+  Salad,
+  Cookie
 } from "lucide-react";
 
 export default function ClientDiet() {
@@ -50,33 +53,96 @@ export default function ClientDiet() {
 
   const currentPlan = dietPlans?.find(plan => plan.clientId === clientId);
 
+  // Meal type icon configuration with colors
+  const getMealTypeIcon = (mealType: string) => {
+    switch (mealType.toLowerCase()) {
+      case 'breakfast':
+        return { 
+          icon: Coffee, 
+          bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+          iconColor: 'text-yellow-600 dark:text-yellow-400',
+          time: '7:00 AM'
+        };
+      case 'lunch':
+        return { 
+          icon: Salad, 
+          bgColor: 'bg-green-100 dark:bg-green-900/30',
+          iconColor: 'text-green-600 dark:text-green-400',
+          time: '12:30 PM'
+        };
+      case 'preworkout':
+      case 'pre-workout':
+        return { 
+          icon: Zap, 
+          bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+          iconColor: 'text-blue-600 dark:text-blue-400',
+          time: '3:00 PM'
+        };
+      case 'postworkout':
+      case 'post-workout':
+        return { 
+          icon: Dumbbell, 
+          bgColor: 'bg-purple-100 dark:bg-purple-900/30',
+          iconColor: 'text-purple-600 dark:text-purple-400',
+          time: '5:00 PM'
+        };
+      case 'dinner':
+        return { 
+          icon: ChefHat, 
+          bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+          iconColor: 'text-orange-600 dark:text-orange-400',
+          time: '7:00 PM'
+        };
+      case 'snacks':
+        return { 
+          icon: Cookie, 
+          bgColor: 'bg-pink-100 dark:bg-pink-900/30',
+          iconColor: 'text-pink-600 dark:text-pink-400',
+          time: '4:00 PM'
+        };
+      default:
+        return { 
+          icon: Utensils, 
+          bgColor: 'bg-gray-100 dark:bg-gray-900/30',
+          iconColor: 'text-gray-600 dark:text-gray-400',
+          time: '12:00 PM'
+        };
+    }
+  };
+
   // Meal schedule from assigned diet plan
   const hasDietPlan = currentPlan && Object.keys(currentPlan.meals || {}).length > 0;
   
   const mealSchedule = hasDietPlan ? [
     currentPlan.meals?.breakfast && {
-      time: "7:00 AM",
       type: "Breakfast",
-      icon: "🥞",
-      meal: currentPlan.meals.breakfast
+      meal: currentPlan.meals.breakfast,
+      ...getMealTypeIcon('breakfast')
     },
     currentPlan.meals?.lunch && {
-      time: "12:30 PM",
       type: "Lunch",
-      icon: "🥗",
-      meal: currentPlan.meals.lunch
+      meal: currentPlan.meals.lunch,
+      ...getMealTypeIcon('lunch')
+    },
+    currentPlan.meals?.preWorkout && {
+      type: "Pre-Workout",
+      meal: currentPlan.meals.preWorkout,
+      ...getMealTypeIcon('preWorkout')
+    },
+    currentPlan.meals?.postWorkout && {
+      type: "Post-Workout",
+      meal: currentPlan.meals.postWorkout,
+      ...getMealTypeIcon('postWorkout')
     },
     currentPlan.meals?.dinner && {
-      time: "7:00 PM",
       type: "Dinner",
-      icon: "🍲",
-      meal: currentPlan.meals.dinner
+      meal: currentPlan.meals.dinner,
+      ...getMealTypeIcon('dinner')
     },
     currentPlan.meals?.snacks && {
-      time: "4:00 PM",
       type: "Snacks",
-      icon: "🌽",
-      meal: currentPlan.meals.snacks
+      meal: currentPlan.meals.snacks,
+      ...getMealTypeIcon('snacks')
     }
   ].filter(Boolean) : [];
 
@@ -165,22 +231,28 @@ export default function ClientDiet() {
 
                 {/* Meals List */}
                 <div className="space-y-3">
-                  {mealSchedule.map((meal, idx) => (
-                    <Card key={idx} className="border-0 bg-white dark:bg-slate-800 hover-elevate">
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-4">
-                          <div className="text-3xl">{meal.icon}</div>
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900 dark:text-white">{meal.type}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{meal.meal.name}</p>
+                  {mealSchedule.map((meal, idx) => {
+                    const IconComponent = meal.icon;
+                    return (
+                      <Card key={idx} className="border-0 bg-white dark:bg-slate-800 hover-elevate">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-4">
+                            {/* Colored Icon Circle */}
+                            <div className={`${meal.bgColor} rounded-full p-3 flex items-center justify-center`}>
+                              <IconComponent className={`h-6 w-6 ${meal.iconColor}`} />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900 dark:text-white">{meal.type}</h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">{meal.meal.name}</p>
+                            </div>
+                            <Badge variant="secondary" className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-0">
+                              {meal.meal.calories}Cal
+                            </Badge>
                           </div>
-                          <Badge variant="secondary" className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-0">
-                            {meal.meal.calories}Cal
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
