@@ -245,6 +245,7 @@ export function DietTemplateList() {
     const submitData = {
       ...formData,
       targetCalories,
+      isTemplate: true,
     };
 
     if (editingTemplate) {
