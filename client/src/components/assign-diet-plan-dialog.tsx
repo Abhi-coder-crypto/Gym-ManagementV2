@@ -13,11 +13,12 @@ interface AssignDietPlanDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   dietPlan: {
-    id: number;
+    _id?: string;
+    id?: number;
     name: string;
     calories: number;
     type: string;
-    meals: number;
+    meals: number | any[];
   } | null;
 }
 
@@ -31,6 +32,13 @@ export function AssignDietPlanDialog({ open, onOpenChange, dietPlan }: AssignDie
 
   const { data: packages = [] } = useQuery<any[]>({
     queryKey: ['/api/packages'],
+  });
+
+  // Fetch the full diet plan template to get its meals
+  const planId = dietPlan?._id || dietPlan?.id;
+  const { data: fullDietPlan } = useQuery<any>({
+    queryKey: ['/api/diet-plans', planId],
+    enabled: !!planId && open,
   });
 
   const packageById = packages.reduce((map: Record<string, any>, pkg) => {
@@ -49,17 +57,32 @@ export function AssignDietPlanDialog({ open, onOpenChange, dietPlan }: AssignDie
 
   const assignMutation = useMutation({
     mutationFn: async (clientIds: string[]) => {
-      if (!dietPlan) return;
+      if (!dietPlan || !fullDietPlan) return;
+      
+      // Deep clone the template's meals to avoid reference sharing
+      const templateMeals = JSON.parse(JSON.stringify(fullDietPlan.meals || []));
+      
+      // Use fullDietPlan with safe fallbacks to dietPlan for legacy data
+      const targetCals = fullDietPlan.targetCalories ?? dietPlan.calories;
+      const category = fullDietPlan.category ?? dietPlan.type;
+      const protein = fullDietPlan.protein ?? Math.round(targetCals * 0.30 / 4);
+      const carbs = fullDietPlan.carbs ?? Math.round(targetCals * 0.40 / 4);
+      const fats = fullDietPlan.fats ?? Math.round(targetCals * 0.30 / 9);
       
       const assignments = clientIds.map(clientId => 
         apiRequest('POST', '/api/diet-plans', {
           clientId,
-          name: dietPlan.name,
-          targetCalories: dietPlan.calories,
-          protein: Math.round(dietPlan.calories * 0.30 / 4),
-          carbs: Math.round(dietPlan.calories * 0.40 / 4),
-          fats: Math.round(dietPlan.calories * 0.30 / 9),
-          meals: generateMeals(dietPlan.calories, dietPlan.meals, dietPlan.type),
+          name: fullDietPlan.name ?? dietPlan.name,
+          description: fullDietPlan.description,
+          category, // New field
+          type: category, // Legacy field (same as category)
+          targetCalories: targetCals, // New field
+          calories: targetCals, // Legacy field (same as targetCalories)
+          protein,
+          carbs,
+          fats,
+          isTemplate: false, // Assigned plans are not templates
+          meals: JSON.parse(JSON.stringify(templateMeals)), // Deep clone per client
         })
       );
       

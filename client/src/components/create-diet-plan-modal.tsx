@@ -28,6 +28,7 @@ export function CreateDietPlanModal({ open, onOpenChange, plan }: CreateDietPlan
   const [carbs, setCarbs] = useState("");
   const [fats, setFats] = useState("");
   const [isTemplate, setIsTemplate] = useState(true);
+  const [generateMeals, setGenerateMeals] = useState(true);
 
   useEffect(() => {
     if (plan) {
@@ -40,6 +41,7 @@ export function CreateDietPlanModal({ open, onOpenChange, plan }: CreateDietPlan
       setCarbs(String(plan.carbs || ""));
       setFats(String(plan.fats || ""));
       setIsTemplate(plan.isTemplate ?? true);
+      setGenerateMeals(false); // Don't generate meals by default when editing
     } else {
       resetForm();
     }
@@ -55,6 +57,7 @@ export function CreateDietPlanModal({ open, onOpenChange, plan }: CreateDietPlan
     setCarbs("");
     setFats("");
     setIsTemplate(true);
+    setGenerateMeals(true); // Generate meals by default for new plans
   };
 
   const autoCalculateMacros = () => {
@@ -119,31 +122,50 @@ export function CreateDietPlanModal({ open, onOpenChange, plan }: CreateDietPlan
       return;
     }
 
-    // Generate 5 meals for the selected week
-    const caloriesPerMeal = Math.round(parseFloat(targetCalories) / 5);
-    const mealTimes = ["7:00 AM", "10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM"];
-    const mealTypes = ["Breakfast", "Snack", "Lunch", "Snack", "Dinner"];
-    const mealNames: Record<string, string[]> = {
-      "Low Carb": ["Scrambled Eggs & Avocado", "Almonds & Cheese", "Grilled Chicken Salad", "Greek Yogurt", "Salmon with Vegetables"],
-      "High Protein": ["Protein Pancakes", "Protein Shake", "Turkey & Quinoa Bowl", "Cottage Cheese", "Lean Beef with Broccoli"],
-      "Balanced": ["Oatmeal with Berries", "Apple & Peanut Butter", "Chicken & Rice", "Greek Yogurt & Fruit", "Fish with Sweet Potato"],
-      "Ketogenic": ["Keto Breakfast Bowl", "Keto Fat Bombs", "Keto Chicken Salad", "Keto Cheese Plate", "Keto Steak Dinner"],
-      "Vegan": ["Tofu Scramble", "Hummus & Veggies", "Lentil Buddha Bowl", "Mixed Nuts & Berries", "Vegan Stir Fry"],
-    };
+    // Clone existing meals to avoid reference sharing
+    let mealsToSave = plan?.meals ? JSON.parse(JSON.stringify(plan.meals)) : [];
     
-    const names = mealNames[category] || mealNames["Balanced"];
-    const weekNum = parseInt(weekNumber);
-    
-    const generatedMeals = Array.from({ length: 5 }, (_, i) => ({
-      weekNumber: weekNum,
-      time: mealTimes[i],
-      type: mealTypes[i],
-      name: names[i],
-      calories: caloriesPerMeal,
-      protein: protein ? Math.round(parseFloat(protein) / 5) : Math.round(caloriesPerMeal * 0.30 / 4),
-      carbs: carbs ? Math.round(parseFloat(carbs) / 5) : Math.round(caloriesPerMeal * 0.40 / 4),
-      fats: fats ? Math.round(parseFloat(fats) / 5) : Math.round(caloriesPerMeal * 0.30 / 9),
-    }));
+    if (generateMeals) {
+      const weekNum = parseInt(weekNumber);
+      
+      // Check if this week already has meals
+      const weekExists = mealsToSave.some((meal: any) => meal.weekNumber === weekNum);
+      if (weekExists) {
+        toast({
+          title: "Week Already Exists",
+          description: `Week ${weekNum} already has meals in this plan. Please delete existing meals first or choose a different week.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Generate 5 meals for the selected week
+      const caloriesPerMeal = Math.round(parseFloat(targetCalories) / 5);
+      const mealTimes = ["7:00 AM", "10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM"];
+      const mealTypes = ["Breakfast", "Snack", "Lunch", "Snack", "Dinner"];
+      const mealNames: Record<string, string[]> = {
+        "Low Carb": ["Scrambled Eggs & Avocado", "Almonds & Cheese", "Grilled Chicken Salad", "Greek Yogurt", "Salmon with Vegetables"],
+        "High Protein": ["Protein Pancakes", "Protein Shake", "Turkey & Quinoa Bowl", "Cottage Cheese", "Lean Beef with Broccoli"],
+        "Balanced": ["Oatmeal with Berries", "Apple & Peanut Butter", "Chicken & Rice", "Greek Yogurt & Fruit", "Fish with Sweet Potato"],
+        "Ketogenic": ["Keto Breakfast Bowl", "Keto Fat Bombs", "Keto Chicken Salad", "Keto Cheese Plate", "Keto Steak Dinner"],
+        "Vegan": ["Tofu Scramble", "Hummus & Veggies", "Lentil Buddha Bowl", "Mixed Nuts & Berries", "Vegan Stir Fry"],
+      };
+      
+      const names = mealNames[category] || mealNames["Balanced"];
+      
+      const generatedMeals = Array.from({ length: 5 }, (_, i) => ({
+        weekNumber: weekNum,
+        time: mealTimes[i],
+        type: mealTypes[i],
+        name: names[i],
+        calories: caloriesPerMeal,
+        protein: protein ? Math.round(parseFloat(protein) / 5) : Math.round(caloriesPerMeal * 0.30 / 4),
+        carbs: carbs ? Math.round(parseFloat(carbs) / 5) : Math.round(caloriesPerMeal * 0.40 / 4),
+        fats: fats ? Math.round(parseFloat(fats) / 5) : Math.round(caloriesPerMeal * 0.30 / 9),
+      }));
+      
+      mealsToSave = [...mealsToSave, ...generatedMeals];
+    }
 
     const data = {
       name,
@@ -154,7 +176,7 @@ export function CreateDietPlanModal({ open, onOpenChange, plan }: CreateDietPlan
       carbs: carbs ? parseFloat(carbs) : undefined,
       fats: fats ? parseFloat(fats) : undefined,
       isTemplate,
-      meals: plan?.meals ? [...plan.meals, ...generatedMeals] : generatedMeals,
+      meals: mealsToSave,
     };
 
     createOrUpdateMutation.mutate(data);
@@ -239,6 +261,23 @@ export function CreateDietPlanModal({ open, onOpenChange, plan }: CreateDietPlan
                 {plan ? "Add meals for a specific week to this plan" : "Select which week this plan is for (5 meals per week)"}
               </p>
             </div>
+
+            {plan && (
+              <div className="flex items-center justify-between p-4 border rounded-md">
+                <div>
+                  <Label htmlFor="generateMeals">Generate Meals for Selected Week</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Add 5 new meals for Week {weekNumber} to this plan
+                  </p>
+                </div>
+                <Switch
+                  id="generateMeals"
+                  checked={generateMeals}
+                  onCheckedChange={setGenerateMeals}
+                  data-testid="switch-generate-meals"
+                />
+              </div>
+            )}
 
             <div>
               <Label htmlFor="calories">Target Calories (Weekly Total) *</Label>
