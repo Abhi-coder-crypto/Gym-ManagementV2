@@ -56,11 +56,20 @@ export default function ClientDiet() {
     enabled: !!clientId,
   });
 
-  const currentPlan = dietPlans?.find(plan => plan.clientId === clientId);
+  // The API already filters by clientId, so we just use the first plan
+  // If there are multiple plans, we take the most recent one (API sorts by createdAt desc)
+  const currentPlan = dietPlans && dietPlans.length > 0 ? dietPlans[0] : null;
   
-  // Reset currentWeek when diet plan changes
+  // Reset currentWeek when diet plan changes - default to week 4 if it exists
   useEffect(() => {
-    setCurrentWeek(1);
+    if (currentPlan?.meals && Array.isArray(currentPlan.meals)) {
+      const weeks = currentPlan.meals.map((m: any) => m.weekNumber ?? 1);
+      // Start at week 4 if it exists, otherwise start at week 1
+      const startWeek = weeks.includes(4) ? 4 : 1;
+      setCurrentWeek(startWeek);
+    } else {
+      setCurrentWeek(1);
+    }
   }, [currentPlan?._id]);
 
   // Handler functions for clickable elements
