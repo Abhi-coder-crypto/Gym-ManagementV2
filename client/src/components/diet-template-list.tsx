@@ -277,8 +277,11 @@ export function DietTemplateList() {
       return;
     }
 
-    // Convert meals array to day-based object structure with aggregated values
-    const mealsObject: any = {};
+    // Preserve existing meals from other days and merge the current day
+    const mealsObject: any = editingTemplate?.meals && typeof editingTemplate.meals === 'object' 
+      ? { ...editingTemplate.meals } 
+      : {};
+    
     const selectedDay = formData.selectedDay || "Monday";
     mealsObject[selectedDay] = {};
     

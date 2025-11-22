@@ -288,36 +288,46 @@ export default function ClientDiet() {
                 <div className="bg-orange-100 dark:bg-orange-900/30 rounded-lg p-4 mb-6 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Flame className="h-6 w-6 text-orange-500" />
-                    <span className="font-medium text-gray-800 dark:text-gray-200">Total Calories</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200">{selectedDay}'s Total Calories</span>
                   </div>
                   <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">{totalCalories} Cal</span>
                 </div>
 
                 {/* Meals List */}
-                <div className="space-y-3">
-                  {mealSchedule.map((meal, idx) => {
-                    const IconComponent = meal.icon;
-                    return (
-                      <Card key={idx} className="border-0 bg-white dark:bg-slate-800 hover-elevate">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-4">
-                            {/* Colored Icon Circle */}
-                            <div className={`${meal.bgColor} rounded-full p-3 flex items-center justify-center`}>
-                              <IconComponent className={`h-6 w-6 ${meal.iconColor}`} />
+                {mealSchedule.length === 0 ? (
+                  <Card className="border-dashed">
+                    <CardContent className="p-8 text-center">
+                      <UtensilsCrossed className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                      <p className="text-muted-foreground">No meals planned for {selectedDay}</p>
+                      <p className="text-sm text-muted-foreground mt-1">Select another day to view your meal plan</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-3">
+                    {mealSchedule.map((meal, idx) => {
+                      const IconComponent = meal.icon;
+                      return (
+                        <Card key={idx} className="border-0 bg-white dark:bg-slate-800 hover-elevate">
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-4">
+                              {/* Colored Icon Circle */}
+                              <div className={`${meal.bgColor} rounded-full p-3 flex items-center justify-center`}>
+                                <IconComponent className={`h-6 w-6 ${meal.iconColor}`} />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-gray-900 dark:text-white">{meal.type}</h4>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{meal.meal.name}</p>
+                              </div>
+                              <Badge variant="secondary" className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-0">
+                                {meal.meal.calories}Cal
+                              </Badge>
                             </div>
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-900 dark:text-white">{meal.type}</h4>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">{meal.meal.name}</p>
-                            </div>
-                            <Badge variant="secondary" className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-0">
-                              {meal.meal.calories}Cal
-                            </Badge>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
