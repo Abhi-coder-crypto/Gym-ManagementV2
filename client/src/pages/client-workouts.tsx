@@ -3,7 +3,7 @@ import { ClientHeader } from "@/components/client-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, CheckCircle2, Target, Clock, Flame } from "lucide-react";
+import { Dumbbell, CheckCircle2, Target, Clock, Flame, Droplet, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
 
@@ -34,6 +34,8 @@ interface WorkoutPlan {
 
 export default function ClientWorkouts() {
   const [selectedWeek, setSelectedWeek] = useState(new Date());
+  const [waterIntake, setWaterIntake] = useState(0);
+  const waterGoal = 8;
 
   const { data: workoutSessions = [], isLoading: isLoadingSessions } = useQuery<WorkoutSession[]>({
     queryKey: ['/api/workout-sessions'],
@@ -87,6 +89,16 @@ export default function ClientWorkouts() {
 
   const goToCurrentWeek = () => {
     setSelectedWeek(new Date());
+  };
+
+  const handleWaterIntake = () => {
+    if (waterIntake < waterGoal) {
+      setWaterIntake(waterIntake + 1);
+    }
+  };
+
+  const handleResetWater = () => {
+    setWaterIntake(0);
   };
 
   if (isLoading) {
@@ -227,6 +239,79 @@ export default function ClientWorkouts() {
                   </div>
                 );
               })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Fitness Tracking */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Fitness Tracking</CardTitle>
+            <CardDescription>Track your weight and water intake</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Weight In */}
+              <Card className="hover-elevate bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border-0">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="text-4xl">⚖️</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Weight in</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">88.5 kg</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" data-testid="button-record-weight">
+                    Record
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Water Intake */}
+              <Card className="hover-elevate">
+                <CardContent className="p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-gray-900 dark:text-white">Water</h4>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{waterIntake * 250} ml</span>
+                  </div>
+
+                  {/* Water Glasses Grid */}
+                  <div className="grid grid-cols-4 gap-2">
+                    {Array.from({ length: waterGoal }).map((_, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          if (idx === waterIntake) {
+                            handleWaterIntake();
+                          }
+                        }}
+                        className={`aspect-square rounded-lg flex items-center justify-center cursor-pointer transition-all ${
+                          idx < waterIntake
+                            ? 'bg-blue-500 dark:bg-blue-600'
+                            : 'bg-gray-200 dark:bg-gray-700'
+                        }`}
+                        data-testid={`water-glass-${idx}`}
+                      >
+                        {idx < waterIntake ? (
+                          <Droplet className="h-4 w-4 text-white" />
+                        ) : idx === waterIntake ? (
+                          <Plus className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResetWater}
+                    className="w-full"
+                    data-testid="button-reset-water"
+                  >
+                    Reset
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
           </CardContent>
         </Card>

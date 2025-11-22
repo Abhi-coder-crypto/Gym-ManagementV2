@@ -109,7 +109,7 @@ export default function ClientDiet() {
       
       <main className="p-4 md:p-6 max-w-7xl mx-auto">
         <Tabs defaultValue="diet" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="diet" data-testid="tab-diet">
               <UtensilsCrossed className="h-4 w-4 mr-2" />
               Diet
@@ -117,10 +117,6 @@ export default function ClientDiet() {
             <TabsTrigger value="macros" data-testid="tab-macros">
               <Zap className="h-4 w-4 mr-2" />
               Macros
-            </TabsTrigger>
-            <TabsTrigger value="fitness" data-testid="tab-fitness">
-              <Dumbbell className="h-4 w-4 mr-2" />
-              Fitness
             </TabsTrigger>
           </TabsList>
 
@@ -320,79 +316,6 @@ export default function ClientDiet() {
                     </CardContent>
                   </Card>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Fitness Tab */}
-          <TabsContent value="fitness" className="space-y-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Exercise</CardTitle>
-                <Badge className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-0">
-                  Burned 238 Cal
-                </Badge>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Weight In */}
-                <Card className="hover-elevate bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border-0">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="text-4xl">⚖️</div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white">Weight in</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">88.5 kg</p>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Record
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Water Intake */}
-                <Card className="hover-elevate">
-                  <CardContent className="p-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-gray-900 dark:text-white">Water</h4>
-                      <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{waterIntake * 250} ml</span>
-                    </div>
-
-                    {/* Water Glasses Grid */}
-                    <div className="grid grid-cols-5 gap-2">
-                      {Array.from({ length: waterGoal }).map((_, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => {
-                            if (idx === waterIntake) {
-                              handleWaterIntake();
-                            }
-                          }}
-                          className={`aspect-square rounded-lg flex items-center justify-center cursor-pointer transition-all ${
-                            idx < waterIntake
-                              ? 'bg-blue-500 dark:bg-blue-600'
-                              : 'bg-gray-200 dark:bg-gray-700'
-                          }`}
-                        >
-                          {idx < waterIntake ? (
-                            <Droplet className="h-4 w-4 text-white" />
-                          ) : idx === waterIntake ? (
-                            <Plus className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleResetWater}
-                      className="w-full"
-                    >
-                      Reset
-                    </Button>
-                  </CardContent>
-                </Card>
               </CardContent>
             </Card>
           </TabsContent>
