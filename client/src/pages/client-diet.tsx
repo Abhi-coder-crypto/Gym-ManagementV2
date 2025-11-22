@@ -334,22 +334,6 @@ export default function ClientDiet() {
                 </Badge>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Daily Steps */}
-                <Card className="hover-elevate bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-0">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="text-4xl">👟</div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white">Daily steps</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">5,299 steps</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">238 Cal</div>
-                    </div>
-                  </CardContent>
-                </Card>
-
                 {/* Weight In */}
                 <Card className="hover-elevate bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border-0">
                   <CardContent className="p-4 flex items-center justify-between">
