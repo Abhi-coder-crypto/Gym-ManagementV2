@@ -3992,13 +3992,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? Math.round(((lastMonthClients - twoMonthsAgoClients) / twoMonthsAgoClients) * 100)
         : 100;
 
-      // Package breakdown
-      const packageById = packages.reduce((map: Record<string, any>, pkg: any) => {
+      // Package breakdown (exclude archived packages)
+      const activePackages = packages.filter((pkg: any) => pkg.status !== 'archived');
+      
+      const packageById = activePackages.reduce((map: Record<string, any>, pkg: any) => {
         map[pkg._id.toString()] = pkg;
         return map;
       }, {});
 
-      const packageStats = packages.map((pkg: any) => {
+      const packageStats = activePackages.map((pkg: any) => {
         const count = clients.filter((c: any) => {
           const packageId = typeof c.packageId === 'object' ? c.packageId._id : c.packageId;
           return packageId?.toString() === pkg._id.toString();
@@ -4008,7 +4010,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           count,
           percentage: clients.length > 0 ? Math.round((count / clients.length) * 100) : 0
         };
-      });
+      }).filter((stat: any) => stat.count > 0);
 
       res.json({
         thisMonth: thisMonthClients,

@@ -206,9 +206,9 @@ export default function AdminAnalyticsEnhanced() {
                 />
                 <StatCard 
                   title="Monthly Revenue" 
-                  value={`$${monthlyRevenue.toLocaleString()}`} 
+                  value={`₹${monthlyRevenue.toLocaleString()}`} 
                   icon={DollarSign} 
-                  trend={`${monthlyRevenue > 0 ? '+' : ''}${monthlyRevenue.toLocaleString()}`} 
+                  trend={`${monthlyRevenue > 0 ? '+' : ''}₹${monthlyRevenue.toLocaleString()}`} 
                   trendUp={monthlyRevenue > 0} 
                 />
                 <StatCard 
@@ -447,7 +447,7 @@ export default function AdminAnalyticsEnhanced() {
                       <DollarSign className="h-5 w-5 text-chart-3 mt-0.5" />
                       <div className="flex-1">
                         <p className="font-medium">Monthly Revenue</p>
-                        <p className="text-2xl font-bold mt-1">${monthlyRevenue.toLocaleString()}</p>
+                        <p className="text-2xl font-bold mt-1">₹{monthlyRevenue.toLocaleString()}</p>
                         <p className="text-xs text-muted-foreground mt-1">Recurring income</p>
                       </div>
                     </div>
