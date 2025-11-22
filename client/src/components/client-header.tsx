@@ -1,7 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { NotificationBell } from "@/components/notification-bell";
-import { CalculatorDialog } from "@/components/calculator-dialog";
 import { SessionReminders } from "@/components/session-reminders";
 import {
   DropdownMenu,
@@ -191,9 +189,7 @@ export function ClientHeader({ currentPage }: ClientHeaderProps) {
 
           {/* Icon Buttons */}
           <div className="flex items-center gap-1 flex-shrink-0">
-            <CalculatorDialog />
             <SessionReminders />
-            <NotificationBell />
             <ThemeToggle />
             <Button 
               variant="ghost" 
@@ -208,6 +204,7 @@ export function ClientHeader({ currentPage }: ClientHeaderProps) {
               size="icon" 
               onClick={handleLogout} 
               data-testid="button-logout"
+              title="Logout"
             >
               <LogOut className="h-5 w-5" />
             </Button>

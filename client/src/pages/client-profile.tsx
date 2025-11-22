@@ -60,11 +60,6 @@ export default function ClientProfile() {
     enabled: !!clientId,
   });
 
-  const { data: payments = [], isLoading: isLoadingPayments } = useQuery<any[]>({
-    queryKey: [`/api/payment-history/${clientId}`],
-    enabled: !!clientId,
-  });
-
   // Initialize form data when client loads
   useEffect(() => {
     if (client) {
@@ -162,12 +157,10 @@ export default function ClientProfile() {
           </div>
 
           <Tabs defaultValue="personal" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="personal">{t('tabs.personal')}</TabsTrigger>
               <TabsTrigger value="health">{t('tabs.health')}</TabsTrigger>
               <TabsTrigger value="subscription">{t('tabs.subscription')}</TabsTrigger>
-              <TabsTrigger value="payments">{t('tabs.payments')}</TabsTrigger>
-              <TabsTrigger value="preferences">{t('tabs.preferences')}</TabsTrigger>
               <TabsTrigger value="privacy">{t('tabs.privacy')}</TabsTrigger>
             </TabsList>
 
@@ -339,229 +332,61 @@ export default function ClientProfile() {
                   <CardTitle>Current Plan</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="p-4 border rounded-md bg-accent/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-xl font-bold font-display">{client.packageId?.name || 'Premium'} Plan</h3>
-                      <Badge className="bg-chart-2">${client.packageId?.price || '59'}/month</Badge>
-                    </div>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                        Access to all recorded workout videos
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                        Personalized diet management
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                        Progress tracking and analytics
-                      </li>
-                    </ul>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Next billing date</span>
-                      <span className="font-semibold">Dec 10, 2025</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Payment method</span>
-                      <span className="font-semibold flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        •••• 4242
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    <Button variant="outline" className="flex-1" data-testid="button-change-plan">
-                      Change Plan
-                    </Button>
-                    <Button variant="outline" className="flex-1" data-testid="button-cancel-subscription">
-                      Cancel Subscription
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="payments" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Payment History
-                  </CardTitle>
-                  <CardDescription>View your invoices and payment receipts</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {payments.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>No payment history available</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {payments.map((payment: any) => (
-                        <div
-                          key={payment._id}
-                          className="flex flex-wrap items-center justify-between p-4 border rounded-md gap-3"
-                          data-testid={`payment-${payment._id}`}
-                        >
-                          <div className="flex-1 min-w-48">
-                            <div className="font-semibold">Invoice #{payment.invoiceNumber}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {new Date(payment.billingDate).toLocaleDateString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric', 
-                                year: 'numeric' 
-                              })}
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="font-bold">${payment.amount}</div>
-                            <Badge variant={payment.status === 'completed' ? 'default' : 'secondary'}>
-                              {payment.status}
-                            </Badge>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {payment.paymentMethod}
-                          </div>
-                          <Button variant="outline" size="sm" data-testid={`button-download-${payment._id}`}>
-                            <Download className="h-4 w-4 mr-2" />
-                            Receipt
-                          </Button>
+                  {client.packageId ? (
+                    <>
+                      <div className="p-4 border rounded-md bg-accent/50">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-xl font-bold font-display">{client.packageId.name} Plan</h3>
+                          <Badge className="bg-chart-2">₹{client.packageId.price}/month</Badge>
                         </div>
-                      ))}
+                        {client.packageId.features && client.packageId.features.length > 0 && (
+                          <ul className="space-y-2 text-sm">
+                            {client.packageId.features.map((feature: string, index: number) => (
+                              <li key={index} className="flex items-center gap-2">
+                                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                {feature}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      <div className="space-y-3">
+                        {client.subscriptionEndDate && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Subscription ends on</span>
+                            <span className="font-semibold">
+                              {new Date(client.subscriptionEndDate).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                        )}
+                        {client.paymentMethod && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Payment method</span>
+                            <span className="font-semibold flex items-center gap-2">
+                              <CreditCard className="h-4 w-4" />
+                              {client.paymentMethod}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-3">
+                        <Button variant="outline" className="flex-1" data-testid="button-change-plan">
+                          Change Plan
+                        </Button>
+                        <Button variant="outline" className="flex-1" data-testid="button-cancel-subscription">
+                          Cancel Subscription
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No active subscription</p>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="preferences" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notification Preferences</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold">Email Notifications</p>
-                      <p className="text-sm text-muted-foreground">Receive email updates about your progress</p>
-                    </div>
-                    <Switch 
-                      id="emailNotifications"
-                      checked={formData.emailNotifications}
-                      onCheckedChange={(checked) => setFormData({...formData, emailNotifications: checked})}
-                      data-testid="switch-email-notifications"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold">Session Reminders</p>
-                      <p className="text-sm text-muted-foreground">Get notified before live sessions</p>
-                    </div>
-                    <Switch 
-                      id="sessionReminders"
-                      checked={formData.sessionReminders}
-                      onCheckedChange={(checked) => setFormData({...formData, sessionReminders: checked})}
-                      data-testid="switch-session-reminders"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold">Achievement Notifications</p>
-                      <p className="text-sm text-muted-foreground">Celebrate your milestones</p>
-                    </div>
-                    <Switch 
-                      id="achievementNotifications"
-                      checked={formData.achievementNotifications}
-                      onCheckedChange={(checked) => setFormData({...formData, achievementNotifications: checked})}
-                      data-testid="switch-achievement-notifications"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    {darkMode ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-                    Appearance
-                  </CardTitle>
-                  <CardDescription>Customize how FitPro looks to you</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold">Dark Mode</p>
-                      <p className="text-sm text-muted-foreground">Switch between light and dark themes</p>
-                    </div>
-                    <Switch 
-                      id="darkMode"
-                      checked={darkMode}
-                      onCheckedChange={toggleDarkMode}
-                      data-testid="switch-dark-mode"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe className="h-5 w-5" />
-                    Language & Region
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="language">Preferred Language</Label>
-                    <Select value={formData.language} onValueChange={(value: any) => setFormData({...formData, language: value})}>
-                      <SelectTrigger id="language" data-testid="select-language">
-                        <SelectValue placeholder="Select language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="hi">हिंदी (Hindi)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Button
-                className="w-full"
-                onClick={() => {
-                  updateClientMutation.mutate({
-                    language: formData.language,
-                    notificationPreferences: {
-                      email: formData.emailNotifications,
-                      sessionReminders: formData.sessionReminders,
-                      achievements: formData.achievementNotifications,
-                    },
-                  });
-                }}
-                disabled={updateClientMutation.isPending}
-                data-testid="button-save-preferences"
-              >
-                {updateClientMutation.isPending ? "Saving..." : "Save Preferences"}
-              </Button>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Fitness Goals</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="targetWeight">Target Weight (lbs)</Label>
-                    <Input id="targetWeight" type="number" defaultValue="170" data-testid="input-target-weight" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="weeklyGoal">Weekly Workout Goal</Label>
-                    <Input id="weeklyGoal" type="number" defaultValue="5" data-testid="input-weekly-goal" />
-                  </div>
-                  <Button className="w-full" data-testid="button-save-goals">Update Goals</Button>
                 </CardContent>
               </Card>
             </TabsContent>

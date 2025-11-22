@@ -35,8 +35,7 @@ const menuItems = [
   { title: "Videos", icon: Video, url: "/admin/videos" },
   { title: "Diet & Workout", icon: UtensilsCrossed, url: "/admin/diet" },
   { title: "Live Sessions", icon: Calendar, url: "/admin/sessions" },
-  { title: "Analytics", icon: TrendingUp, url: "/admin/analytics" },
-  { title: "Reports", icon: FileText, url: "/admin/reports" },
+  { title: "Analytics & Reports", icon: BarChart3, url: "/admin/analytics" },
   { title: "Settings", icon: Settings, url: "/admin/settings" },
 ];
 
