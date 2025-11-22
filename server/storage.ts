@@ -764,6 +764,58 @@ export class MongoStorage implements IStorage {
       throw new Error('Diet plan not found');
     }
     
+    // Helper function to normalize meal type to camelCase
+    const normalizeMealType = (type: string): string => {
+      const normalized = type.toLowerCase().replace(/[_\s-]+/g, '');
+      const typeMap: Record<string, string> = {
+        'breakfast': 'breakfast',
+        'lunch': 'lunch',
+        'dinner': 'dinner',
+        'snacks': 'snacks',
+        'preworkout': 'preWorkout',
+        'pre-workout': 'preWorkout',
+        'postworkout': 'postWorkout',
+        'post-workout': 'postWorkout',
+      };
+      return typeMap[normalized] || normalized;
+    };
+    
+    // Transform meals array to object structure for client assignment
+    let transformedMeals = originalPlan.meals;
+    if (clientId && Array.isArray(originalPlan.meals)) {
+      transformedMeals = {};
+      for (const meal of originalPlan.meals) {
+        const mealType = normalizeMealType(meal.type);
+        if (meal.dishes && meal.dishes.length > 0) {
+          // Aggregate all dishes in this meal into a single meal object
+          const totalCalories = meal.dishes.reduce((sum: number, dish: any) => sum + (dish.calories || 0), 0);
+          const totalProtein = meal.dishes.reduce((sum: number, dish: any) => sum + (dish.protein || 0), 0);
+          const totalCarbs = meal.dishes.reduce((sum: number, dish: any) => sum + (dish.carbs || 0), 0);
+          const totalFats = meal.dishes.reduce((sum: number, dish: any) => sum + (dish.fats || 0), 0);
+          
+          // Combine dish names for the meal name
+          const dishNames = meal.dishes.map((dish: any) => dish.name).join(', ');
+          
+          transformedMeals[mealType] = {
+            name: dishNames,
+            calories: totalCalories,
+            protein: totalProtein,
+            carbs: totalCarbs,
+            fats: totalFats
+          };
+        } else {
+          // Handle meals with no dishes - provide default structure
+          transformedMeals[mealType] = {
+            name: `${meal.type} (Not configured)`,
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fats: 0
+          };
+        }
+      }
+    }
+    
     const clonedPlan = new DietPlan({
       clientId: clientId || undefined,
       name: clientId ? originalPlan.name : `${originalPlan.name} (Copy)`,
@@ -773,7 +825,7 @@ export class MongoStorage implements IStorage {
       protein: originalPlan.protein,
       carbs: originalPlan.carbs,
       fats: originalPlan.fats,
-      meals: originalPlan.meals,
+      meals: transformedMeals,
       allergens: originalPlan.allergens,
       waterIntakeGoal: originalPlan.waterIntakeGoal,
       supplements: originalPlan.supplements,

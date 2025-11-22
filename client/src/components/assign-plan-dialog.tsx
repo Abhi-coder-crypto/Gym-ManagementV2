@@ -67,15 +67,27 @@ export function AssignPlanDialog({ open, onOpenChange, plan, resourceType = 'die
     onSuccess: (_, clientIds) => {
       if (resourceType === 'workout') {
         queryClient.invalidateQueries({ queryKey: ['/api/workout-plan-templates'] });
+        // Invalidate each client's workout plans
+        clientIds.forEach(clientId => {
+          queryClient.invalidateQueries({ queryKey: [`/api/workout-plans/${clientId}`] });
+        });
       } else if (resourceType === 'meal') {
         // Meals create diet plans when assigned, so invalidate diet plan queries
         queryClient.invalidateQueries({ queryKey: ['/api/diet-plans-with-assignments'] });
         queryClient.invalidateQueries({ queryKey: ['/api/diet-plan-templates'] });
         queryClient.invalidateQueries({ queryKey: ['/api/diet-plan-assignments'] });
+        // Invalidate each client's diet plans
+        clientIds.forEach(clientId => {
+          queryClient.invalidateQueries({ queryKey: [`/api/diet-plans/${clientId}`] });
+        });
       } else {
         queryClient.invalidateQueries({ queryKey: ['/api/diet-plans-with-assignments'] });
         queryClient.invalidateQueries({ queryKey: ['/api/diet-plan-templates'] });
         queryClient.invalidateQueries({ queryKey: ['/api/diet-plan-assignments'] });
+        // Invalidate each client's diet plans so they see the new plan immediately
+        clientIds.forEach(clientId => {
+          queryClient.invalidateQueries({ queryKey: [`/api/diet-plans/${clientId}`] });
+        });
       }
       const resourceLabel = resourceType === 'workout' ? 'Workout' : resourceType === 'meal' ? 'Meal' : 'Diet';
       toast({
